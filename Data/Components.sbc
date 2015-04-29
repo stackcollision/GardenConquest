@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<Definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <Components>
+  	<Component>
+      <Id>
+        <TypeId>Component</TypeId>
+        <SubtypeId>ShipLicense</SubtypeId>
+      </Id>
+      <DisplayName>Ship License</DisplayName>
+      <Icon>Textures\Icons\license_ico.dds</Icon>
+      <Size>
+        <X>1</X>
+        <Y>0.5</Y>
+        <Z>0.4</Z>
+      </Size>
+      <Mass>8</Mass>
+      <Volume>140</Volume>
+      <Model>Models\Components\radio_communication_components_component.mwm</Model>
+      <MaxIntegrity>15</MaxIntegrity>
+      <DropProbability>0.1</DropProbability>
+    </Component>
+  </Components>
+</Definitions>
