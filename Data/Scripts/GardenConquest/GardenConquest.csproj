@@ -53,10 +53,12 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Config.cs" />
     <Compile Include="ControlPoint.cs" />
     <Compile Include="Core.cs" />
     <Compile Include="HullClassifier.cs" />
     <Compile Include="Logger.cs" />
+    <Compile Include="ConquestSettings.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Properties\" />

@@ -39,15 +39,14 @@ namespace GardenConquest {
 		private bool m_IsServer = false;
 		private MyTimer m_Timer = null;
 
-		private Logger m_Logger = null;
+		private static Logger s_Logger = null;
 
 		private static Core s_Instance = null;
 
-		private const int PERIOD = 10; // Period at which we award tickets
-		private static MyObjectBuilder_Component m_TokenBuilder = null;
-		private static Sandbox.Common.ObjectBuilders.Definitions.SerializableDefinitionId? m_TokenDef = null;
+		private static MyObjectBuilder_Component s_TokenBuilder = null;
+		private static Sandbox.Common.ObjectBuilders.Definitions.SerializableDefinitionId? s_TokenDef = null;
 
-		private List<ControlPoint> m_CPs;
+		private static Config s_Config = null;
 
 		#endregion
 		#region Class Lifecycle
@@ -59,14 +58,15 @@ namespace GardenConquest {
 		}
 
 		public void initialize() {
-			if (MyAPIGateway.Session == null)
+			if (MyAPIGateway.Session == null || m_Initialized)
 				return;
 
-			m_Logger = new Logger("Conquest Core", "Core");
+			if(s_Logger == null)
+				s_Logger = new Logger("Conquest Core", "Core");
 			log("Conquest core started");
 
-			m_TokenBuilder = new MyObjectBuilder_Component() { SubtypeName = "ShipLicense" };
-			m_TokenDef = new Sandbox.Common.ObjectBuilders.Definitions.SerializableDefinitionId(
+			s_TokenBuilder = new MyObjectBuilder_Component() { SubtypeName = "ShipLicense" };
+			s_TokenDef = new Sandbox.Common.ObjectBuilders.Definitions.SerializableDefinitionId(
 				typeof(MyObjectBuilder_InventoryItem), "ShipLicense");
 
 			MyAPIGateway.Utilities.MessageEntered += handleChatCommand;
@@ -82,20 +82,11 @@ namespace GardenConquest {
 			}
 
 			if (m_IsServer) {
-				m_CPs = new List<ControlPoint>();
-
-				//
-				// Testing value
-				ControlPoint test = new ControlPoint();
-				test.Name = "Center";
-				test.Position = new VRageMath.Vector3D(0, 0, 0);
-				test.Radius = 5000;
-				test.TokensPerPeriod = 1;
-				m_CPs.Add(test);
-				// end testing value
+				log("Loading config");
+				s_Config = new Config();
 
 				// Start timer
-				m_Timer = new MyTimer(PERIOD * 1000, timerTriggered);
+				m_Timer = new MyTimer(s_Config.Settings.Period * 1000, timerTriggered);
 				m_Timer.Start();
 				log("Timer started");
 			}
@@ -150,7 +141,7 @@ namespace GardenConquest {
 
 				// Check each CP in turn
 				Dictionary<long, long> totalTokens = new Dictionary<long, long>();
-				foreach (ControlPoint cp in m_CPs) {
+				foreach (ControlPoint cp in s_Config.Settings.ControlPoints) {
 					log("Processing control point " + cp.Name, "timerTriggered");
 
 					// Get a list of all grids within this CPs sphere of influence
@@ -256,7 +247,7 @@ namespace GardenConquest {
 							((container as Interfaces.IMyInventoryOwner).GetInventory(0) 
 								as IMyInventory).AddItems(
 								cp.TokensPerPeriod, 
-								m_TokenBuilder);
+								s_TokenBuilder);
 						}
 					}
 				}
@@ -397,8 +388,8 @@ namespace GardenConquest {
 		}
 
 		private void log(String message, String method = null, Logger.severity level = Logger.severity.DEBUG) {
-			if (m_Logger != null)
-				m_Logger.log(level, method, message);
+			if (s_Logger != null)
+				s_Logger.log(level, method, message);
 		}
 
 		#endregion
