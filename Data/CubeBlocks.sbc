@@ -4,7 +4,7 @@
     <Definition>
       <Id>
         <TypeId>Beacon</TypeId>
-        <SubtypeId>HullClassifier</SubtypeId>
+        <SubtypeId>FrigateHullClassifier</SubtypeId>
       </Id>
       <DisplayName>Frigate Class</DisplayName>
       <Icon>Textures\Icons\ff_beacon_ico.dds</Icon>

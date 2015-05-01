@@ -46,8 +46,6 @@ namespace GardenConquest {
 		private static MyObjectBuilder_Component s_TokenBuilder = null;
 		private static Sandbox.Common.ObjectBuilders.Definitions.SerializableDefinitionId? s_TokenDef = null;
 
-		private static Config s_Config = null;
-
 		#endregion
 		#region Class Lifecycle
 
@@ -69,8 +67,6 @@ namespace GardenConquest {
 			s_TokenDef = new Sandbox.Common.ObjectBuilders.Definitions.SerializableDefinitionId(
 				typeof(MyObjectBuilder_InventoryItem), "ShipLicense");
 
-			MyAPIGateway.Utilities.MessageEntered += handleChatCommand;
-
 			if (!MyAPIGateway.Multiplayer.MultiplayerActive) {
 				m_IsServer = true;
 			} else {
@@ -83,12 +79,15 @@ namespace GardenConquest {
 
 			if (m_IsServer) {
 				log("Loading config");
-				s_Config = new Config();
+				if (!ConquestSettings.getInstance().loadSettings())
+					ConquestSettings.getInstance().loadDefaults();
 
 				// Start timer
-				m_Timer = new MyTimer(s_Config.Settings.Period * 1000, timerTriggered);
+				m_Timer = new MyTimer(ConquestSettings.getInstance().Period * 1000, timerTriggered);
 				m_Timer.Start();
 				log("Timer started");
+			} else {
+				MyAPIGateway.Utilities.MessageEntered += handleChatCommand;
 			}
 
 			m_Initialized = true;
@@ -141,7 +140,7 @@ namespace GardenConquest {
 
 				// Check each CP in turn
 				Dictionary<long, long> totalTokens = new Dictionary<long, long>();
-				foreach (ControlPoint cp in s_Config.Settings.ControlPoints) {
+				foreach (ControlPoint cp in ConquestSettings.getInstance().ControlPoints) {
 					log("Processing control point " + cp.Name, "timerTriggered");
 
 					// Get a list of all grids within this CPs sphere of influence
@@ -248,9 +247,19 @@ namespace GardenConquest {
 								as IMyInventory).AddItems(
 								cp.TokensPerPeriod, 
 								s_TokenBuilder);
+
+							// Track totals
+							if (totalTokens.ContainsKey(greatestFaction)) {
+								totalTokens[greatestFaction] += cp.TokensPerPeriod;
+							} else {
+								totalTokens.Add(greatestFaction, cp.TokensPerPeriod);
+							}
 						}
 					}
 				}
+
+				// Report round results
+				// TODO
 			} catch (Exception e) {
 				log("An exception occured: " + e, "timerTriggered", Logger.severity.ERROR);
 			}

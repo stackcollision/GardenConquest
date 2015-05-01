@@ -53,10 +53,11 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Config.cs" />
     <Compile Include="ControlPoint.cs" />
     <Compile Include="Core.cs" />
+    <Compile Include="HullClass.cs" />
     <Compile Include="HullClassifier.cs" />
+    <Compile Include="HullRule.cs" />
     <Compile Include="Logger.cs" />
     <Compile Include="ConquestSettings.cs" />
   </ItemGroup>
