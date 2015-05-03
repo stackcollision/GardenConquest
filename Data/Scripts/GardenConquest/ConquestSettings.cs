@@ -20,6 +20,7 @@ namespace GardenConquest {
 		private struct SETTINGS {
 			public List<ControlPoint> ControlPoints { get; set; }
 			public int Period { get; set; }
+            public HullRule[] HullRules { get; set; }
 		}
 
 		private static Logger s_Logger = null;
@@ -28,7 +29,7 @@ namespace GardenConquest {
 
 		public List<ControlPoint> ControlPoints { get { return m_Settings.ControlPoints; } }
 		public int Period { get { return m_Settings.Period; } set { m_Settings.Period = value; } }
-		//public HullRule[] HullRules { get; set; }
+        public HullRule[] HullRules { get { return m_Settings.HullRules; } }
 
 		private static ConquestSettings s_Instance = null;
 
@@ -39,7 +40,7 @@ namespace GardenConquest {
 
 			m_Settings = new SETTINGS();
 			m_Settings.ControlPoints = new List<ControlPoint>();
-			//HullRules = new HullRule[9];
+			m_Settings.HullRules = new HullRule[9];
 		}
 
 		public bool loadSettings() {

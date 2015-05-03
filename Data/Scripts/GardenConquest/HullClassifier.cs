@@ -22,6 +22,7 @@ namespace GardenConquest {
 		private IMyCubeGrid m_Grid = null;
 		public InGame.IMyBeacon m_Classifier { get; private set; }
 		private int m_BlockCount = 0;
+		private int m_TurretCount = 0;
 		private HullClass.CLASS m_Class = HullClass.CLASS.UNCLASSIFIED;
 
 		private Logger m_Logger = null;
@@ -34,6 +35,16 @@ namespace GardenConquest {
 			base.Init(objectBuilder);
 			m_Grid = Entity as IMyCubeGrid;
 
+			// If this is not the server we don't need this class.
+			// When we modify the grid on the server the changes should be
+			// sent to all clients
+			// Can we remove components?  Let's find out
+			if (!MyAPIGateway.Multiplayer.MultiplayerActive || !MyAPIGateway.Multiplayer.IsServer) {
+				log("Removing HullClassifier", "Init");
+				m_Grid.Components.Remove<HullClassifier>();
+				return;
+			}
+
 			m_Logger = new Logger(Entity.Name, "HullClassifier");
 			log("Loaded into new grid");
 
@@ -41,43 +52,31 @@ namespace GardenConquest {
 			List<IMySlimBlock> blocks = new List<IMySlimBlock>();
 			m_Grid.GetBlocks(blocks);
 			m_BlockCount = blocks.Count;
-			log("Block count at load: " + m_BlockCount, "Init");
+			//log("Block count at load: " + m_BlockCount, "Init");
 
-			// See if this grid is classifier
-			foreach (IMySlimBlock b in blocks) {
-				if (b.FatBlock != null && b.FatBlock is InGame.IMyBeacon) {
-					if (b.FatBlock.BlockDefinition.SubtypeName.Contains("HullClassifier")) {
-						// Are we already classified?
-						// TODO: If there are two classification blocks on a grid what do we do??
-						if (m_Class != HullClass.CLASS.UNCLASSIFIED) {
-							log("This grid has more than one classifier on it",
-								"Init", Logger.severity.ERROR);
-						} else {
-							m_Class = HullClass.hullClassFromString(
-								b.FatBlock.BlockDefinition.SubtypeName);
-						}
-					}
-				}
-			}
+			// See if this grid is classified
+			// QUESTION: is this not necessary? seems these are loaded when the grid is spawned
+			// with zero blocks and all blocks are added one at a time
+			//foreach (IMySlimBlock b in blocks) {
+			//	if (b.FatBlock != null && b.FatBlock is InGame.IMyBeacon) {
+			//		if (b.FatBlock.BlockDefinition.SubtypeName.Contains("HullClassifier")) {
+			//			// Are we already classified?
+			//			// TODO: If there are two classification blocks on a grid what do we do??
+			//			if (m_Class != HullClass.CLASS.UNCLASSIFIED) {
+			//				log("This grid has more than one classifier on it",
+			//					"Init", Logger.severity.ERROR);
+			//			} else {
+			//				m_Class = HullClass.hullClassFromString(
+			//					b.FatBlock.BlockDefinition.SubtypeName);
+			//			}
+			//		}
+			//	}
+			//}
 
-			log("Grid initial classification: " + HullClass.ClassStrings[(int)m_Class], "Init");
+			//log("Grid initial classification: " + HullClass.ClassStrings[(int)m_Class], "Init");
 
 			m_Grid.OnBlockAdded += blockAdded;
 			m_Grid.OnBlockRemoved += blockRemoved;
-
-			//if (m_Block.BlockDefinition.SubtypeName.Contains("HullClassifier")) {
-			//	m_IsHullClass = true;
-			//	m_Block.CubeGrid.OnBlockAdded += blockAdded;
-			//	m_Block.CubeGrid.OnBlockRemoved += blockRemoved;
-
-			//	// Get initial block count
-			//	List<IMySlimBlock> blocks = new List<IMySlimBlock>();
-			//	m_Block.CubeGrid.GetBlocks(blocks);
-			//	m_BlockCount = blocks.Count;
-
-			//} else {
-			//	m_IsHullClass = false;
-			//}
 		}
 
 		private void Close(IMyEntity ent) {
@@ -92,6 +91,13 @@ namespace GardenConquest {
 		private void blockAdded(IMySlimBlock added) {
 			m_BlockCount++;
 			log("Block added to grid.  Count now: " + m_BlockCount, "blockAdded");
+			if (added.FatBlock != null && (
+					added.FatBlock is InGame.IMyLargeGatlingTurret ||
+					added.FatBlock is InGame.IMyLargeMissileTurret
+			)) {
+				m_TurretCount++;
+				log("Turret count now: " + m_TurretCount, "blockAdded");
+			}
 
 			// Check if its a class beacon
 			if (added.FatBlock != null &&
@@ -112,12 +118,21 @@ namespace GardenConquest {
 
 			// Check if we are violating class rules
 			if (m_Class != HullClass.CLASS.UNCLASSIFIED) {
-				//HullRule r = [(int)m_Class];
+				HullRule r = ConquestSettings.getInstance().HullRules[(int)m_Class];
 
-				//if (m_BlockCount > r.maxBlocks) {
-				//	log("Grid has violated block limit for class", "blockAdded");
-				//	// TODO: how do we fix this?
-				//}
+				// Check general block count limit
+				if (m_BlockCount > r.MaxBlocks) {
+					log("Grid has violated block limit for class", "blockAdded");
+					// TODO: Get a message to the player who placed it
+					m_Grid.RemoveBlock(added);
+				}
+
+				// Check number of turrets
+				if (m_TurretCount > r.MaxTurrets) {
+					log("Grid has violated block limit for class", "blockAdded");
+					// TODO: Get a message to the player who placed it
+					m_Grid.RemoveBlock(added);
+				}
 			}
 		}
 
