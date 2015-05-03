@@ -53,8 +53,10 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BaseMessage.cs" />
     <Compile Include="ControlPoint.cs" />
     <Compile Include="Core.cs" />
+    <Compile Include="RuleViolation.cs" />
     <Compile Include="HullClass.cs" />
     <Compile Include="HullClassifier.cs" />
     <Compile Include="HullRule.cs" />
