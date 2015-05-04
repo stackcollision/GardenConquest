@@ -17,17 +17,18 @@ using InGame = Sandbox.ModAPI.Ingame;
 
 namespace GardenConquest {
 	[MyEntityComponentDescriptor(typeof(MyObjectBuilder_CubeGrid))]
-	public class HullClassifier : MyGameLogicComponent {
+	public class GridEnforcer : MyGameLogicComponent {
 
 		private IMyCubeGrid m_Grid = null;
 		public InGame.IMyBeacon m_Classifier { get; private set; }
 		private int m_BlockCount = 0;
 		private int m_TurretCount = 0;
 		private HullClass.CLASS m_Class = HullClass.CLASS.UNCLASSIFIED;
+		private bool m_BeyondFirst100 = false;
 
 		private Logger m_Logger = null;
 
-		public HullClassifier() {
+		public GridEnforcer() {
 			m_Classifier = null;
 		}
 
@@ -39,44 +40,34 @@ namespace GardenConquest {
 			// When we modify the grid on the server the changes should be
 			// sent to all clients
 			// Can we remove components?  Let's find out
-			if (!MyAPIGateway.Multiplayer.MultiplayerActive || !MyAPIGateway.Multiplayer.IsServer) {
-				log("Removing HullClassifier", "Init");
-				m_Grid.Components.Remove<HullClassifier>();
+			if (MyAPIGateway.Multiplayer != null &&
+				MyAPIGateway.Multiplayer.MultiplayerActive &&
+				!MyAPIGateway.Multiplayer.IsServer
+			) {
+				m_Grid.Components.Remove<GridEnforcer>();
 				return;
 			}
 
-			m_Logger = new Logger(Entity.Name, "HullClassifier");
+			m_Logger = new Logger(Entity.Name, "GridEnforcer");
 			log("Loaded into new grid");
 
+
+			// We need to only turn on our rule checking after startup. Otherwise, if
+			// a beacon is destroyed and then the server restarts, all but the first
+			// 25 blocks will be deleted on startup.
+			m_Grid.NeedsUpdate |= MyEntityUpdateEnum.EACH_100TH_FRAME;
+
 			// Get the initial block count
+			// TODO: Is this really necessary?  Will this always be 0?
 			List<IMySlimBlock> blocks = new List<IMySlimBlock>();
 			m_Grid.GetBlocks(blocks);
 			m_BlockCount = blocks.Count;
-			//log("Block count at load: " + m_BlockCount, "Init");
-
-			// See if this grid is classified
-			// QUESTION: is this not necessary? seems these are loaded when the grid is spawned
-			// with zero blocks and all blocks are added one at a time
-			//foreach (IMySlimBlock b in blocks) {
-			//	if (b.FatBlock != null && b.FatBlock is InGame.IMyBeacon) {
-			//		if (b.FatBlock.BlockDefinition.SubtypeName.Contains("HullClassifier")) {
-			//			// Are we already classified?
-			//			// TODO: If there are two classification blocks on a grid what do we do??
-			//			if (m_Class != HullClass.CLASS.UNCLASSIFIED) {
-			//				log("This grid has more than one classifier on it",
-			//					"Init", Logger.severity.ERROR);
-			//			} else {
-			//				m_Class = HullClass.hullClassFromString(
-			//					b.FatBlock.BlockDefinition.SubtypeName);
-			//			}
-			//		}
-			//	}
-			//}
-
-			//log("Grid initial classification: " + HullClass.ClassStrings[(int)m_Class], "Init");
 
 			m_Grid.OnBlockAdded += blockAdded;
 			m_Grid.OnBlockRemoved += blockRemoved;
+
+			// TODO: Start a timer for unclassified grids.  Timer will be stopped when
+			// a classifier is detected
 		}
 
 		private void Close(IMyEntity ent) {
@@ -86,6 +77,17 @@ namespace GardenConquest {
 			m_Grid.OnBlockRemoved -= blockRemoved;
 
 			m_Grid = null;
+		}
+
+		public override void UpdateBeforeSimulation100() {
+			// NOTE: Can't turn off this update, because other scripts might also want it
+			if (!m_BeyondFirst100) {
+				m_BeyondFirst100 = true;
+
+				// Once the server has loaded all block for this grid, check if we are
+				// classified.  If not, warn the owner about the timer
+				// TODO
+			}
 		}
 
 		private void blockAdded(IMySlimBlock added) {
@@ -106,7 +108,8 @@ namespace GardenConquest {
 			) {
 				// Is this grid already classified?
 				if (m_Class != HullClass.CLASS.UNCLASSIFIED) {
-					// TODO: multiple classifiers
+					log("Grid is already classified.  Removing this new one.", "blockAdded");
+					m_Grid.RemoveBlock(added);
 				} else {
 					m_Class = HullClass.hullClassFromString(
 						added.FatBlock.BlockDefinition.SubtypeName);
@@ -114,31 +117,58 @@ namespace GardenConquest {
 					log("Hull has been classified as " +
 						HullClass.ClassStrings[(int)m_Class], "blockAdded");
 				}
+
+				// Return after classification
+				// It is recommended that the distance between the unclassified block limit and 
+				// the fighter/corvette block limits be substantial to prevent an issue
+				// where as soon as the hull is classified it's over the limit.
+				return;
 			}
 
 			// Check if we are violating class rules
-			if (m_Class != HullClass.CLASS.UNCLASSIFIED) {
-				HullRule r = ConquestSettings.getInstance().HullRules[(int)m_Class];
-
-				// Check general block count limit
-				if (m_BlockCount > r.MaxBlocks) {
-					log("Grid has violated block limit for class", "blockAdded");
-					// TODO: Get a message to the player who placed it
-					m_Grid.RemoveBlock(added);
-				}
-
-				// Check number of turrets
-				if (m_TurretCount > r.MaxTurrets) {
-					log("Grid has violated block limit for class", "blockAdded");
-					// TODO: Get a message to the player who placed it
-					m_Grid.RemoveBlock(added);
-				}
+			if (checkRules()) {
+				m_Grid.RemoveBlock(added);
 			}
+		}
+
+		// Returns true if any rule is violated
+		private bool checkRules() {
+			// Don't apply rules until server startup is completed
+			if (!m_BeyondFirst100)
+				return false;
+
+			HullRule r = ConquestSettings.getInstance().HullRules[(int)m_Class];
+
+			// Check general block count limit
+			if (m_BlockCount > r.MaxBlocks) {
+				log("Grid has violated block limit for class", "blockAdded");
+				// TODO: Get a message to the player who placed it
+				return true;
+			}
+
+			// Check number of turrets
+			if (m_TurretCount > r.MaxTurrets) {
+				log("Grid has violated turret limit for class", "blockAdded");
+				// TODO: Get a message to the player who placed it
+				return true;
+			}
+
+			return false;
 		}
 
 		private void blockRemoved(IMySlimBlock removed) {
 			m_BlockCount--;
 			log("Block removed from grid.  Count now: " + m_BlockCount, "blockAdded");
+
+			// Check if the removed block was the class beacon
+			if (removed.FatBlock != null &&
+				removed.FatBlock is InGame.IMyBeacon &&
+				removed.FatBlock.BlockDefinition.SubtypeName.Contains("HullClassifier")
+			) {
+				// If the classifier was removed change the class and start the timer
+				m_Class = HullClass.CLASS.UNCLASSIFIED;
+				// TODO: start timer
+			}
 		}
 
 		public override MyObjectBuilder_EntityBase GetObjectBuilder(bool copy = false) {

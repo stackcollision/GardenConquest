@@ -17,10 +17,10 @@ namespace GardenConquest {
 	public class ConquestSettings {
 
 		[XmlType("GardenConquestSettings")]
-		private struct SETTINGS {
+		public struct SETTINGS {
 			public List<ControlPoint> ControlPoints { get; set; }
 			public int Period { get; set; }
-            public HullRule[] HullRules { get; set; }
+			public HullRule[] HullRules { get; set; }
 		}
 
 		private static Logger s_Logger = null;
@@ -29,7 +29,7 @@ namespace GardenConquest {
 
 		public List<ControlPoint> ControlPoints { get { return m_Settings.ControlPoints; } }
 		public int Period { get { return m_Settings.Period; } set { m_Settings.Period = value; } }
-        public HullRule[] HullRules { get { return m_Settings.HullRules; } }
+		public HullRule[] HullRules { get { return m_Settings.HullRules; } }
 
 		private static ConquestSettings s_Instance = null;
 
@@ -81,6 +81,25 @@ namespace GardenConquest {
 
 			// Default period 900 seconds (15 minutes)
 			Period = 900;
+
+			HullRules[(int)HullClass.CLASS.UNCLASSIFIED] =
+				new HullRule() { MaxBlocks = 25, MaxTurrets = 0 };
+			HullRules[(int)HullClass.CLASS.FIGHTER] = 
+				new HullRule() { MaxBlocks = 200, MaxTurrets = 0 };
+			HullRules[(int)HullClass.CLASS.CORVETTE] =
+				new HullRule() { MaxBlocks = 200, MaxTurrets = 2 };
+			HullRules[(int)HullClass.CLASS.FRIGATE] =
+				new HullRule() { MaxBlocks = 300, MaxTurrets = 4 };
+			HullRules[(int)HullClass.CLASS.DESTROYER] =
+				new HullRule() { MaxBlocks = 500, MaxTurrets = 4 };
+			HullRules[(int)HullClass.CLASS.CRUISER] =
+				new HullRule() { MaxBlocks = 1200, MaxTurrets = 6 };
+			HullRules[(int)HullClass.CLASS.BATTLESHIP] =
+				new HullRule() { MaxBlocks = 2000, MaxTurrets = 8 };
+			HullRules[(int)HullClass.CLASS.CARRIER] =
+				new HullRule() { MaxBlocks = 5000, MaxTurrets = 8 };
+			HullRules[(int)HullClass.CLASS.UTILITY] =
+				new HullRule() { MaxBlocks = 300, MaxTurrets = 0 };
 
 			writeSettings();
 		}

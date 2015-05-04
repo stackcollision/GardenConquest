@@ -67,14 +67,10 @@ namespace GardenConquest {
 			s_TokenDef = new Sandbox.Common.ObjectBuilders.Definitions.SerializableDefinitionId(
 				typeof(MyObjectBuilder_InventoryItem), "ShipLicense");
 
-			if (!MyAPIGateway.Multiplayer.MultiplayerActive) {
+			if (MyAPIGateway.Multiplayer == null || !MyAPIGateway.Multiplayer.MultiplayerActive) {
 				m_IsServer = true;
 			} else {
-				if (MyAPIGateway.Multiplayer.IsServer) {
-					m_IsServer = true;
-				} else {
-					m_IsServer = false;
-				}
+				m_IsServer = MyAPIGateway.Multiplayer.IsServer;
 			}
 
 			if (m_IsServer) {
