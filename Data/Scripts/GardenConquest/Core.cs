@@ -37,6 +37,7 @@ namespace GardenConquest {
 
 		private bool m_Initialized = false;
 		private bool m_IsServer = false;
+		private bool m_IsAdmin = false;
 		private MyTimer m_Timer = null;
 
 		private static Logger s_Logger = null;
@@ -73,6 +74,15 @@ namespace GardenConquest {
 				m_IsServer = MyAPIGateway.Multiplayer.IsServer;
 			}
 
+			m_IsAdmin = m_IsServer || (
+				MyAPIGateway.Utilities.IsDedicated &&
+				MyAPIGateway.Utilities.ConfigDedicated.Administrators.Contains(
+				MyAPIGateway.Session.Player.DisplayName));
+			if (m_IsAdmin)
+				log("Player is an administrator", "initialize");
+			else
+				log("Player is not an administrator", "initialize");
+
 			if (m_IsServer) {
 				log("Loading config");
 				if (!ConquestSettings.getInstance().loadSettings())
@@ -82,8 +92,6 @@ namespace GardenConquest {
 				m_Timer = new MyTimer(ConquestSettings.getInstance().Period * 1000, timerTriggered);
 				m_Timer.Start();
 				log("Timer started");
-			} else {
-				MyAPIGateway.Utilities.MessageEntered += handleChatCommand;
 			}
 
 			m_Initialized = true;
@@ -99,28 +107,6 @@ namespace GardenConquest {
 		}
 
 		protected override void UnloadData() {
-			MyAPIGateway.Utilities.MessageEntered -= handleChatCommand;
-		}
-
-		private void handleChatCommand(string messageText, ref bool sendToOthers) {
-			try {
-				if (messageText[0] != '/')
-					return;
-
-				string[] cmd = 
-					messageText.Split(new string[] { " " }, StringSplitOptions.RemoveEmptyEntries);
-				if (cmd[0].ToLower() != "/gc")
-					return;
-
-				int numCommands = cmd.Length - 1;
-				if (numCommands == 1) {
-					if (cmd[1].ToLower() == "about") {
-						// TODO
-					}
-				}
-			} catch (Exception e) {
-				log("Exception occured: " + e, "handleChatCommand", Logger.severity.ERROR);
-			}
 		}
 
 		#endregion
@@ -255,7 +241,8 @@ namespace GardenConquest {
 				}
 
 				// Report round results
-				// TODO
+				MyAPIGateway.Utilities.ShowNotification("Conquest Round Ended");
+
 			} catch (Exception e) {
 				log("An exception occured: " + e, "timerTriggered", Logger.severity.ERROR);
 			}
