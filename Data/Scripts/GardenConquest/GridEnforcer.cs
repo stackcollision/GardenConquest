@@ -21,12 +21,17 @@ namespace GardenConquest {
 
 		private IMyCubeGrid m_Grid = null;
 		public InGame.IMyBeacon m_Classifier { get; private set; }
+		private IMyFaction m_OwningFaction;
+
 		private int m_BlockCount = 0;
 		private int m_TurretCount = 0;
 		private HullClass.CLASS m_Class = HullClass.CLASS.UNCLASSIFIED;
 		private bool m_BeyondFirst100 = false;
+		private bool m_DoubleClass = false;
 
 		private Logger m_Logger = null;
+
+		public IMyFaction Faction { get { return m_OwningFaction; } }
 
 		public GridEnforcer() {
 			m_Classifier = null;
@@ -35,6 +40,8 @@ namespace GardenConquest {
 		public override void Init(MyObjectBuilder_EntityBase objectBuilder) {
 			base.Init(objectBuilder);
 			m_Grid = Entity as IMyCubeGrid;
+			m_Classifier = null;
+			m_OwningFaction = null;
 
 			// If this is not the server we don't need this class.
 			// When we modify the grid on the server the changes should be
@@ -51,7 +58,6 @@ namespace GardenConquest {
 			m_Logger = new Logger(Entity.Name, "GridEnforcer");
 			log("Loaded into new grid");
 
-
 			// We need to only turn on our rule checking after startup. Otherwise, if
 			// a beacon is destroyed and then the server restarts, all but the first
 			// 25 blocks will be deleted on startup.
@@ -65,9 +71,7 @@ namespace GardenConquest {
 
 			m_Grid.OnBlockAdded += blockAdded;
 			m_Grid.OnBlockRemoved += blockRemoved;
-
-			// TODO: Start a timer for unclassified grids.  Timer will be stopped when
-			// a classifier is detected
+			m_Grid.OnBlockOwnershipChanged += blockOwnerChanged;
 		}
 
 		private void Close(IMyEntity ent) {
@@ -75,6 +79,7 @@ namespace GardenConquest {
 
 			m_Grid.OnBlockAdded -= blockAdded;
 			m_Grid.OnBlockRemoved -= blockRemoved;
+			m_Grid.OnBlockOwnershipChanged -= blockOwnerChanged;
 
 			m_Grid = null;
 		}
@@ -109,13 +114,25 @@ namespace GardenConquest {
 				// Is this grid already classified?
 				if (m_Class != HullClass.CLASS.UNCLASSIFIED) {
 					log("Grid is already classified.  Removing this new one.", "blockAdded");
+					// Prevent unclassification in blockRemoved
+					m_DoubleClass = true;
 					m_Grid.RemoveBlock(added);
 				} else {
-					m_Class = HullClass.hullClassFromString(
+					HullClass.CLASS c = HullClass.hullClassFromString(
 						added.FatBlock.BlockDefinition.SubtypeName);
-					m_Classifier = added.FatBlock as InGame.IMyBeacon;
-					log("Hull has been classified as " +
-						HullClass.ClassStrings[(int)m_Class], "blockAdded");
+					if (checkClassAllowed(c)) {
+						m_Class = c;
+						m_Classifier = added.FatBlock as InGame.IMyBeacon;
+
+						onClassChange(HullClass.CLASS.UNCLASSIFIED, m_Class);
+
+						log("Hull has been classified as " +
+							HullClass.ClassStrings[(int)m_Class], "blockAdded");
+					} else {
+						log("Classification as " + HullClass.ClassStrings[(int)c] + " not permitted",
+							"blockAdded");
+						m_Grid.RemoveBlock(added);
+					}
 				}
 
 				// Return after classification
@@ -156,6 +173,23 @@ namespace GardenConquest {
 			return false;
 		}
 
+		private bool checkClassAllowed(HullClass.CLASS c) {
+			// QUESTION: maybe players not in factions shouldn't be able to classify?
+			if (m_OwningFaction == null)
+				return true;
+
+			// If attempting to classify as Unlicensed, check that the faction has room
+			if (c == HullClass.CLASS.UNLICENSED) {
+				FactionFleet fleet = StateTracker.getInstance().getFleet(m_OwningFaction.FactionId);
+				if (fleet.countClass(c) >= ConquestSettings.getInstance().UnlicensedPerFaction) {
+					// TODO: Send message
+					return false;
+				}
+			}
+
+			return true;
+		}
+
 		private void blockRemoved(IMySlimBlock removed) {
 			m_BlockCount--;
 			log("Block removed from grid.  Count now: " + m_BlockCount, "blockAdded");
@@ -165,10 +199,92 @@ namespace GardenConquest {
 				removed.FatBlock is InGame.IMyBeacon &&
 				removed.FatBlock.BlockDefinition.SubtypeName.Contains("HullClassifier")
 			) {
-				// If the classifier was removed change the class and start the timer
-				m_Class = HullClass.CLASS.UNCLASSIFIED;
-				// TODO: start timer
+				// This check prevents the hull from being unclassified
+				if (m_DoubleClass) {
+					m_DoubleClass = false;
+				} else {
+					// If the classifier was removed change the class and start the timer
+					onClassChange(m_Class, HullClass.CLASS.UNCLASSIFIED);
+					m_Class = HullClass.CLASS.UNCLASSIFIED;
+					m_Classifier = null;
+					// TODO: start timer
+				}
+			} else if (removed.FatBlock != null && (
+					removed.FatBlock is InGame.IMyLargeGatlingTurret ||
+					removed.FatBlock is InGame.IMyLargeMissileTurret
+			)) {
+				m_TurretCount--;
 			}
+		}
+
+		// Testing indicates this is only called once per grid, even if you change 50 blocks at once
+		private void blockOwnerChanged(IMyCubeGrid changed) {
+			log("Ownership changed", "blockOwnerChanged");
+			reevaluateOwningFaction();
+		}
+
+		private bool reevaluateOwningFaction() {
+			IMyFaction fac = null;
+			bool changed = false;
+
+			// Do we have any owner at all?
+			if (m_Grid.BigOwners.Count == 0) {
+				// If there is no owner, was there one before?
+				if (m_OwningFaction != null) {
+					fac = null;
+					changed = true;
+				} else {
+					fac = null;
+					changed = false;
+				}
+			} else {
+				// NOTE: Hopefully this is sorted by number of blocks owned?
+				long biggestOwner = m_Grid.BigOwners[0];
+				fac = MyAPIGateway.Session.Factions.TryGetPlayerFaction(biggestOwner);
+				if (m_OwningFaction != fac)
+					changed = true;
+			}
+
+			if (changed) {
+				onFactionChange(m_OwningFaction, fac);
+				m_OwningFaction = fac;
+			}
+
+			return changed;
+		}
+
+		private void onFactionChange(IMyFaction oldFac, IMyFaction newFac) {
+			if (oldFac == newFac)
+				return;
+
+			log("Faction has changed", "onFactionChange");
+
+			FactionFleet oldFleet = oldFac == null ? null :
+				StateTracker.getInstance().getFleet(oldFac.FactionId);
+			FactionFleet newFleet = newFac == null ? null : 
+				StateTracker.getInstance().getFleet(newFac.FactionId);
+
+			// Subtract one from the old fleet, if there was one
+			if (oldFleet != null) {
+				oldFleet.removeClass(m_Class);
+			}
+			
+			// Add one to the new fleet, if there is one
+			if (newFleet != null) {
+				newFleet.addClass(m_Class);
+			}
+		}
+
+		private void onClassChange(HullClass.CLASS oldClass, HullClass.CLASS newClass) {
+			if (oldClass == newClass || m_OwningFaction == null)
+				return;
+
+			log("Class has changed", "onClassChange");
+
+			FactionFleet fleet = StateTracker.getInstance().getFleet(m_OwningFaction.FactionId);
+
+			fleet.removeClass(oldClass);
+			fleet.addClass(newClass);
 		}
 
 		public override MyObjectBuilder_EntityBase GetObjectBuilder(bool copy = false) {

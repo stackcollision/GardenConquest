@@ -16,13 +16,9 @@ namespace GardenConquest {
 
 	class CommandProcessor {
 
-		private StateTracker m_State = null;
-
 		private static Logger s_Logger = null;
 
-		public CommandProcessor(StateTracker state) {
-			m_State = state;
-
+		public CommandProcessor() {
 			if(s_Logger == null)
 				s_Logger = new Logger("Conquest Core", "Command Processor");
 		}

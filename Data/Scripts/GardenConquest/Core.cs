@@ -256,7 +256,8 @@ namespace GardenConquest {
 			// Get all ents within the radius
 			VRageMath.BoundingSphereD bounds = 
 				new VRageMath.BoundingSphereD(cp.Position, (double)cp.Radius);
-			List<IMyEntity> ents = MyAPIGateway.Entities.GetEntitiesInSphere(ref bounds);
+			List<IMyEntity> ents = 
+				MyAPIGateway.Entities.GetEntitiesInSphere(ref bounds);
 
 			// Get only the ships/stations
 			List<IMyCubeGrid> grids = new List<IMyCubeGrid>();

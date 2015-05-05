@@ -54,6 +54,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CommandProcessor.cs" />
+    <Compile Include="FactionFleet.cs" />
     <Compile Include="RequestProcessor.cs" />
     <Compile Include="ControlPoint.cs" />
     <Compile Include="Core.cs" />

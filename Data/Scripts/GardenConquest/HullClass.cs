@@ -15,7 +15,8 @@ namespace GardenConquest {
 			CRUISER = 5,
 			BATTLESHIP = 6,
 			CARRIER = 7,
-			UTILITY = 8
+			UTILITY = 8,
+			UNLICENSED = 9
 		}
 
 		public static String[] ClassStrings = {
@@ -27,7 +28,8 @@ namespace GardenConquest {
 										   "Cruiser",
 										   "Battleship",
 										   "Carrier",
-										   "Utility"
+										   "Utility",
+										   "Unlicensed"
 									   };
 
 		public static CLASS hullClassFromString(String subtype) {
@@ -47,6 +49,8 @@ namespace GardenConquest {
 				return CLASS.CARRIER;
 			} else if (subtype.Contains("Utility")) {
 				return CLASS.UTILITY;
+			} else if (subtype.Contains("Unlicensed")) {
+				return CLASS.UNLICENSED;
 			} else {
 				return CLASS.UNCLASSIFIED;
 			}

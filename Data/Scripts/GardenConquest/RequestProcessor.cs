@@ -18,11 +18,7 @@ namespace GardenConquest {
 
 		public const ushort GCMessageId = 43501;
 
-		private StateTracker m_State = null;
-
-		public RequestProcessor(StateTracker state) {
-			m_State = state;
-
+		public RequestProcessor() {
 			if (MyAPIGateway.Multiplayer != null) {
 				MyAPIGateway.Multiplayer.RegisterMessageHandler(GCMessageId, incomming);
 			}
