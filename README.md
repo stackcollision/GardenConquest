@@ -1,42 +1,62 @@
 # GardenConquest
-A new conquest game mode for Space Engineers
+A new game mode for [Space Engineers](http://www.spaceengineersgame.com/) that
+provides players with additional PVP opportunities and helps admins limit grid
+count and complexity.
 
-## Gameplay Flow
+## Gameplay Concepts
 
 ### Ship Classification
-Each grid must have a special classification beacon on it.  This beacon
-requires a special resource "Ship License" to build. The larger the class, the
-great the number of licenses required.  Each class imposes limitations on the
-grid in terms of block and weapon counts.  Once the block count is reached no
-new blocks can be added.
+Each grid must have a special Hull Classifier beacon on it.  This block
+requires a new component named "Ship License" to build. The larger the class,
+the greater the number of licenses required.
 
-If a grid's classification beacon is destroyed, the grid becomes
-"Unclassified".  This starts a timer (several hours) until the grid becomes a
-derelict.  Once a grid becomes a derelict its functional blocks will be
-destroyed.  If the grid is classified within the time limit it will not be
-destroyed.
+Each faction is also permitted a limited number of "Unlicensed" grids
+(default 2). An Unlicensed Hull Classifier is required even on these grids.
+These classifiers do not require Ship Licenses to build, but they have
+relatively low block limits.
+
+Classifiers and their License cost (subject to change):
+
+* Unlicensed - 0
+* Fighter - 5
+* Corvette - 10
+* Utility - 15
+* Frigate - 20
+* Destroyer - 40
+* Cruiser - 80
+* Carrier - 100
+* Battleship - 150
+
+Until a Hull Classifier is built on a grid, or after a classifier is destroyed,
+the grid becomes "Unclassified". This starts a timer (default 2 hours) until the
+grid becomes a "Derelict." A Derelict is immediately disabled and eventually
+destroyed. Players should classify their grids within the time limit to ensure
+they are not damaged/removed.
+
+#### Class-based block limits
+Each class imposes limits on the number of various blocks on the grid,
+i.e. turrets, as well as the total block count. Players are unable to add blocks
+over the established limits for the grid's class. If a player changes a grid's
+class and it is breaking the limits for the new class, no new blocks can be
+added until the offending blocks are removed. Server owners can set specific
+limits per class for certain grids. The defaults are (currently in flux):
+
+* Fighter - 0 turrets,
+* Corvette - 2 turrets,
+
+...etc, will be filled out when these are more certain...
 
 ### Control Points
-In order to acquire ship licenses a faction must hold Control Points (CPs) at
-the time a round ends.  A faction is required to hold control points, even if
-there is only one person in it.  At the time the round ends the CP's configured
-reward will be given to the faction with the most valid grids in the CP's
-sphere of influence.  If there is a tie in grid counts, no one gets anything.
+In order to acquire Ship Licenses, a faction must hold a Control Points ("CPs").
+Every X minutes (default 15), a CP "round" will end and the CP's reward
+of Y Ship Licenses (default 5) will be given to the faction with the most valid grids
+within the CP's sphere of influence.
 
-A grid is counted towards capturing under the following conditions:
-* It has power
-* It has a classifier beacon
-* The broadcast range on the classifier is large enough to encompass the CP's
-center.
+A grid is counted towards a faction's total if:
+* It has a powered, broadcasting Hull Classifier beacon
+* The broadcast range on the classifier is at least as large as the radius of
+the CP (default 15km). This is to prevent players from hiding while capturing a
+CP.
 
-The reason for the broadcast range requirement is to prevent players from
-sitting a small ship at the edge of a CP and getting licenses while being
-nearly undetectable.
+If there is a tie in grid counts between factions, no one gets the reward.
 
-### How Do New Players Get Started?
-Each faction is permitted a configurable number of "Unlicensed" grids.  An
-Unlicensed hull classifier is required even on these types of grids because of
-the broadcast requirement specified above.  These Unlicensed classifiers do
-not require and Ship Licenses to build, but they have relatively low block
-limits.  They are also limited in the number of them permitted, unlike any
-other class.
