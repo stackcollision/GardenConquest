@@ -12,8 +12,11 @@ using VRage.Library.Utils;
 using Interfaces = Sandbox.ModAPI.Interfaces;
 using InGame = Sandbox.ModAPI.Ingame;
 
-namespace GardenConquest {
+namespace GardenConquest.Core {
 
+	/// <summary>
+	/// Hooks into SE session.  Only a passthrough to launch Server or Client core.
+	/// </summary>
 	[Sandbox.Common.MySessionComponentDescriptor(Sandbox.Common.MyUpdateOrder.BeforeSimulation)]
 	class CoreComponent : Sandbox.Common.MySessionComponentBase {
 
@@ -40,6 +43,9 @@ namespace GardenConquest {
 				m_CoreProcessor.unloadData();
 		}
 
+		/// <summary>
+		/// Starts up the proper core process depending on whether we are a client or server.
+		/// </summary>
 		private void startCore() {
 			if (Utility.isServer()) {
 				m_CoreProcessor = new Core_Server();

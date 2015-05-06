@@ -4,7 +4,14 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace GardenConquest {
+using GardenConquest.Records;
+
+namespace GardenConquest.Core {
+
+	/// <summary>
+	/// Singleton class which tracks state, accessible to other classes.
+	/// Contains information on last round results, current faction fleets, etc
+	/// </summary>
 	public class StateTracker {
 
 		public Dictionary<long, long> TokensLastRound { get; private set; }
@@ -17,12 +24,21 @@ namespace GardenConquest {
 			m_Fleets = new Dictionary<long, FactionFleet>();
 		}
 
+		/// <summary>
+		/// Get singleton instance
+		/// </summary>
+		/// <returns></returns>
 		public static StateTracker getInstance() {
 			if (s_Instance == null)
 				s_Instance = new StateTracker();
 			return s_Instance;
 		}
 
+		/// <summary>
+		/// Returns the fleet for the faction id.  If no fleet yet recorded creates a new one.
+		/// </summary>
+		/// <param name="factionId"></param>
+		/// <returns></returns>
 		public FactionFleet getFleet(long factionId) {
 			if (!m_Fleets.ContainsKey(factionId))
 				m_Fleets.Add(factionId, new FactionFleet(factionId));

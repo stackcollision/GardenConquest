@@ -12,8 +12,13 @@ using Sandbox.Engine;
 using Sandbox.Game;
 using Sandbox.ModAPI;
 
-namespace GardenConquest {
+using GardenConquest.Records;
+
+namespace GardenConquest.Core {
 	
+	/// <summary>
+	/// Singleton class to store settings for the server.
+	/// </summary>
 	public class ConquestSettings {
 
 		[XmlType("GardenConquestSettings")]
@@ -53,6 +58,10 @@ namespace GardenConquest {
 			m_Settings.HullRules = new HullRule[Enum.GetValues(typeof(HullClass.CLASS)).Length];
 		}
 
+		/// <summary>
+		/// Loads settings from the configuration XML.
+		/// </summary>
+		/// <returns>False if no file exists</returns>
 		public bool loadSettings() {
 			log("Attempting to load settings from file", "loadSettings");
 			if (MyAPIGateway.Utilities.FileExistsInLocalStorage(m_ConfigFileName, typeof(SETTINGS))) {
@@ -68,7 +77,10 @@ namespace GardenConquest {
 			}
 		}
 
-		// Only for use when creating the original config
+		/// <summary>
+		/// Writes the current settings to a file.
+		/// Used to produce a config file when none exists
+		/// </summary>
 		public void writeSettings() {
 			log("Writing config file", "writeSettings");
 			TextWriter writer =
@@ -79,6 +91,9 @@ namespace GardenConquest {
 			log("Config written", "writeSettings");
 		}
 
+		/// <summary>
+		/// Sets default settings to be create a new config file.
+		/// </summary>
 		public void loadDefaults() {
 			log("Loading default settings", "loadDefaults");
 
@@ -122,6 +137,10 @@ namespace GardenConquest {
 			writeSettings();
 		}
 
+		/// <summary>
+		/// Get singleton instance
+		/// </summary>
+		/// <returns></returns>
 		public static ConquestSettings getInstance() {
 			if (s_Instance == null)
 				s_Instance = new ConquestSettings();

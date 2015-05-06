@@ -16,7 +16,15 @@ using VRage.Library.Utils;
 using Interfaces = Sandbox.ModAPI.Interfaces;
 using InGame = Sandbox.ModAPI.Ingame;
 
-namespace GardenConquest {
+using GardenConquest.Records;
+using GardenConquest.Core;
+
+namespace GardenConquest.Blocks {
+
+	/// <summary>
+	/// Applied to every grid.  Verifies that all grids comply with the rules and enforces them.
+	/// Only attaches on the server.  Removes itself on the client.
+	/// </summary>
 	[MyEntityComponentDescriptor(typeof(MyObjectBuilder_CubeGrid))]
 	public class GridEnforcer : MyGameLogicComponent {
 
@@ -108,11 +116,20 @@ namespace GardenConquest {
 			}
 		}
 
+		/// <summary>
+		/// Marks the grid to skip rule enforcement for the next few frames because of a grid merge.
+		/// </summary>
 		public void markForMerge() {
 			log("This grid is having another merged into it", "markForMerge");
 			m_Merging = true;
 		}
 
+		/// <summary>
+		/// Called when a block is added to the grid.
+		/// Decides whether or not to allow the block to be placed.
+		/// Increments counts and checks for classification.
+		/// </summary>
+		/// <param name="added"></param>
 		private void blockAdded(IMySlimBlock added) {
 			m_BlockCount++;
 			log("Block added to grid.  Count now: " + m_BlockCount, "blockAdded");
@@ -170,7 +187,10 @@ namespace GardenConquest {
 			}
 		}
 
-		// Returns true if any rule is violated
+		/// <summary>
+		/// Checks if the grid complies with the rules.  Returns true if any rule is violated.
+		/// </summary>
+		/// <returns></returns>
 		private bool checkRules() {
 			// Don't apply rules until server startup is completed
 			if (!m_BeyondFirst100)
@@ -195,6 +215,12 @@ namespace GardenConquest {
 			return false;
 		}
 
+		/// <summary>
+		/// Certain classes have count limitations.  Check if this faction can have any more
+		/// of this class.
+		/// </summary>
+		/// <param name="c">Class to check</param>
+		/// <returns></returns>
 		private bool checkClassAllowed(HullClass.CLASS c) {
 			// QUESTION: maybe players not in factions shouldn't be able to classify?
 			if (m_OwningFaction == null)
@@ -212,6 +238,10 @@ namespace GardenConquest {
 			return true;
 		}
 
+		/// <summary>
+		/// Called when a block is removed.  Decrements counts and checks for declassification.
+		/// </summary>
+		/// <param name="removed"></param>
 		private void blockRemoved(IMySlimBlock removed) {
 			m_BlockCount--;
 			log("Block removed from grid.  Count now: " + m_BlockCount, "blockAdded");
@@ -239,17 +269,31 @@ namespace GardenConquest {
 			}
 		}
 
-		// Testing indicates this is only called once per grid, even if you change 50 blocks at once
+		/// <summary>
+		/// Called when ownership on the grid changes.
+		/// </summary>
+		/// <remarks>
+		/// Testing indicates this is only called once per grid, even if you change 50 blocks at once
+		/// </remarks>
+		/// <param name="changed"></param>
 		private void blockOwnerChanged(IMyCubeGrid changed) {
 			log("Ownership changed", "blockOwnerChanged");
 			reevaluateOwningFaction();
 		}
 
+		/// <summary>
+		/// Forces a block to be removed, usually in the case of a rule violation.
+		/// </summary>
+		/// <param name="b"></param>
 		private void removeBlock(IMySlimBlock b) {
 			// TODO: spawn materials in place so they're not lost
 			m_Grid.RemoveBlock(b);
 		}
 
+		/// <summary>
+		/// Figures out which faction owns this grid, if any
+		/// </summary>
+		/// <returns>Whether or not the owning faction changed.</returns>
 		private bool reevaluateOwningFaction() {
 			IMyFaction fac = null;
 			bool changed = false;
@@ -280,6 +324,12 @@ namespace GardenConquest {
 			return changed;
 		}
 
+		/// <summary>
+		/// When the owning faction changes we need to decrement this class's count on the old
+		/// faction and increment it on the new one.
+		/// </summary>
+		/// <param name="oldFac"></param>
+		/// <param name="newFac"></param>
 		private void onFactionChange(IMyFaction oldFac, IMyFaction newFac) {
 			if (oldFac == newFac)
 				return;
@@ -302,6 +352,12 @@ namespace GardenConquest {
 			}
 		}
 
+		/// <summary>
+		/// When the class changes decrement the old class count and increment the new one
+		/// for the owning faction.
+		/// </summary>
+		/// <param name="oldClass"></param>
+		/// <param name="newClass"></param>
 		private void onClassChange(HullClass.CLASS oldClass, HullClass.CLASS newClass) {
 			if (oldClass == newClass || m_OwningFaction == null)
 				return;
@@ -314,14 +370,25 @@ namespace GardenConquest {
 			fleet.addClass(newClass);
 		}
 
+		/// <summary>
+		/// Starts the timer and alerts the player that their grid will become a derelict
+		/// after x time
+		/// </summary>
 		private void startDerelictionTimer() {
 
 		}
 
+		/// <summary>
+		/// If the rules are met before the timer experies this cancels the timer
+		/// </summary>
 		private void cancelDerelictionTimer() {
 
 		}
 
+		/// <summary>
+		/// When the dereliction timer expires this turns the grid into a derelict.
+		/// Destroys functional blocks and stops the grid.
+		/// </summary>
 		private void makeDerelict() {
 		}
 

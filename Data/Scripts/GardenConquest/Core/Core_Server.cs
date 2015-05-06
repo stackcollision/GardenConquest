@@ -13,9 +13,13 @@ using VRage.Library.Utils;
 using Interfaces = Sandbox.ModAPI.Interfaces;
 using InGame = Sandbox.ModAPI.Ingame;
 
-namespace GardenConquest {
+using GardenConquest.Records;
 
-	
+namespace GardenConquest.Core {
+
+	/// <summary>
+	/// Core of the server.  Manages rounds and reward distribution.
+	/// </summary>
 	class Core_Server : Core_Base {
 		#region Structs
 
@@ -37,7 +41,6 @@ namespace GardenConquest {
 
 		private bool m_Initialized = false;
 		private bool m_IsServer = false;
-		private bool m_IsAdmin = false;
 		private MyTimer m_Timer = null;
 
 		private static MyObjectBuilder_Component s_TokenBuilder = null;
@@ -46,32 +49,22 @@ namespace GardenConquest {
 		#endregion
 		#region Inherited Methods
 
+		/// <summary>
+		/// Starts up the core on the server
+		/// </summary>
 		public override void initialize() {
 			if (MyAPIGateway.Session == null || m_Initialized)
 				return;
 
 			if(s_Logger == null)
 				s_Logger = new Logger("Conquest Core", "Core");
-			log("Conquest core started");
+			log("Conquest core (Server) started");
 
 			s_TokenBuilder = new MyObjectBuilder_Component() { SubtypeName = "ShipLicense" };
 			s_TokenDef = new Sandbox.Common.ObjectBuilders.Definitions.SerializableDefinitionId(
 				typeof(MyObjectBuilder_InventoryItem), "ShipLicense");
 
-			if (MyAPIGateway.Multiplayer == null || !MyAPIGateway.Multiplayer.MultiplayerActive) {
-				m_IsServer = true;
-			} else {
-				m_IsServer = MyAPIGateway.Multiplayer.IsServer;
-			}
-
-			m_IsAdmin = m_IsServer || (
-				MyAPIGateway.Utilities.IsDedicated &&
-				MyAPIGateway.Utilities.ConfigDedicated.Administrators.Contains(
-				MyAPIGateway.Session.Player.DisplayName));
-			if (m_IsAdmin)
-				log("Player is an administrator", "initialize");
-			else
-				log("Player is not an administrator", "initialize");
+			m_IsServer = Utility.isServer();
 
 			if (m_IsServer) {
 				log("Loading config");
@@ -94,6 +87,9 @@ namespace GardenConquest {
 		#endregion
 		#region Class Timer Events
 
+		/// <summary>
+		/// Called at the end of a round.  Distributes rewards to winning factions.
+		/// </summary>
 		private void timerTriggered() {
 			log("Timer triggered", "timerTriggered");
 
@@ -234,6 +230,11 @@ namespace GardenConquest {
 
 		#region Class Helpers
 
+		/// <summary>
+		/// Returns a list of grids in the vicinity of the CP
+		/// </summary>
+		/// <param name="cp">Control point to check</param>
+		/// <returns></returns>
 		private List<IMyCubeGrid> getGridsInCPRadius(ControlPoint cp) {
 			// Get all ents within the radius
 			VRageMath.BoundingSphereD bounds = 
@@ -251,6 +252,11 @@ namespace GardenConquest {
 			return grids;
 		}
 
+		/// <summary>
+		/// Separates a list of grids by their faction.  Also discards invalid grids.
+		/// </summary>
+		/// <param name="grids">Grids to aggregate</param>
+		/// <returns></returns>
 		private Dictionary<long, List<FACGRID>> groupFactionGrids(List<IMyCubeGrid> grids) {
 			Dictionary<long, List<FACGRID>> result = new Dictionary<long, List<FACGRID>>();
 
@@ -314,6 +320,12 @@ namespace GardenConquest {
 			return result;
 		}
 
+		/// <summary>
+		/// Finds the first cargo container in the list of grids which can hold the reward.
+		/// </summary>
+		/// <param name="grids"></param>
+		/// <param name="numTok"></param>
+		/// <returns></returns>
 		private InGame.IMyCargoContainer getFirstAvailableCargo(List<FACGRID> grids, int numTok) {
 			InGame.IMyCargoContainer result = null;
 
@@ -347,6 +359,11 @@ namespace GardenConquest {
 			return result;
 		}
 
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="grid"></param>
+		/// <returns>Type of the grid</returns>
 		private GRIDTYPE getGridType(IMyCubeGrid grid) {
 			if (grid.IsStatic) {
 				return GRIDTYPE.STATION;

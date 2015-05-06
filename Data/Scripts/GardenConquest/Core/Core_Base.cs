@@ -4,7 +4,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace GardenConquest {
+namespace GardenConquest.Core {
+
+	/// <summary>
+	/// Base class for GardenConquest Core processes
+	/// </summary>
 	public abstract class Core_Base {
 		protected static Logger s_Logger = null;
 

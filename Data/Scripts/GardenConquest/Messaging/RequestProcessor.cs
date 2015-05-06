@@ -14,13 +14,15 @@ using InGame = Sandbox.ModAPI.Ingame;
 
 namespace GardenConquest {
 
+	/// <summary>
+	/// Server side messaging hooks.  Recieves requests from the clients and sends
+	/// responses.
+	/// </summary>
 	public class RequestProcessor {
-
-		public const ushort GCMessageId = 43501;
 
 		public RequestProcessor() {
 			if (MyAPIGateway.Multiplayer != null) {
-				MyAPIGateway.Multiplayer.RegisterMessageHandler(GCMessageId, incomming);
+				MyAPIGateway.Multiplayer.RegisterMessageHandler(Constants.GCMessageId, incomming);
 			}
 		}
 
