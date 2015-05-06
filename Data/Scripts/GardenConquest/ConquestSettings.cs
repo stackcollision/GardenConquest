@@ -106,7 +106,7 @@ namespace GardenConquest {
 				new HullRule() { MaxBlocks = 1500, MaxTurrets = 6 };
 			HullRules[(int)HullClass.CLASS.BATTLESHIP] =
 				new HullRule() { MaxBlocks = 2500, MaxTurrets = 8 };
-			HullRules[(int)HullClass.CLASS.CARRIER] =
+			HullRules[(int)HullClass.CLASS.DREADNAUGHT] =
 				new HullRule() { MaxBlocks = 10000, MaxTurrets = 8 };
 			HullRules[(int)HullClass.CLASS.UTILITY] =
 				new HullRule() { MaxBlocks = 300, MaxTurrets = 0 };

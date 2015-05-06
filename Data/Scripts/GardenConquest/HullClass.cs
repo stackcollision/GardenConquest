@@ -14,7 +14,7 @@ namespace GardenConquest {
 			DESTROYER = 4,
 			CRUISER = 5,
 			BATTLESHIP = 6,
-			CARRIER = 7,
+			DREADNAUGHT = 7,
 			UTILITY = 8,
 			UNLICENSED = 9
 		}
@@ -27,7 +27,7 @@ namespace GardenConquest {
 										   "Destroyer",
 										   "Cruiser",
 										   "Battleship",
-										   "Carrier",
+										   "Dreadnaught",
 										   "Utility",
 										   "Unlicensed"
 									   };
@@ -45,8 +45,8 @@ namespace GardenConquest {
 				return CLASS.CRUISER;
 			} else if (subtype.Contains("Battleship")) {
 				return CLASS.BATTLESHIP;
-			} else if (subtype.Contains("Carrier")) {
-				return CLASS.CARRIER;
+			} else if (subtype.Contains("Dreadnaught")) {
+				return CLASS.DREADNAUGHT;
 			} else if (subtype.Contains("Utility")) {
 				return CLASS.UTILITY;
 			} else if (subtype.Contains("Unlicensed")) {

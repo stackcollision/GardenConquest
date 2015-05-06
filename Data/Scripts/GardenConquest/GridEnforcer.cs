@@ -28,6 +28,7 @@ namespace GardenConquest {
 		private HullClass.CLASS m_Class = HullClass.CLASS.UNCLASSIFIED;
 		private bool m_BeyondFirst100 = false;
 		private bool m_DoubleClass = false;
+		private bool m_Merging = false;
 
 		private Logger m_Logger = null;
 
@@ -55,7 +56,7 @@ namespace GardenConquest {
 				return;
 			}
 
-			m_Logger = new Logger(Entity.Name, "GridEnforcer");
+			m_Logger = new Logger(Utility.gridIdentifier(m_Grid), "GridEnforcer");
 			log("Loaded into new grid");
 
 			// We need to only turn on our rule checking after startup. Otherwise, if
@@ -74,7 +75,7 @@ namespace GardenConquest {
 			m_Grid.OnBlockOwnershipChanged += blockOwnerChanged;
 		}
 
-		private void Close(IMyEntity ent) {
+		public override void Close() {
 			log("Grid closed", "Close");
 
 			m_Grid.OnBlockAdded -= blockAdded;
@@ -93,6 +94,13 @@ namespace GardenConquest {
 				// classified.  If not, warn the owner about the timer
 				// TODO
 			}
+
+			m_Merging = false;
+		}
+
+		public void markForMerge() {
+			log("This grid is having another merged into it", "markForMerge");
+			m_Merging = true;
 		}
 
 		private void blockAdded(IMySlimBlock added) {
@@ -141,6 +149,10 @@ namespace GardenConquest {
 				// where as soon as the hull is classified it's over the limit.
 				return;
 			}
+
+			// If this grid is currently being merged do not check rules
+			if (m_Merging)
+				return;
 
 			// Check if we are violating class rules
 			if (checkRules()) {

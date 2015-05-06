@@ -55,6 +55,7 @@
   <ItemGroup>
     <Compile Include="CommandProcessor.cs" />
     <Compile Include="FactionFleet.cs" />
+    <Compile Include="MergeBlock.cs" />
     <Compile Include="RequestProcessor.cs" />
     <Compile Include="ControlPoint.cs" />
     <Compile Include="Core.cs" />
@@ -64,6 +65,7 @@
     <Compile Include="Logger.cs" />
     <Compile Include="ConquestSettings.cs" />
     <Compile Include="StateTracker.cs" />
+    <Compile Include="Utility.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Properties\" />
