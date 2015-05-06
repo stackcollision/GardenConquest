@@ -54,11 +54,14 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CommandProcessor.cs" />
+    <Compile Include="CoreComponent.cs" />
+    <Compile Include="Core_Base.cs" />
+    <Compile Include="Core_Client.cs" />
     <Compile Include="FactionFleet.cs" />
     <Compile Include="MergeBlock.cs" />
     <Compile Include="RequestProcessor.cs" />
     <Compile Include="ControlPoint.cs" />
-    <Compile Include="Core.cs" />
+    <Compile Include="Core_Server.cs" />
     <Compile Include="HullClass.cs" />
     <Compile Include="GridEnforcer.cs" />
     <Compile Include="HullRule.cs" />

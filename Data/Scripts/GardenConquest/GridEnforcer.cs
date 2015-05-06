@@ -12,6 +12,7 @@ using Sandbox.Common.ObjectBuilders.Serializer;
 using Sandbox.Engine;
 using Sandbox.Game;
 using Sandbox.ModAPI;
+using VRage.Library.Utils;
 using Interfaces = Sandbox.ModAPI.Interfaces;
 using InGame = Sandbox.ModAPI.Ingame;
 
@@ -29,6 +30,9 @@ namespace GardenConquest {
 		private bool m_BeyondFirst100 = false;
 		private bool m_DoubleClass = false;
 		private bool m_Merging = false;
+
+		private MyTimer m_DerelictTimer = null;
+		private bool m_IsDerelict = false;
 
 		private Logger m_Logger = null;
 
@@ -52,7 +56,8 @@ namespace GardenConquest {
 				MyAPIGateway.Multiplayer.MultiplayerActive &&
 				!MyAPIGateway.Multiplayer.IsServer
 			) {
-				m_Grid.Components.Remove<GridEnforcer>();
+				// Need to use MyGameLogicComponent because ??
+				m_Grid.Components.Remove<MyGameLogicComponent>();
 				return;
 			}
 
@@ -95,7 +100,12 @@ namespace GardenConquest {
 				// TODO
 			}
 
-			m_Merging = false;
+			// If we just completed a merge check if this grid is violating rules
+			if (m_Merging) {
+				if (checkRules())
+					startDerelictionTimer();
+				m_Merging = false;
+			}
 		}
 
 		public void markForMerge() {
@@ -124,7 +134,7 @@ namespace GardenConquest {
 					log("Grid is already classified.  Removing this new one.", "blockAdded");
 					// Prevent unclassification in blockRemoved
 					m_DoubleClass = true;
-					m_Grid.RemoveBlock(added);
+					removeBlock(added);
 				} else {
 					HullClass.CLASS c = HullClass.hullClassFromString(
 						added.FatBlock.BlockDefinition.SubtypeName);
@@ -139,7 +149,7 @@ namespace GardenConquest {
 					} else {
 						log("Classification as " + HullClass.ClassStrings[(int)c] + " not permitted",
 							"blockAdded");
-						m_Grid.RemoveBlock(added);
+						removeBlock(added);
 					}
 				}
 
@@ -156,7 +166,7 @@ namespace GardenConquest {
 
 			// Check if we are violating class rules
 			if (checkRules()) {
-				m_Grid.RemoveBlock(added);
+				removeBlock(added);
 			}
 		}
 
@@ -235,6 +245,11 @@ namespace GardenConquest {
 			reevaluateOwningFaction();
 		}
 
+		private void removeBlock(IMySlimBlock b) {
+			// TODO: spawn materials in place so they're not lost
+			m_Grid.RemoveBlock(b);
+		}
+
 		private bool reevaluateOwningFaction() {
 			IMyFaction fac = null;
 			bool changed = false;
@@ -297,6 +312,17 @@ namespace GardenConquest {
 
 			fleet.removeClass(oldClass);
 			fleet.addClass(newClass);
+		}
+
+		private void startDerelictionTimer() {
+
+		}
+
+		private void cancelDerelictionTimer() {
+
+		}
+
+		private void makeDerelict() {
 		}
 
 		public override MyObjectBuilder_EntityBase GetObjectBuilder(bool copy = false) {

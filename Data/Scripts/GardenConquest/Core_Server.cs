@@ -15,8 +15,8 @@ using InGame = Sandbox.ModAPI.Ingame;
 
 namespace GardenConquest {
 
-	[Sandbox.Common.MySessionComponentDescriptor(Sandbox.Common.MyUpdateOrder.BeforeSimulation)]
-	class Core : Sandbox.Common.MySessionComponentBase {
+	
+	class Core_Server : Core_Base {
 		#region Structs
 
 		private enum GRIDTYPE {
@@ -40,23 +40,13 @@ namespace GardenConquest {
 		private bool m_IsAdmin = false;
 		private MyTimer m_Timer = null;
 
-		private static Logger s_Logger = null;
-
-		private static Core s_Instance = null;
-
 		private static MyObjectBuilder_Component s_TokenBuilder = null;
 		private static Sandbox.Common.ObjectBuilders.Definitions.SerializableDefinitionId? s_TokenDef = null;
 
 		#endregion
-		#region Class Lifecycle
+		#region Inherited Methods
 
-		public override void Init(MyObjectBuilder_SessionComponent sessionComponent) {
-			base.Init(sessionComponent);
-			initialize();
-			log("Init");
-		}
-
-		public void initialize() {
+		public override void initialize() {
 			if (MyAPIGateway.Session == null || m_Initialized)
 				return;
 
@@ -95,18 +85,10 @@ namespace GardenConquest {
 			}
 
 			m_Initialized = true;
-			s_Instance = this;
 		}
 
-		#endregion
-		#region SessionComponent Hooks
-
-		public override void UpdateBeforeSimulation() {
-			if (!m_Initialized)
-				initialize();
-		}
-
-		protected override void UnloadData() {
+		public override void unloadData() {
+			s_Logger = null;
 		}
 
 		#endregion
@@ -378,11 +360,6 @@ namespace GardenConquest {
 
 		private int sortGridsByRules(IMyCubeGrid x, IMyCubeGrid y) {
 			return 0;
-		}
-
-		private void log(String message, String method = null, Logger.severity level = Logger.severity.DEBUG) {
-			if (s_Logger != null)
-				s_Logger.log(level, method, message);
 		}
 
 		#endregion

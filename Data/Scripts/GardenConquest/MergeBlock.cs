@@ -47,7 +47,7 @@ namespace GardenConquest {
 			if (ge != null)
 				ge.markForMerge();
 			else
-				log("gridenforcer is null");
+				log("GridEnforcer is null");
 		}
 
 		public override MyObjectBuilder_EntityBase GetObjectBuilder(bool copy = false) {

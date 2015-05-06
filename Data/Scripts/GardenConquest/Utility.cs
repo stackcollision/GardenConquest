@@ -14,5 +14,13 @@ namespace GardenConquest {
 			int end = id.IndexOf('}');
 			return id.Substring(start + 1, end - start);
 		}
+
+		public static bool isServer() {
+			// If multiplayer is inactive, we are the "server" in single player
+			if (MyAPIGateway.Multiplayer == null || !MyAPIGateway.Multiplayer.MultiplayerActive)
+				return true;
+			else
+				return MyAPIGateway.Multiplayer.IsServer;
+		}
 	}
 }
