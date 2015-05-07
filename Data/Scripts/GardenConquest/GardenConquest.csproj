@@ -65,6 +65,7 @@
     <Compile Include="Messaging\RequestProcessor.cs" />
     <Compile Include="Records\ControlPoint.cs" />
     <Compile Include="Core\Core_Server.cs" />
+    <Compile Include="Records\GridSorter.cs" />
     <Compile Include="Records\HullClass.cs" />
     <Compile Include="Blocks\GridEnforcer.cs" />
     <Compile Include="Records\HullRule.cs" />

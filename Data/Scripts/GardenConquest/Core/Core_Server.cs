@@ -23,21 +23,6 @@ namespace GardenConquest.Core {
 	/// Core of the server.  Manages rounds and reward distribution.
 	/// </summary>
 	class Core_Server : Core_Base {
-		#region Structs
-
-		private enum GRIDTYPE {
-			STATION,
-			LARGESHIP,
-			SMALLSHIP
-		}
-
-		private struct FACGRID {
-			public IMyCubeGrid grid;
-			public long blockCount;
-			public GRIDTYPE gtype;
-		}
-
-		#endregion
 
 		#region Class Members
 
@@ -48,6 +33,7 @@ namespace GardenConquest.Core {
 
 		private static MyObjectBuilder_Component s_TokenBuilder = null;
 		private static Sandbox.Common.ObjectBuilders.Definitions.SerializableDefinitionId? s_TokenDef = null;
+		private static IComparer<FACGRID> s_Sorter = null;
 
 		#endregion
 		#region Inherited Methods
@@ -66,6 +52,7 @@ namespace GardenConquest.Core {
 			s_TokenBuilder = new MyObjectBuilder_Component() { SubtypeName = "ShipLicense" };
 			s_TokenDef = new Sandbox.Common.ObjectBuilders.Definitions.SerializableDefinitionId(
 				typeof(MyObjectBuilder_InventoryItem), "ShipLicense");
+			s_Sorter = new GridSorter();
 
 			m_IsServer = Utility.isServer();
 
@@ -187,52 +174,7 @@ namespace GardenConquest.Core {
 						// Sort the list by these rules ^
 						log("Sorting list of grids", "timerTriggered");
 						List<FACGRID> grids = allFactionGrids[greatestFaction];
-						grids.Sort(delegate(FACGRID A, FACGRID B) {
-							// TODO: unfuck this
-							if (A.gtype == GRIDTYPE.STATION) {
-								if (B.gtype == GRIDTYPE.STATION) {
-									// Resolve by block count
-									if (A.blockCount > B.blockCount)
-										return -1;
-									else if (A.blockCount == B.blockCount)
-										return 0;
-									else
-										return 1;
-								} else {
-									// Stations go first no matter what
-									return -1;
-								}
-							} else if (A.gtype == GRIDTYPE.LARGESHIP) {
-								if (B.gtype == GRIDTYPE.STATION) {
-									// B is a station so it goes first
-									return 1;
-								} else if (B.gtype == GRIDTYPE.LARGESHIP) {
-									// Resolve by block count
-									if (A.blockCount > B.blockCount)
-										return -1;
-									else if (A.blockCount == B.blockCount)
-										return 0;
-									else
-										return 1;
-								} else {
-									// B is a small ship, goes last
-									return -1;
-								}
-							} else {
-								if (B.gtype == GRIDTYPE.SMALLSHIP) {
-									// Resolve by block count
-									if (A.blockCount > B.blockCount)
-										return -1;
-									else if (A.blockCount == B.blockCount)
-										return 0;
-									else
-										return 1;
-								} else {
-									// A is a small ship and B isn't, so A goes last
-									return 1;
-								}
-							}
-						});
+						grids.Sort(s_Sorter);
 
 						// Go through the sorted list and find the first ship with a cargo container
 						// with space.  If the faction has no free cargo container they are S.O.L.
@@ -344,7 +286,7 @@ namespace GardenConquest.Core {
 				FACGRID fg = new FACGRID();
 				fg.grid = grid;
 				fg.blockCount = blocks.Count;
-				fg.gtype = getGridType(grid);
+				fg.gtype = Utility.getGridType(grid);
 
 				List<FACGRID> gridsOfCurrent = null;
 				if (result.ContainsKey(fac.FactionId)) {
@@ -396,26 +338,6 @@ namespace GardenConquest.Core {
 			}
 
 			return result;
-		}
-
-		/// <summary>
-		/// 
-		/// </summary>
-		/// <param name="grid"></param>
-		/// <returns>Type of the grid</returns>
-		private GRIDTYPE getGridType(IMyCubeGrid grid) {
-			if (grid.IsStatic) {
-				return GRIDTYPE.STATION;
-			} else {
-				if (grid.GridSizeEnum == MyCubeSize.Large)
-					return GRIDTYPE.LARGESHIP;
-				else
-					return GRIDTYPE.SMALLSHIP;
-			}
-		}
-
-		private int sortGridsByRules(IMyCubeGrid x, IMyCubeGrid y) {
-			return 0;
 		}
 
 		#endregion
