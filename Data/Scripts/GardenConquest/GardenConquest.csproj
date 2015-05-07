@@ -73,6 +73,7 @@
     <Compile Include="Core\ConquestSettings.cs" />
     <Compile Include="Messaging\ResponseProcessor.cs" />
     <Compile Include="Core\StateTracker.cs" />
+    <Compile Include="Records\SavedState.cs" />
     <Compile Include="Utility.cs" />
   </ItemGroup>
   <ItemGroup>

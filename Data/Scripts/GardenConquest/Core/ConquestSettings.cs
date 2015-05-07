@@ -31,7 +31,6 @@ namespace GardenConquest.Core {
 		}
 
 		private static Logger s_Logger = null;
-		private const String m_ConfigFileName = "GCConfig.xml";
 		private SETTINGS m_Settings;
 
 		public List<ControlPoint> ControlPoints { get { return m_Settings.ControlPoints; } }
@@ -64,9 +63,11 @@ namespace GardenConquest.Core {
 		/// <returns>False if no file exists</returns>
 		public bool loadSettings() {
 			log("Attempting to load settings from file", "loadSettings");
-			if (MyAPIGateway.Utilities.FileExistsInLocalStorage(m_ConfigFileName, typeof(SETTINGS))) {
+			if (MyAPIGateway.Utilities.FileExistsInLocalStorage(
+				Constants.ConfigFileName, typeof(SETTINGS))
+			) {
 				TextReader reader = MyAPIGateway.Utilities.ReadFileInLocalStorage(
-					m_ConfigFileName, typeof(SETTINGS));
+					Constants.ConfigFileName, typeof(SETTINGS));
 				m_Settings =
 					MyAPIGateway.Utilities.SerializeFromXML<SETTINGS>(reader.ReadToEnd());
 				log("Config file successfully loaded", "loadSettings");
@@ -85,7 +86,7 @@ namespace GardenConquest.Core {
 			log("Writing config file", "writeSettings");
 			TextWriter writer =
 				MyAPIGateway.Utilities.WriteFileInLocalStorage(
-				m_ConfigFileName, typeof(SETTINGS));
+				Constants.ConfigFileName, typeof(SETTINGS));
 			writer.Write(MyAPIGateway.Utilities.SerializeToXML<SETTINGS>(m_Settings));
 			writer.Flush();
 			log("Config written", "writeSettings");
