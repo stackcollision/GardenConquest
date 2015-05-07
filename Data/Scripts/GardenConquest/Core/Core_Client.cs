@@ -26,6 +26,10 @@ namespace GardenConquest.Core {
 			// TODO
 		}
 
+		public override void updateBeforeSimulation() {
+			// TODO
+		}
+
 		#endregion
 		#region Hooks
 

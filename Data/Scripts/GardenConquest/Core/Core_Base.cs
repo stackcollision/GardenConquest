@@ -14,6 +14,7 @@ namespace GardenConquest.Core {
 
 		public abstract void initialize();
 		public abstract void unloadData();
+		public abstract void updateBeforeSimulation();
 
 		protected void log(String message, String method = null, Logger.severity level = Logger.severity.DEBUG) {
 			if (s_Logger != null)

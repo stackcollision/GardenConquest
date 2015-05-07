@@ -14,6 +14,8 @@ using Interfaces = Sandbox.ModAPI.Interfaces;
 using InGame = Sandbox.ModAPI.Ingame;
 
 using GardenConquest.Records;
+using Sandbox.Common.Components;
+using GardenConquest.Blocks;
 
 namespace GardenConquest.Core {
 
@@ -42,6 +44,7 @@ namespace GardenConquest.Core {
 		private bool m_Initialized = false;
 		private bool m_IsServer = false;
 		private MyTimer m_Timer = null;
+		private byte m_Frame = 0;
 
 		private static MyObjectBuilder_Component s_TokenBuilder = null;
 		private static Sandbox.Common.ObjectBuilders.Definitions.SerializableDefinitionId? s_TokenDef = null;
@@ -82,6 +85,42 @@ namespace GardenConquest.Core {
 
 		public override void unloadData() {
 			s_Logger = null;
+		}
+
+		public override void updateBeforeSimulation() {
+			// Do this only every 100 frames
+			if (m_Frame++ > 100) {
+				m_Frame = 0;
+
+				// Check for new derelict timers
+				StateTracker st = StateTracker.getInstance();
+				while (st.newDerelictTimers()) {
+					StateTracker.DERELICT_TIMER dt = st.nextNewDerelictTimer();
+					
+					// Alert the whole faction
+					GridEnforcer enf = 
+						dt.grid.Components.Get<MyGameLogicComponent>() as GridEnforcer;
+					IMyFaction fac = enf.Faction;
+
+					// If there is no faction only alert the player who owns it
+					if (fac == null) {
+						// Alert the big owner.  If no big owner, no one gets an alert
+						if (dt.grid.BigOwners.Count > 0) {
+							// TODO: send message
+						}
+					} else {
+						if(MyAPIGateway.Multiplayer != null) {
+							List<IMyPlayer> players = new List<IMyPlayer>();
+							MyAPIGateway.Multiplayer.Players.GetPlayers(players);
+							foreach (IMyPlayer p in players) {
+								if (fac.IsMember(p.PlayerID)) {
+									// TODO: send message
+								}
+							}
+						}
+					}
+				}
+			}
 		}
 
 		#endregion

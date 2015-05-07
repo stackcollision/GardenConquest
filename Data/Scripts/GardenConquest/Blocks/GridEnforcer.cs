@@ -105,7 +105,8 @@ namespace GardenConquest.Blocks {
 
 				// Once the server has loaded all block for this grid, check if we are
 				// classified.  If not, warn the owner about the timer
-				// TODO
+				if (m_Class == HullClass.CLASS.UNCLASSIFIED)
+					startDerelictionTimer();
 			}
 
 			// If we just completed a merge check if this grid is violating rules
@@ -259,7 +260,7 @@ namespace GardenConquest.Blocks {
 					onClassChange(m_Class, HullClass.CLASS.UNCLASSIFIED);
 					m_Class = HullClass.CLASS.UNCLASSIFIED;
 					m_Classifier = null;
-					// TODO: start timer
+					startDerelictionTimer();
 				}
 			} else if (removed.FatBlock != null && (
 					removed.FatBlock is InGame.IMyLargeGatlingTurret ||
@@ -375,14 +376,36 @@ namespace GardenConquest.Blocks {
 		/// after x time
 		/// </summary>
 		private void startDerelictionTimer() {
+			m_DerelictTimer = new MyTimer(
+				ConquestSettings.getInstance().DerelictCountdown * 1000,
+				makeDerelict);
+			m_DerelictTimer.Start();
 
+			// Add to state
+			StateTracker.DERELICT_TIMER dt = new StateTracker.DERELICT_TIMER();
+			dt.grid = m_Grid;
+			dt.timerType = StateTracker.DERELICT_TIMER.TIMER_TYPE.STARTED;
+			StateTracker.getInstance().addNewDerelictTimer(dt);
+
+			log("Dereliction timer started", "startDerelictionTimer");
 		}
 
 		/// <summary>
 		/// If the rules are met before the timer experies this cancels the timer
 		/// </summary>
 		private void cancelDerelictionTimer() {
+			if (m_DerelictTimer != null) {
+				m_DerelictTimer.Stop();
+				m_DerelictTimer = null;
 
+				// Do they really need an alert for this?  They know they placed the beacon
+				/*StateTracker.DERELICT_TIMER dt = new StateTracker.DERELICT_TIMER();
+				dt.grid = m_Grid;
+				dt.timerType = StateTracker.DERELICT_TIMER.TIMER_TYPE.CANCELLED;
+				StateTracker.getInstance().addNewDerelictTimer(dt);*/
+
+				log("Dereliction timer cancelled", "cancelDerelictionTimer");
+			}
 		}
 
 		/// <summary>
@@ -390,6 +413,29 @@ namespace GardenConquest.Blocks {
 		/// Destroys functional blocks and stops the grid.
 		/// </summary>
 		private void makeDerelict() {
+			// Get rid of the timer
+			m_DerelictTimer = null;
+
+			// Get a list of all functional blocks
+			List<IMySlimBlock> funcBlocks = new List<IMySlimBlock>();
+			m_Grid.GetBlocks(funcBlocks,
+				x => x.FatBlock != null && x.FatBlock is IMyFunctionalBlock);
+
+			// Go through the list and destroy them
+			// TODO: Do this in phases with damage instead of just poofing them
+			foreach (IMySlimBlock block in funcBlocks) {
+				// TODO: What happens if this block is the only thing holding the grid together?
+				// will the blocks on the split portion of the grid get removed or not?
+				m_Grid.RemoveBlock(block);
+			}
+
+			// Send the alert
+			StateTracker.DERELICT_TIMER dt = new StateTracker.DERELICT_TIMER();
+			dt.grid = m_Grid;
+			dt.timerType = StateTracker.DERELICT_TIMER.TIMER_TYPE.FINISHED;
+			StateTracker.getInstance().addNewDerelictTimer(dt);
+
+			log("Timer expired.  Grid turned into a derelict.", "makeDerelict");
 		}
 
 		public override MyObjectBuilder_EntityBase GetObjectBuilder(bool copy = false) {
