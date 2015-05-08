@@ -27,8 +27,8 @@ namespace GardenConquest.Core {
 		#region Class Members
 
 		private bool m_Initialized = false;
-		private bool m_IsServer = false;
-		private MyTimer m_Timer = null;
+		private MyTimer m_RoundTimer = null;
+		private MyTimer m_SaveTimer = null;
 		private byte m_Frame = 0;
 
 		private static MyObjectBuilder_Component s_TokenBuilder = null;
@@ -54,23 +54,26 @@ namespace GardenConquest.Core {
 				typeof(MyObjectBuilder_InventoryItem), "ShipLicense");
 			s_Sorter = new GridSorter();
 
-			m_IsServer = Utility.isServer();
+			log("Loading config");
+			if (!ConquestSettings.getInstance().loadSettings())
+				ConquestSettings.getInstance().loadDefaults();
 
-			if (m_IsServer) {
-				log("Loading config");
-				if (!ConquestSettings.getInstance().loadSettings())
-					ConquestSettings.getInstance().loadDefaults();
+			// Start round timer
+			m_RoundTimer = new MyTimer(ConquestSettings.getInstance().Period * 1000, roundEnd);
+			m_RoundTimer.Start();
+			log("Round timer started");
 
-				// Start timer
-				m_Timer = new MyTimer(ConquestSettings.getInstance().Period * 1000, timerTriggered);
-				m_Timer.Start();
-				log("Timer started");
-			}
-
+			// Start save timer
+			m_SaveTimer = new MyTimer(Constants.SaveInterval * 1000, saveTimer);
+			m_SaveTimer.Start();
+			log("Save timer started");
+	
 			m_Initialized = true;
 		}
 
 		public override void unloadData() {
+
+
 			s_Logger = null;
 		}
 
@@ -106,6 +109,9 @@ namespace GardenConquest.Core {
 							}
 						}
 					}
+
+					// Add it to the persistent state
+					
 				}
 			}
 		}
@@ -116,32 +122,31 @@ namespace GardenConquest.Core {
 		/// <summary>
 		/// Called at the end of a round.  Distributes rewards to winning factions.
 		/// </summary>
-		private void timerTriggered() {
-			log("Timer triggered", "timerTriggered");
+		private void roundEnd() {
+			log("Timer triggered", "roundEnd");
 
 			try {
-				// Only the host processes this stuff
-				if (!m_Initialized || !m_IsServer)
+				if (!m_Initialized)
 					return;
 
 				// Check each CP in turn
 				Dictionary<long, long> totalTokens = new Dictionary<long, long>();
 				foreach (ControlPoint cp in ConquestSettings.getInstance().ControlPoints) {
-					log("Processing control point " + cp.Name, "timerTriggered");
+					log("Processing control point " + cp.Name, "roundEnd");
 
 					// Get a list of all grids within this CPs sphere of influence
 					List<IMyCubeGrid> gridsInSOI = getGridsInCPRadius(cp);
-					log("Found " + gridsInSOI.Count + " grids in CP SOI", "timerTriggered");
+					log("Found " + gridsInSOI.Count + " grids in CP SOI", "roundEnd");
 
 					// Group all of the grids in the SOI into their factions
 					// This will only return grids which conform to the rules which make them valid
 					// for counting.  All other grids discarded.
 					Dictionary<long, List<FACGRID>> allFactionGrids = groupFactionGrids(gridsInSOI);
-					log("After aggregation there are " + allFactionGrids.Count + " factions present", "timerTriggered");
+					log("After aggregation there are " + allFactionGrids.Count + " factions present", "roundEnd");
 					foreach (KeyValuePair<long, List<FACGRID>> entry in allFactionGrids) {
-						log("Grids for faction " + entry.Key, "timerTriggered");
+						log("Grids for faction " + entry.Key, "roundEnd");
 						foreach (FACGRID grid in entry.Value) {
-							log("\t" + grid.grid.Name, "timerTriggered");
+							log("\t" + grid.grid.Name, "roundEnd");
 						}
 					}
 
@@ -159,9 +164,9 @@ namespace GardenConquest.Core {
 						}
 					}
 
-					log("Faction with most grids: " + greatestFaction, "timerTriggered");
-					log("Number of grids: " + mostGrids, "timerTriggered");
-					log("Tie? " + tie, "timerTriggered");
+					log("Faction with most grids: " + greatestFaction, "roundEnd");
+					log("Number of grids: " + mostGrids, "roundEnd");
+					log("Tie? " + tie, "roundEnd");
 
 					// If we have a tie, nobody gets the tokens
 					// If we don't, award tokens to the faction with the most ships in the SOI
@@ -172,18 +177,18 @@ namespace GardenConquest.Core {
 						// 3. Otherwise largest (by block count) small ship with cargo
 
 						// Sort the list by these rules ^
-						log("Sorting list of grids", "timerTriggered");
+						log("Sorting list of grids", "roundEnd");
 						List<FACGRID> grids = allFactionGrids[greatestFaction];
 						grids.Sort(s_Sorter);
 
 						// Go through the sorted list and find the first ship with a cargo container
 						// with space.  If the faction has no free cargo container they are S.O.L.
-						log("Looking for valid container", "timerTriggered");
+						log("Looking for valid container", "roundEnd");
 						InGame.IMyCargoContainer container = 
 							getFirstAvailableCargo(grids, cp.TokensPerPeriod);
 						if (container != null) {
 							// Award the tokens
-							log("Found a ship to put tokens in", "timerTriggered");
+							log("Found a ship to put tokens in", "roundEnd");
 							((container as Interfaces.IMyInventoryOwner).GetInventory(0) 
 								as IMyInventory).AddItems(
 								cp.TokensPerPeriod, 
@@ -203,8 +208,13 @@ namespace GardenConquest.Core {
 				MyAPIGateway.Utilities.ShowNotification("Conquest Round Ended");
 
 			} catch (Exception e) {
-				log("An exception occured: " + e, "timerTriggered", Logger.severity.ERROR);
+				log("An exception occured: " + e, "roundEnd", Logger.severity.ERROR);
 			}
+		}
+
+		private void saveTimer() {
+			log("Save timer triggered", "saveTimer");
+			StateTracker.getInstance().saveState();
 		}
 
 		#endregion

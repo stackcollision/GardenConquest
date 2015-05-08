@@ -22,7 +22,12 @@ namespace GardenConquest {
 
 		/// <summary>
 		/// Name of the file persistent state is saved to
-		/// </summary>
+		/// </summary>	
 		public const String StateFileName = "GCState.xml";
+
+		/// <summary>
+		/// Time between state saves (in seconds)
+		/// </summary>
+		public const int SaveInterval = 20;
 	}
 }

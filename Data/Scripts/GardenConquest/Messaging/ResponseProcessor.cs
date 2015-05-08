@@ -18,10 +18,10 @@ namespace GardenConquest {
 	/// Client side message hooks.  Processed messages coming from the server.
 	/// </summary>
 	public class ResponseProcessor {
-		private static VRage.Serialization.ProtoSerializer<BaseMessage> m_Serializer = null;
+		//private static VRage.Serialization.ProtoSerializer<BaseMessage> m_Serializer = null;
 
 		public ResponseProcessor() {
-			m_Serializer = new VRage.Serialization.ProtoSerializer<BaseMessage>();
+			//m_Serializer = new VRage.Serialization.ProtoSerializer<BaseMessage>();
 
 			if (MyAPIGateway.Multiplayer != null) {
 				MyAPIGateway.Multiplayer.RegisterMessageHandler(Constants.GCMessageId, incomming);
@@ -30,16 +30,16 @@ namespace GardenConquest {
 
 		public void incomming(byte[] stream) {
 			// Deserialize the message
-			BaseMessage msg = null;
-			VRage.ByteStream bstream = new VRage.ByteStream(stream, stream.Length);
-			m_Serializer.Deserialize(bstream, out msg);
+			//BaseMessage msg = null;
+			//VRage.ByteStream bstream = new VRage.ByteStream(stream, stream.Length);
+			//m_Serializer.Deserialize(bstream, out msg);
 
 			// Process based on type
-			switch (msg.MsgType) {
-				case BaseMessage.TYPE.NOTIFICATION:
-					processNotificationResponse(msg as NotificationResponse);
-					break;
-			}
+			//switch (msg.MsgType) {
+			//	case BaseMessage.TYPE.NOTIFICATION:
+			//		processNotificationResponse(msg as NotificationResponse);
+			//		break;
+			//}
 		}
 
 		private void processNotificationResponse(NotificationResponse noti) {

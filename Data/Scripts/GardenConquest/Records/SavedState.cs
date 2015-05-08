@@ -40,7 +40,11 @@ namespace GardenConquest.Records {
 			public long StartingMillisRemaining;
 		}
 
-		public Dictionary<long, ActiveDerelictTimer> DerelictTimers;
+		public List<ActiveDerelictTimer> DerelictTimers;
+
+		public SavedState() {
+			DerelictTimers = new List<ActiveDerelictTimer>();
+		}
 
 	}
 }

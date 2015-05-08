@@ -94,6 +94,10 @@ namespace GardenConquest.Core {
 		/// <param name="dt"></param>
 		public void addNewDerelictTimer(DERELICT_TIMER dt) {
 			m_NewDerelictTimers.Enqueue(dt);
+
+			SavedState.ActiveDerelictTimer record = new SavedState.ActiveDerelictTimer();
+			record.MillisRemaining = 
+			m_SavedState.DerelictTimers.Add();
 		}
 
 		/// <summary>
@@ -101,67 +105,73 @@ namespace GardenConquest.Core {
 		/// </summary>
 		/// <returns>True if file could be found</returns>
 		private bool loadState() {
-			if (MyAPIGateway.Utilities.FileExistsInLocalStorage(
-				Constants.StateFileName, typeof(SavedState))
-			) {
-				DateTime startTime = DateTime.UtcNow;
-
-				TextReader reader = MyAPIGateway.Utilities.ReadFileInLocalStorage(
-					Constants.StateFileName, typeof(SavedState));
-				m_SavedState =
-					MyAPIGateway.Utilities.SerializeFromXML<SavedState>(reader.ReadToEnd());
-
-				// Once the state is loaded from the file there's some housekeeping to do
-				List<long> negative = new List<long>();
-				foreach (
-					KeyValuePair<long, SavedState.ActiveDerelictTimer> pair
-					in m_SavedState.DerelictTimers
+			try {
+				if (MyAPIGateway.Utilities.FileExistsInLocalStorage(
+					Constants.StateFileName, typeof(SavedState))
 				) {
-					// Need to keep track of when the server was started and how many
-					// millis were remaining at that time
-					// This is critical for saving again later
-					pair.Value.StartingMillisRemaining = pair.Value.MillisRemaining;
-					pair.Value.StartTime = startTime;
+					DateTime startTime = DateTime.UtcNow;
 
-					// If a timer has a negative remaining time just ignore it
-					negative.Add(pair.Key);
+					TextReader reader = MyAPIGateway.Utilities.ReadFileInLocalStorage(
+						Constants.StateFileName, typeof(SavedState));
+					m_SavedState =
+						MyAPIGateway.Utilities.SerializeFromXML<SavedState>(reader.ReadToEnd());
+					if (m_SavedState == null) {
+						log("Read null m_SavedState", "loadState");
+						return false;
+					}
+
+					// Once the state is loaded from the file there's some housekeeping to do
+					// Make a copy of the list to iterate so we can remove from the actual one
+					List<SavedState.ActiveDerelictTimer> copy =
+						new List<SavedState.ActiveDerelictTimer>(m_SavedState.DerelictTimers);
+					foreach (SavedState.ActiveDerelictTimer timer in copy) {
+						// Need to keep track of when the server was started and how many
+						// millis were remaining at that time
+						// This is critical for saving again later
+						timer.StartingMillisRemaining = timer.MillisRemaining;
+						timer.StartTime = startTime;
+
+						if (timer.StartingMillisRemaining <= 0) {
+							m_SavedState.DerelictTimers.Remove(timer);
+						}
+					}
+
+					log("State loaded from file", "loadState");
+					return true;
+				} else {
+					log("State file not found", "loadState");
+					return false;
 				}
-
-				// Remove the negative timers we marked earlier
-				foreach (long key in negative)
-					m_SavedState.DerelictTimers.Remove(key);
-
-				log("State loaded from file", "loadState");
-				return true;
-			} else {
-				log("State file not found", "loadState");
+			} catch (Exception e) {
+				log("Exception occured: " + e, "loadState");
 				return false;
 			}
 		}
 
 		public void saveState() {
-			log("Saving state to file", "saveState");
+			try {
+				log("Saving state to file", "saveState");
 
-			// Before we can actually do any writing we need to see where the timers currently stand
-			DateTime now = DateTime.UtcNow;
-			foreach (
-					KeyValuePair<long, SavedState.ActiveDerelictTimer> pair
-					in m_SavedState.DerelictTimers
-			) {
-				// If this results in a negative time remaining, it means the timer expired but
-				// hasn't been removed from the dictionary yet.  We'll leave it alone and let it go
-				// to the file, but when we try to load it later it'll get dropped
-				long difference = (long)(now - pair.Value.StartTime).TotalMilliseconds;
-				pair.Value.MillisRemaining = pair.Value.StartingMillisRemaining - difference;
+				// Before we can actually do any writing we need to see where the timers currently stand
+				DateTime now = DateTime.UtcNow;
+				foreach (SavedState.ActiveDerelictTimer timer in m_SavedState.DerelictTimers) {
+					// If this results in a negative time remaining, it means the timer expired but
+					// hasn't been removed from the dictionary yet.  We'll leave it alone and let it go
+					// to the file, but when we try to load it later it'll get dropped
+					long difference = (long)(now - timer.StartTime).TotalMilliseconds;
+					timer.MillisRemaining = timer.StartingMillisRemaining - difference;
+				}
+
+				// Write the state to the file
+				TextWriter writer =
+					MyAPIGateway.Utilities.WriteFileInLocalStorage(
+					Constants.StateFileName, typeof(SavedState));
+				writer.Write(MyAPIGateway.Utilities.SerializeToXML<SavedState>(m_SavedState));
+				writer.Flush();
+				log("Write finished", "saveState");
+			} catch (Exception e) {
+				log("Exception occured: " + e, "saveState");
 			}
-
-			// Write the state to the file
-			TextWriter writer =
-				MyAPIGateway.Utilities.WriteFileInLocalStorage(
-				Constants.StateFileName, typeof(SavedState));
-			writer.Write(MyAPIGateway.Utilities.SerializeToXML<SavedState>(m_SavedState));
-			writer.Flush();
-			log("Write finished", "saveState");
 		}
 
 		private void log(String message, String method = null, Logger.severity level = Logger.severity.DEBUG) {
