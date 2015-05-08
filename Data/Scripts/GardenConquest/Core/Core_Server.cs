@@ -17,6 +17,10 @@ using GardenConquest.Records;
 using Sandbox.Common.Components;
 using GardenConquest.Blocks;
 
+using CompletedTimer = System.Tuple<GardenConquest.Records.ActiveDerelictTimer, GardenConquest.Records.ActiveDerelictTimer.COMPLETION>;
+using Sandbox.Game.Multiplayer;
+using Sandbox.Game.World;
+
 namespace GardenConquest.Core {
 
 	/// <summary>
@@ -45,7 +49,7 @@ namespace GardenConquest.Core {
 			if (MyAPIGateway.Session == null || m_Initialized)
 				return;
 
-			if(s_Logger == null)
+			if (s_Logger == null)
 				s_Logger = new Logger("Conquest Core", "Core");
 			log("Conquest core (Server) started");
 
@@ -67,7 +71,7 @@ namespace GardenConquest.Core {
 			m_SaveTimer = new MyTimer(Constants.SaveInterval * 1000, saveTimer);
 			m_SaveTimer.Start();
 			log("Save timer started");
-	
+
 			m_Initialized = true;
 		}
 
@@ -85,33 +89,45 @@ namespace GardenConquest.Core {
 				// Check for new derelict timers
 				StateTracker st = StateTracker.getInstance();
 				while (st.newDerelictTimers()) {
-					StateTracker.DERELICT_TIMER dt = st.nextNewDerelictTimer();
-					
-					// Alert the whole faction
-					GridEnforcer enf = 
-						dt.grid.Components.Get<MyGameLogicComponent>() as GridEnforcer;
-					IMyFaction fac = enf.Faction;
+					ActiveDerelictTimer dt = st.nextNewDerelictTimer();
 
-					// If there is no faction only alert the player who owns it
-					if (fac == null) {
-						// Alert the big owner.  If no big owner, no one gets an alert
-						if (dt.grid.BigOwners.Count > 0) {
-							// TODO: send message
-						}
-					} else {
-						if(MyAPIGateway.Multiplayer != null) {
-							List<IMyPlayer> players = new List<IMyPlayer>();
-							MyAPIGateway.Multiplayer.Players.GetPlayers(players);
-							foreach (IMyPlayer p in players) {
-								if (fac.IsMember(p.PlayerID)) {
-									// TODO: send message
-								}
-							}
+					List<MyPlayer> players = playersToAlert(dt);
+
+					string message = "Your grid " + dt.Grid.DisplayName + " will become a " +
+						"derelict in " + ConquestSettings.getInstance().DerelictCountdown/60.0f +
+						" minutes";
+
+					foreach (MyPlayer p in players) {
+						if (p.IsLocalPlayer()) {
+							// For the local player (i.e. player as server) just show notification
+							MyAPIGateway.Utilities.ShowNotification(message, 2000, MyFontEnum.Red);
+						} else {
+							// TODO: Send message to remote player
 						}
 					}
+				}
 
-					// Add it to the persistent state
-					
+				while (st.finishedDerelictTimers()) {
+					CompletedTimer ct = st.nextFinishedDerelictTimer();
+
+					List<MyPlayer> players = playersToAlert(ct.Item1);
+
+					string message = "";
+					if (ct.Item2 == ActiveDerelictTimer.COMPLETION.ELAPSED)
+						message = "Your grid " + ct.Item1.Grid.DisplayName + " has been turned " +
+							"into a derelict";
+					else if (ct.Item2 == ActiveDerelictTimer.COMPLETION.CANCELLED)
+						message = "Your grid " + ct.Item1.Grid.DisplayName + " is no longer " +
+							"danger of dereliction";
+
+					foreach (MyPlayer p in players) {
+						if (p.IsLocalPlayer()) {
+							// For the local player (i.e. player as server) just show notification
+							MyAPIGateway.Utilities.ShowNotification(message, 2000, MyFontEnum.Red);
+						} else {
+							// TODO: Send message to remote player
+						}
+					}
 				}
 			}
 		}
@@ -141,7 +157,8 @@ namespace GardenConquest.Core {
 					// Group all of the grids in the SOI into their factions
 					// This will only return grids which conform to the rules which make them valid
 					// for counting.  All other grids discarded.
-					Dictionary<long, List<FACGRID>> allFactionGrids = groupFactionGrids(gridsInSOI);
+					Dictionary<long, List<FACGRID>> allFactionGrids = 
+						groupFactionGrids(gridsInSOI, cp.Radius);
 					log("After aggregation there are " + allFactionGrids.Count + " factions present", "roundEnd");
 					foreach (KeyValuePair<long, List<FACGRID>> entry in allFactionGrids) {
 						log("Grids for faction " + entry.Key, "roundEnd");
@@ -184,14 +201,14 @@ namespace GardenConquest.Core {
 						// Go through the sorted list and find the first ship with a cargo container
 						// with space.  If the faction has no free cargo container they are S.O.L.
 						log("Looking for valid container", "roundEnd");
-						InGame.IMyCargoContainer container = 
+						InGame.IMyCargoContainer container =
 							getFirstAvailableCargo(grids, cp.TokensPerPeriod);
 						if (container != null) {
 							// Award the tokens
 							log("Found a ship to put tokens in", "roundEnd");
-							((container as Interfaces.IMyInventoryOwner).GetInventory(0) 
+							((container as Interfaces.IMyInventoryOwner).GetInventory(0)
 								as IMyInventory).AddItems(
-								cp.TokensPerPeriod, 
+								cp.TokensPerPeriod,
 								s_TokenBuilder);
 
 							// Track totals
@@ -228,9 +245,9 @@ namespace GardenConquest.Core {
 		/// <returns></returns>
 		private List<IMyCubeGrid> getGridsInCPRadius(ControlPoint cp) {
 			// Get all ents within the radius
-			VRageMath.BoundingSphereD bounds = 
+			VRageMath.BoundingSphereD bounds =
 				new VRageMath.BoundingSphereD(cp.Position, (double)cp.Radius);
-			List<IMyEntity> ents = 
+			List<IMyEntity> ents =
 				MyAPIGateway.Entities.GetEntitiesInSphere(ref bounds);
 
 			// Get only the ships/stations
@@ -247,16 +264,17 @@ namespace GardenConquest.Core {
 		/// Separates a list of grids by their faction.  Also discards invalid grids.
 		/// </summary>
 		/// <param name="grids">Grids to aggregate</param>
+		/// <param name="radius">The radius of the CP</param>
 		/// <returns></returns>
-		private Dictionary<long, List<FACGRID>> groupFactionGrids(List<IMyCubeGrid> grids) {
+		private Dictionary<long, List<FACGRID>> groupFactionGrids(List<IMyCubeGrid> grids, float radius) {
 			Dictionary<long, List<FACGRID>> result = new Dictionary<long, List<FACGRID>>();
 
 			foreach (IMyCubeGrid grid in grids) {
-				// TODO: use full owners list
-				if (grid.BigOwners.Count == 0)
+				GridEnforcer ge = grid.Components.Get<MyGameLogicComponent>() as GridEnforcer;
+				if (ge == null)
 					continue;
-				long owner = grid.BigOwners[0];
-				IMyFaction fac = MyAPIGateway.Session.Factions.TryGetPlayerFaction(owner);
+
+				IMyFaction fac = ge.Faction;
 
 				// Player must be in a faction to get tokens
 				if (fac == null)
@@ -282,7 +300,12 @@ namespace GardenConquest.Core {
 						} else if (fat is InGame.IMyBeacon) {
 							if (fat.BlockDefinition.SubtypeName.Contains("HullClassifier")) {
 								hasHC |= fat.IsFunctional;
-								radiusOK |= true; // TODO
+								
+								// Since we're only checking grids inside the bounding sphere
+								// as long as the radius of the beacon is >= radius of the CP
+								// it must encompass the center
+								InGame.IMyBeacon beacon = fat as InGame.IMyBeacon; 
+								radiusOK |= beacon.Radius >= radius;
 							}
 						}
 					}
@@ -291,7 +314,7 @@ namespace GardenConquest.Core {
 				// If the grid doesn't pass the above conditions, skip it
 				if (!(isPowered && hasHC && radiusOK))
 					continue;
-				
+
 				// The grid can be counted
 				FACGRID fg = new FACGRID();
 				fg.grid = grid;
@@ -337,9 +360,9 @@ namespace GardenConquest.Core {
 						// TODO: Check that it can fit
 						//if (inv.CanItemsBeAdded(numTok, 
 						//	(Sandbox.Common.ObjectBuilders.Definitions.SerializableDefinitionId)m_TokenDef)) {
-							log("Can fit tokens", "getFirstAvailableCargo");
-							result = c;
-							break;
+						log("Can fit tokens", "getFirstAvailableCargo");
+						result = c;
+						break;
 						//}
 					}
 				}
@@ -348,6 +371,36 @@ namespace GardenConquest.Core {
 			}
 
 			return result;
+		}
+
+		private List<MyPlayer> playersToAlert(ActiveDerelictTimer dt) {
+			List<MyPlayer> players = new List<MyPlayer>();
+			if (MyAPIGateway.Multiplayer == null)
+				return players;
+
+			GridEnforcer enf =
+				dt.Grid.Components.Get<MyGameLogicComponent>() as GridEnforcer;
+			IMyFaction fac = enf.Faction;
+
+			MyPlayerCollection allPlayers = MyAPIGateway.Multiplayer.Players as MyPlayerCollection;
+
+			// If there is no faction only alert the player who owns it
+			if (fac == null) {
+				// Alert the big owner.  If no big owner, no one gets an alert
+				if (dt.Grid.BigOwners.Count > 0) {
+					// TODO: Figure out how to get the PlayerId based on this number
+				}
+			} else {
+				Dictionary<MyPlayer.PlayerId, MyPlayer>.ValueCollection online = 
+					allPlayers.GetOnlinePlayers();
+				foreach (MyPlayer p in online) {
+					if (fac.IsMember((p as IMyPlayer).PlayerID)) {
+						players.Add(p);
+					}
+				}
+			}
+
+			return players;
 		}
 
 		#endregion

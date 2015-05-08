@@ -39,7 +39,7 @@ namespace GardenConquest.Blocks {
 		private bool m_DoubleClass = false;
 		private bool m_Merging = false;
 
-		private MyTimer m_DerelictTimer = null;
+		private ActiveDerelictTimer m_DerelictTimer = null;
 		private bool m_IsDerelict = false;
 
 		private Logger m_Logger = null;
@@ -105,8 +105,16 @@ namespace GardenConquest.Blocks {
 
 				// Once the server has loaded all block for this grid, check if we are
 				// classified.  If not, warn the owner about the timer
-				if (m_Class == HullClass.CLASS.UNCLASSIFIED)
-					startDerelictionTimer();
+				if (m_Class == HullClass.CLASS.UNCLASSIFIED) {
+					// Since the game is just starting, we need to check if we're supposed
+					// to resume this timer or start a brand new one
+					ActiveDerelictTimer dt = StateTracker.getInstance().findActiveDerelictTimer(
+						m_Grid.EntityId);
+					if (dt == null)
+						startDerelictionTimer();
+					else
+						resumeDerelictionTimer(dt);
+				}
 			}
 
 			// If we just completed a merge check if this grid is violating rules
@@ -376,18 +384,40 @@ namespace GardenConquest.Blocks {
 		/// after x time
 		/// </summary>
 		private void startDerelictionTimer() {
-			m_DerelictTimer = new MyTimer(
-				ConquestSettings.getInstance().DerelictCountdown * 1000,
-				makeDerelict);
-			m_DerelictTimer.Start();
+			// Create timer record
+			m_DerelictTimer = new ActiveDerelictTimer();
+			m_DerelictTimer.Grid = m_Grid;
+			m_DerelictTimer.GridID = m_Grid.EntityId;
+			m_DerelictTimer.Phase = ActiveDerelictTimer.PHASE.INITIAL;
+			m_DerelictTimer.MillisRemaining = 
+				ConquestSettings.getInstance().DerelictCountdown * 1000;
+			m_DerelictTimer.Timer = new MyTimer(m_DerelictTimer.MillisRemaining, makeDerelict);
+			m_DerelictTimer.Timer.Start();
+
+			m_DerelictTimer.StartingMillisRemaining = m_DerelictTimer.MillisRemaining;
+			m_DerelictTimer.StartTime = DateTime.UtcNow;
 
 			// Add to state
-			StateTracker.DERELICT_TIMER dt = new StateTracker.DERELICT_TIMER();
-			dt.grid = m_Grid;
-			dt.timerType = StateTracker.DERELICT_TIMER.TIMER_TYPE.STARTED;
-			StateTracker.getInstance().addNewDerelictTimer(dt);
+			StateTracker.getInstance().addNewDerelictTimer(m_DerelictTimer);
 
 			log("Dereliction timer started", "startDerelictionTimer");
+		}
+
+		/// <summary>
+		/// Picks up where a saved-state timer left off
+		/// </summary>
+		/// <param name="dt">Timer to resume</param>
+		private void resumeDerelictionTimer(ActiveDerelictTimer dt) {
+			if (dt == null)
+				return;
+
+			m_DerelictTimer = dt;
+			m_DerelictTimer.Grid = m_Grid;
+			m_DerelictTimer.Timer = new MyTimer(m_DerelictTimer.MillisRemaining, makeDerelict);
+			m_DerelictTimer.Timer.Start();
+
+			log("Dereliction timer resumed with " + m_DerelictTimer.MillisRemaining,
+				"resumeDerelictionTimer");
 		}
 
 		/// <summary>
@@ -395,7 +425,8 @@ namespace GardenConquest.Blocks {
 		/// </summary>
 		private void cancelDerelictionTimer() {
 			if (m_DerelictTimer != null) {
-				m_DerelictTimer.Stop();
+				m_DerelictTimer.Timer.Stop();
+				m_DerelictTimer.Timer = null;
 				m_DerelictTimer = null;
 
 				// Do they really need an alert for this?  They know they placed the beacon
@@ -413,8 +444,9 @@ namespace GardenConquest.Blocks {
 		/// Destroys functional blocks and stops the grid.
 		/// </summary>
 		private void makeDerelict() {
-			// Get rid of the timer
-			m_DerelictTimer = null;
+			// How did we get here without a timer?
+			if (m_DerelictTimer == null)
+				return;
 
 			// Get a list of all functional blocks
 			List<IMySlimBlock> funcBlocks = new List<IMySlimBlock>();
@@ -424,16 +456,19 @@ namespace GardenConquest.Blocks {
 			// Go through the list and destroy them
 			// TODO: Do this in phases with damage instead of just poofing them
 			foreach (IMySlimBlock block in funcBlocks) {
-				// TODO: What happens if this block is the only thing holding the grid together?
-				// will the blocks on the split portion of the grid get removed or not?
-				m_Grid.RemoveBlock(block);
+				// Use the grid pointer from the block itself, because if one of the
+				// previously removed blocks caused the grid to split, we can't use the
+				// stored grid to remove it
+				block.CubeGrid.RemoveBlock(block);
 			}
 
-			// Send the alert
-			StateTracker.DERELICT_TIMER dt = new StateTracker.DERELICT_TIMER();
-			dt.grid = m_Grid;
-			dt.timerType = StateTracker.DERELICT_TIMER.TIMER_TYPE.FINISHED;
-			StateTracker.getInstance().addNewDerelictTimer(dt);
+			StateTracker.getInstance().addFinishedDerelictTimer(
+				m_DerelictTimer, ActiveDerelictTimer.COMPLETION.ELAPSED);
+
+			// Get rid of the timer
+			m_DerelictTimer.Timer.Stop();
+			m_DerelictTimer.Timer = null;
+			m_DerelictTimer = null;
 
 			log("Timer expired.  Grid turned into a derelict.", "makeDerelict");
 		}

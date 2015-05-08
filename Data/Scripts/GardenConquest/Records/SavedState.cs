@@ -13,33 +13,6 @@ namespace GardenConquest.Records {
 	[XmlType("SavedState")]
 	public class SavedState {
 
-		/// <summary>
-		/// A dereliction timer to be preserved across restarts
-		/// </summary>
-		/// <remarks>
-		/// Can't just store the start datetime, because if the server is down for
-		/// three hours the grid might be destroyed and the player can't do anything
-		/// to stop it.
-		/// </remarks>
-		[XmlType("ActiveDerelictTimer")]
-		public class ActiveDerelictTimer {
-			/// <summary>
-			/// What stage of dereliction is this grid at?
-			/// </summary>
-			public enum PHASE {
-				INITIAL // The grid is not yet a derelict but is counting down to become one
-			}
-
-			public long MillisRemaining;
-			public PHASE Phase;
-
-			// Time and time remaining when server/timer starts
-			[XmlIgnore]
-			public DateTime StartTime;
-			[XmlIgnore]
-			public long StartingMillisRemaining;
-		}
-
 		public List<ActiveDerelictTimer> DerelictTimers;
 
 		public SavedState() {

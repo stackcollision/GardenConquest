@@ -4,9 +4,13 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using GardenConquest.Records;
+
 using Sandbox.Common;
 using Sandbox.ModAPI;
+
+using GardenConquest.Records;
+
+using CompletedTimer = System.Tuple<GardenConquest.Records.ActiveDerelictTimer, GardenConquest.Records.ActiveDerelictTimer.COMPLETION>;
 
 namespace GardenConquest.Core {
 
@@ -16,18 +20,10 @@ namespace GardenConquest.Core {
 	/// </summary>
 	public class StateTracker {
 
-		public struct DERELICT_TIMER {
-			public enum TIMER_TYPE {
-				STARTED, CANCELLED, FINISHED
-			}
-
-			public IMyCubeGrid grid;
-			public TIMER_TYPE timerType;
-		}
-
 		public Dictionary<long, long> TokensLastRound { get; private set; }
 		private Dictionary<long, FactionFleet> m_Fleets = null;
-		private Queue<DERELICT_TIMER> m_NewDerelictTimers = null;
+		private Queue<ActiveDerelictTimer> m_NewDerelictTimers = null;
+		private Queue<CompletedTimer> m_FinishedDerelictTimers = null;
 		private SavedState m_SavedState = null;
 
 		private static StateTracker s_Instance = null;
@@ -40,7 +36,8 @@ namespace GardenConquest.Core {
 
 			TokensLastRound = new Dictionary<long, long>();
 			m_Fleets = new Dictionary<long, FactionFleet>();
-			m_NewDerelictTimers = new Queue<DERELICT_TIMER>();
+			m_NewDerelictTimers = new Queue<ActiveDerelictTimer>();
+			m_FinishedDerelictTimers = new Queue<CompletedTimer>();
 
 			if (!loadState()) {
 				// If the state is not loaded from the file we need to create an
@@ -83,7 +80,7 @@ namespace GardenConquest.Core {
 		/// Gets the next grid off the new derelict timer queue
 		/// </summary>
 		/// <returns>Next grid</returns>
-		public DERELICT_TIMER nextNewDerelictTimer() {
+		public ActiveDerelictTimer nextNewDerelictTimer() {
 			return m_NewDerelictTimers.Dequeue();
 		}
 
@@ -92,12 +89,45 @@ namespace GardenConquest.Core {
 		/// This will be used to alert the faction
 		/// </summary>
 		/// <param name="dt"></param>
-		public void addNewDerelictTimer(DERELICT_TIMER dt) {
+		public void addNewDerelictTimer(ActiveDerelictTimer dt) {
 			m_NewDerelictTimers.Enqueue(dt);
+			m_SavedState.DerelictTimers.Add(dt);
+		}
 
-			SavedState.ActiveDerelictTimer record = new SavedState.ActiveDerelictTimer();
-			record.MillisRemaining = 
-			m_SavedState.DerelictTimers.Add();
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <returns>True if there is at least one new finished timer</returns>
+		public bool finishedDerelictTimers() {
+			return m_FinishedDerelictTimers.Count > 0;
+		}
+
+		/// <summary>
+		/// Gets the next completed derelict timer
+		/// </summary>
+		/// <returns></returns>
+		public CompletedTimer nextFinishedDerelictTimer() {
+			return m_FinishedDerelictTimers.Dequeue();
+		}
+
+		public ActiveDerelictTimer findActiveDerelictTimer(long gridId) {
+			foreach (ActiveDerelictTimer dt in m_SavedState.DerelictTimers) {
+				if (dt.GridID == gridId)
+					return dt;
+			}
+
+			return null;
+		}
+
+		/// <summary>
+		/// Marks a derelict timer as finished.
+		/// Used for sending alerts to the owner.
+		/// Removes the timer from tracking.
+		/// </summary>
+		/// <param name="dt"></param>
+		public void addFinishedDerelictTimer(ActiveDerelictTimer dt, ActiveDerelictTimer.COMPLETION c) {
+			m_FinishedDerelictTimers.Enqueue(new CompletedTimer(dt, c));
+			m_SavedState.DerelictTimers.Remove(dt);
 		}
 
 		/// <summary>
@@ -122,9 +152,9 @@ namespace GardenConquest.Core {
 
 					// Once the state is loaded from the file there's some housekeeping to do
 					// Make a copy of the list to iterate so we can remove from the actual one
-					List<SavedState.ActiveDerelictTimer> copy =
-						new List<SavedState.ActiveDerelictTimer>(m_SavedState.DerelictTimers);
-					foreach (SavedState.ActiveDerelictTimer timer in copy) {
+					List<ActiveDerelictTimer> copy =
+						new List<ActiveDerelictTimer>(m_SavedState.DerelictTimers);
+					foreach (ActiveDerelictTimer timer in copy) {
 						// Need to keep track of when the server was started and how many
 						// millis were remaining at that time
 						// This is critical for saving again later
@@ -154,11 +184,11 @@ namespace GardenConquest.Core {
 
 				// Before we can actually do any writing we need to see where the timers currently stand
 				DateTime now = DateTime.UtcNow;
-				foreach (SavedState.ActiveDerelictTimer timer in m_SavedState.DerelictTimers) {
+				foreach (ActiveDerelictTimer timer in m_SavedState.DerelictTimers) {
 					// If this results in a negative time remaining, it means the timer expired but
 					// hasn't been removed from the dictionary yet.  We'll leave it alone and let it go
 					// to the file, but when we try to load it later it'll get dropped
-					long difference = (long)(now - timer.StartTime).TotalMilliseconds;
+					int difference = (int)(now - timer.StartTime).TotalMilliseconds;
 					timer.MillisRemaining = timer.StartingMillisRemaining - difference;
 				}
 
