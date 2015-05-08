@@ -11,7 +11,6 @@ using Sandbox.ModAPI;
 using VRage.Library.Utils;
 using Interfaces = Sandbox.ModAPI.Interfaces;
 using InGame = Sandbox.ModAPI.Ingame;
-using GardenConquest.Messaging;
 
 namespace GardenConquest {
 	/// <summary>

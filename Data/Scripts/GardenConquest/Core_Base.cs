@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace GardenConquest.Core {
+namespace GardenConquest {
 
 	/// <summary>
 	/// Base class for GardenConquest Core processes

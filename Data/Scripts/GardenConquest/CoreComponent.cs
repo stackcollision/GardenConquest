@@ -12,7 +12,7 @@ using VRage.Library.Utils;
 using Interfaces = Sandbox.ModAPI.Interfaces;
 using InGame = Sandbox.ModAPI.Ingame;
 
-namespace GardenConquest.Core {
+namespace GardenConquest {
 
 	/// <summary>
 	/// Hooks into SE session.  Only a passthrough to launch Server or Client core.

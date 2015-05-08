@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace GardenConquest.Records {
+namespace GardenConquest {
 
 	/// <summary>
 	/// Records the current classified fleet for a faction

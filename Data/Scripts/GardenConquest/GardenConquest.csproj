@@ -53,28 +53,28 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Core\CommandProcessor.cs" />
-    <Compile Include="Messaging\BaseMessage.cs" />
-    <Compile Include="Messaging\NotificationResponse.cs" />
+    <Compile Include="CommandProcessor.cs" />
+    <Compile Include="BaseMessage.cs" />
+    <Compile Include="NotificationResponse.cs" />
     <Compile Include="Constants.cs" />
-    <Compile Include="Core\CoreComponent.cs" />
-    <Compile Include="Core\Core_Base.cs" />
-    <Compile Include="Core\Core_Client.cs" />
-    <Compile Include="Records\ActiveDerelictTimer.cs" />
-    <Compile Include="Records\FactionFleet.cs" />
-    <Compile Include="Blocks\MergeBlock.cs" />
-    <Compile Include="Messaging\RequestProcessor.cs" />
-    <Compile Include="Records\ControlPoint.cs" />
-    <Compile Include="Core\Core_Server.cs" />
-    <Compile Include="Records\GridSorter.cs" />
-    <Compile Include="Records\HullClass.cs" />
-    <Compile Include="Blocks\GridEnforcer.cs" />
-    <Compile Include="Records\HullRule.cs" />
+    <Compile Include="CoreComponent.cs" />
+    <Compile Include="Core_Base.cs" />
+    <Compile Include="Core_Client.cs" />
+    <Compile Include="ActiveDerelictTimer.cs" />
+    <Compile Include="FactionFleet.cs" />
+    <Compile Include="MergeBlock.cs" />
+    <Compile Include="RequestProcessor.cs" />
+    <Compile Include="ControlPoint.cs" />
+    <Compile Include="Core_Server.cs" />
+    <Compile Include="GridSorter.cs" />
+    <Compile Include="HullClass.cs" />
+    <Compile Include="GridEnforcer.cs" />
+    <Compile Include="HullRule.cs" />
     <Compile Include="Logger.cs" />
-    <Compile Include="Core\ConquestSettings.cs" />
-    <Compile Include="Messaging\ResponseProcessor.cs" />
-    <Compile Include="Core\StateTracker.cs" />
-    <Compile Include="Records\SavedState.cs" />
+    <Compile Include="ConquestSettings.cs" />
+    <Compile Include="ResponseProcessor.cs" />
+    <Compile Include="StateTracker.cs" />
+    <Compile Include="SavedState.cs" />
     <Compile Include="Utility.cs" />
   </ItemGroup>
   <ItemGroup>

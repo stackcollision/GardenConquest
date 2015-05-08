@@ -8,7 +8,7 @@ using System.Xml.Serialization;
 using Sandbox.ModAPI;
 using VRage.Library.Utils;
 
-namespace GardenConquest.Records {
+namespace GardenConquest {
 
 	/// <summary>
 	/// A dereliction timer to be preserved across restarts
@@ -33,6 +33,11 @@ namespace GardenConquest.Records {
 		public enum COMPLETION {
 			ELAPSED,
 			CANCELLED
+		}
+
+		public struct COMPLETED_TIMER {
+			public ActiveDerelictTimer Timer;
+			public COMPLETION Reason;
 		}
 
 		[XmlIgnore]

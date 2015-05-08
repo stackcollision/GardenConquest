@@ -11,7 +11,7 @@ using Sandbox.Definitions;
 using Sandbox.ModAPI;
 using VRage.Library.Utils;
 
-namespace GardenConquest.Records {
+namespace GardenConquest {
 	[XmlType("CP")]
 	public class ControlPoint {
 		[XmlElement("Name")]

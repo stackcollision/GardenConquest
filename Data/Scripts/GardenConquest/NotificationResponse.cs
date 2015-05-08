@@ -8,7 +8,7 @@ using ProtoBuf;
 using VRage.Library;
 using Sandbox.Common;
 
-namespace GardenConquest.Messaging {
+namespace GardenConquest {
 	[ProtoContract]
 	class NotificationResponse : BaseMessage {
 		[ProtoMember(2)]

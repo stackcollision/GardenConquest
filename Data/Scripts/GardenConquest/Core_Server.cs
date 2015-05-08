@@ -13,15 +13,11 @@ using VRage.Library.Utils;
 using Interfaces = Sandbox.ModAPI.Interfaces;
 using InGame = Sandbox.ModAPI.Ingame;
 
-using GardenConquest.Records;
-using Sandbox.Common.Components;
-using GardenConquest.Blocks;
-
-using CompletedTimer = System.Tuple<GardenConquest.Records.ActiveDerelictTimer, GardenConquest.Records.ActiveDerelictTimer.COMPLETION>;
 using Sandbox.Game.Multiplayer;
 using Sandbox.Game.World;
+using Sandbox.Common.Components;
 
-namespace GardenConquest.Core {
+namespace GardenConquest {
 
 	/// <summary>
 	/// Core of the server.  Manages rounds and reward distribution.
@@ -50,7 +46,7 @@ namespace GardenConquest.Core {
 				return;
 
 			if (s_Logger == null)
-				s_Logger = new Logger("Conquest Core", "Core");
+				s_Logger = new Logger("Conquest Core", "Server");
 			log("Conquest core (Server) started");
 
 			s_TokenBuilder = new MyObjectBuilder_Component() { SubtypeName = "ShipLicense" };
@@ -87,7 +83,7 @@ namespace GardenConquest.Core {
 				m_Frame = 0;
 
 				// Check for new derelict timers
-				StateTracker st = StateTracker.getInstance();
+				/*StateTracker st = StateTracker.getInstance();
 				while (st.newDerelictTimers()) {
 					ActiveDerelictTimer dt = st.nextNewDerelictTimer();
 
@@ -128,7 +124,7 @@ namespace GardenConquest.Core {
 							// TODO: Send message to remote player
 						}
 					}
-				}
+				}*/
 			}
 		}
 
@@ -223,6 +219,10 @@ namespace GardenConquest.Core {
 
 				// Report round results
 				MyAPIGateway.Utilities.ShowNotification("Conquest Round Ended");
+
+				byte[] test = new byte[10] { 65, 66, 67, 68, 69, 70, 71, 72, 73, 74 };
+				MyAPIGateway.Multiplayer.SendMessageToOthers(Constants.GCMessageId, test);
+				log("Sent packet: " + Encoding.Default.GetString(test), "roundEnd");
 
 			} catch (Exception e) {
 				log("An exception occured: " + e, "roundEnd", Logger.severity.ERROR);
@@ -373,7 +373,7 @@ namespace GardenConquest.Core {
 			return result;
 		}
 
-		private List<MyPlayer> playersToAlert(ActiveDerelictTimer dt) {
+		/*private List<MyPlayer> playersToAlert(ActiveDerelictTimer dt) {
 			List<MyPlayer> players = new List<MyPlayer>();
 			if (MyAPIGateway.Multiplayer == null)
 				return players;
@@ -401,7 +401,7 @@ namespace GardenConquest.Core {
 			}
 
 			return players;
-		}
+		}*/
 
 		#endregion
 	}

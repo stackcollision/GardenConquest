@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace GardenConquest.Records {
+namespace GardenConquest {
 	public static class HullClass {
 		public enum CLASS {
 			UNCLASSIFIED = 0,

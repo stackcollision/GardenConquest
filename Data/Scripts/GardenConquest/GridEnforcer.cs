@@ -16,10 +16,7 @@ using VRage.Library.Utils;
 using Interfaces = Sandbox.ModAPI.Interfaces;
 using InGame = Sandbox.ModAPI.Ingame;
 
-using GardenConquest.Records;
-using GardenConquest.Core;
-
-namespace GardenConquest.Blocks {
+namespace GardenConquest {
 
 	/// <summary>
 	/// Applied to every grid.  Verifies that all grids comply with the rules and enforces them.
@@ -69,7 +66,7 @@ namespace GardenConquest.Blocks {
 				return;
 			}
 
-			m_Logger = new Logger(Utility.gridIdentifier(m_Grid), "GridEnforcer");
+			m_Logger = new Logger(m_Grid.EntityId.ToString(), "GridEnforcer");
 			log("Loaded into new grid");
 
 			// We need to only turn on our rule checking after startup. Otherwise, if
@@ -425,15 +422,12 @@ namespace GardenConquest.Blocks {
 		/// </summary>
 		private void cancelDerelictionTimer() {
 			if (m_DerelictTimer != null) {
+				StateTracker.getInstance().addFinishedDerelictTimer(
+					m_DerelictTimer, ActiveDerelictTimer.COMPLETION.CANCELLED);
+
 				m_DerelictTimer.Timer.Stop();
 				m_DerelictTimer.Timer = null;
 				m_DerelictTimer = null;
-
-				// Do they really need an alert for this?  They know they placed the beacon
-				/*StateTracker.DERELICT_TIMER dt = new StateTracker.DERELICT_TIMER();
-				dt.grid = m_Grid;
-				dt.timerType = StateTracker.DERELICT_TIMER.TIMER_TYPE.CANCELLED;
-				StateTracker.getInstance().addNewDerelictTimer(dt);*/
 
 				log("Dereliction timer cancelled", "cancelDerelictionTimer");
 			}

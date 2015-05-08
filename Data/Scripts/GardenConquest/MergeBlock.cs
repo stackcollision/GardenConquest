@@ -15,7 +15,7 @@ using Sandbox.ModAPI;
 using Interfaces = Sandbox.ModAPI.Interfaces;
 using InGame = Sandbox.ModAPI.Ingame;
 
-namespace GardenConquest.Blocks {
+namespace GardenConquest {
 	[MyEntityComponentDescriptor(typeof(MyObjectBuilder_MergeBlock))]
 	class MergeBlock : MyGameLogicComponent {
 
@@ -29,7 +29,7 @@ namespace GardenConquest.Blocks {
 			m_MergeBlock = Entity as InGame.IMyShipMergeBlock;
 			m_Grid = m_MergeBlock.CubeGrid as IMyCubeGrid;
 
-			m_Logger = new Logger(Utility.gridIdentifier(m_Grid), "MergeBlock");
+			m_Logger = new Logger(m_Grid.EntityId.ToString(), "MergeBlock");
 			log("Attached to merge block", "Init");
 
 			(m_MergeBlock as IMyShipMergeBlock).BeforeMerge += beforeMerge;

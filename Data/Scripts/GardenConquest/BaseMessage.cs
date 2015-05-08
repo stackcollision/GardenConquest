@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using ProtoBuf;
 using VRage.Library;
 
-namespace GardenConquest.Messaging {
+namespace GardenConquest {
 	[ProtoContract]
 	[ProtoInclude(1000, typeof(NotificationResponse))]
 	public class BaseMessage {

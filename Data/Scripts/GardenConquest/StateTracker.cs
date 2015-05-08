@@ -8,11 +8,7 @@ using System.Threading.Tasks;
 using Sandbox.Common;
 using Sandbox.ModAPI;
 
-using GardenConquest.Records;
-
-using CompletedTimer = System.Tuple<GardenConquest.Records.ActiveDerelictTimer, GardenConquest.Records.ActiveDerelictTimer.COMPLETION>;
-
-namespace GardenConquest.Core {
+namespace GardenConquest {
 
 	/// <summary>
 	/// Singleton class which tracks state, accessible to other classes.
@@ -23,7 +19,7 @@ namespace GardenConquest.Core {
 		public Dictionary<long, long> TokensLastRound { get; private set; }
 		private Dictionary<long, FactionFleet> m_Fleets = null;
 		private Queue<ActiveDerelictTimer> m_NewDerelictTimers = null;
-		private Queue<CompletedTimer> m_FinishedDerelictTimers = null;
+		private Queue<ActiveDerelictTimer.COMPLETED_TIMER> m_FinishedDerelictTimers = null;
 		private SavedState m_SavedState = null;
 
 		private static StateTracker s_Instance = null;
@@ -37,7 +33,7 @@ namespace GardenConquest.Core {
 			TokensLastRound = new Dictionary<long, long>();
 			m_Fleets = new Dictionary<long, FactionFleet>();
 			m_NewDerelictTimers = new Queue<ActiveDerelictTimer>();
-			m_FinishedDerelictTimers = new Queue<CompletedTimer>();
+			m_FinishedDerelictTimers = new Queue<ActiveDerelictTimer.COMPLETED_TIMER>();
 
 			if (!loadState()) {
 				// If the state is not loaded from the file we need to create an
@@ -106,7 +102,7 @@ namespace GardenConquest.Core {
 		/// Gets the next completed derelict timer
 		/// </summary>
 		/// <returns></returns>
-		public CompletedTimer nextFinishedDerelictTimer() {
+		public ActiveDerelictTimer.COMPLETED_TIMER nextFinishedDerelictTimer() {
 			return m_FinishedDerelictTimers.Dequeue();
 		}
 
@@ -126,7 +122,10 @@ namespace GardenConquest.Core {
 		/// </summary>
 		/// <param name="dt"></param>
 		public void addFinishedDerelictTimer(ActiveDerelictTimer dt, ActiveDerelictTimer.COMPLETION c) {
-			m_FinishedDerelictTimers.Enqueue(new CompletedTimer(dt, c));
+			m_FinishedDerelictTimers.Enqueue(new ActiveDerelictTimer.COMPLETED_TIMER() {
+				Timer = dt,
+				Reason = c
+			});
 			m_SavedState.DerelictTimers.Remove(dt);
 		}
 

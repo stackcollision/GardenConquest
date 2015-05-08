@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
 
-namespace GardenConquest.Records {
+namespace GardenConquest {
 	
 	/// <summary>
 	/// Contains elements of the state which must be preserved across server restarts
