@@ -29,6 +29,7 @@ namespace GardenConquest {
 		public InGame.IMyBeacon m_Classifier { get; private set; }
 		private IMyFaction m_OwningFaction;
 
+		private bool m_IsServer = false;
 		private int m_BlockCount = 0;
 		private int m_TurretCount = 0;
 		private HullClass.CLASS m_Class = HullClass.CLASS.UNCLASSIFIED;
@@ -53,21 +54,18 @@ namespace GardenConquest {
 			m_Classifier = null;
 			m_OwningFaction = null;
 
+			m_Logger = new Logger(m_Grid.EntityId.ToString(), "GridEnforcer");
+			log("Loaded into new grid");
+
 			// If this is not the server we don't need this class.
 			// When we modify the grid on the server the changes should be
 			// sent to all clients
-			// Can we remove components?  Let's find out
-			if (MyAPIGateway.Multiplayer != null &&
-				MyAPIGateway.Multiplayer.MultiplayerActive &&
-				!MyAPIGateway.Multiplayer.IsServer
-			) {
-				// Need to use MyGameLogicComponent because ??
-				m_Grid.Components.Remove<MyGameLogicComponent>();
+			if (!Utility.isServer()) {
+				// No cleverness allowed :[
+				m_IsServer = false;
+				log("Disabled.  Not server.", "Init");
 				return;
 			}
-
-			m_Logger = new Logger(m_Grid.EntityId.ToString(), "GridEnforcer");
-			log("Loaded into new grid");
 
 			// We need to only turn on our rule checking after startup. Otherwise, if
 			// a beacon is destroyed and then the server restarts, all but the first

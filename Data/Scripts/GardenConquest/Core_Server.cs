@@ -30,6 +30,7 @@ namespace GardenConquest {
 		private MyTimer m_RoundTimer = null;
 		private MyTimer m_SaveTimer = null;
 		private byte m_Frame = 0;
+		private RequestProcessor m_MailMan = null;
 
 		private static MyObjectBuilder_Component s_TokenBuilder = null;
 		private static Sandbox.Common.ObjectBuilders.Definitions.SerializableDefinitionId? s_TokenDef = null;
@@ -68,6 +69,8 @@ namespace GardenConquest {
 			m_SaveTimer.Start();
 			log("Save timer started");
 
+			m_MailMan = new RequestProcessor();
+
 			m_Initialized = true;
 		}
 
@@ -83,48 +86,49 @@ namespace GardenConquest {
 				m_Frame = 0;
 
 				// Check for new derelict timers
-				/*StateTracker st = StateTracker.getInstance();
+				StateTracker st = StateTracker.getInstance();
 				while (st.newDerelictTimers()) {
 					ActiveDerelictTimer dt = st.nextNewDerelictTimer();
+					GridEnforcer ge = dt.Grid.Components.Get<MyGameLogicComponent>() as GridEnforcer;
+					if (ge == null || ge.Faction == null)
+						continue;
 
-					List<MyPlayer> players = playersToAlert(dt);
-
-					string message = "Your grid " + dt.Grid.DisplayName + " will become a " +
+					string message = "Your faction's grid " + dt.Grid.DisplayName + " will become a " +
 						"derelict in " + ConquestSettings.getInstance().DerelictCountdown/60.0f +
 						" minutes";
 
-					foreach (MyPlayer p in players) {
-						if (p.IsLocalPlayer()) {
-							// For the local player (i.e. player as server) just show notification
-							MyAPIGateway.Utilities.ShowNotification(message, 2000, MyFontEnum.Red);
-						} else {
-							// TODO: Send message to remote player
-						}
-					}
+					MyAPIGateway.Utilities.ShowNotification("Conquest Round Ended", 6000);
+					NotificationResponse noti = new NotificationResponse() {
+						NotificationText = message,
+						Time = 1000,
+						Font = MyFontEnum.Red,
+						Destination = ge.Faction.FactionId,
+						DestType = BaseMessage.DEST_TYPE.FACTION
+					};
+					m_MailMan.send(noti);
 				}
 
 				while (st.finishedDerelictTimers()) {
-					CompletedTimer ct = st.nextFinishedDerelictTimer();
+					ActiveDerelictTimer.COMPLETED_TIMER ct = st.nextFinishedDerelictTimer();
+					GridEnforcer ge = 
+						ct.Timer.Grid.Components.Get<MyGameLogicComponent>() as GridEnforcer;
+					if (ge == null || ge.Faction == null)
+						continue;
 
-					List<MyPlayer> players = playersToAlert(ct.Item1);
+					string message = "Your faction's grid " + ct.Timer.Grid.DisplayName + 
+						" is no longer " +
+						"in danger of becoming a derelict";
 
-					string message = "";
-					if (ct.Item2 == ActiveDerelictTimer.COMPLETION.ELAPSED)
-						message = "Your grid " + ct.Item1.Grid.DisplayName + " has been turned " +
-							"into a derelict";
-					else if (ct.Item2 == ActiveDerelictTimer.COMPLETION.CANCELLED)
-						message = "Your grid " + ct.Item1.Grid.DisplayName + " is no longer " +
-							"danger of dereliction";
-
-					foreach (MyPlayer p in players) {
-						if (p.IsLocalPlayer()) {
-							// For the local player (i.e. player as server) just show notification
-							MyAPIGateway.Utilities.ShowNotification(message, 2000, MyFontEnum.Red);
-						} else {
-							// TODO: Send message to remote player
-						}
-					}
-				}*/
+					MyAPIGateway.Utilities.ShowNotification("Conquest Round Ended", 6000);
+					NotificationResponse noti = new NotificationResponse() {
+						NotificationText = message,
+						Time = 1000,
+						Font = MyFontEnum.Red,
+						Destination = ge.Faction.FactionId,
+						DestType = BaseMessage.DEST_TYPE.FACTION
+					};
+					m_MailMan.send(noti);
+				}
 			}
 		}
 
@@ -217,12 +221,19 @@ namespace GardenConquest {
 					}
 				}
 
-				// Report round results
-				MyAPIGateway.Utilities.ShowNotification("Conquest Round Ended");
+				// Anounce round ended
+				MyAPIGateway.Utilities.ShowNotification("Conquest Round Ended", 6000);
+				NotificationResponse endedMessage = new NotificationResponse() {
+					NotificationText = "Conquest Round Ended",
+					Time = 6000,
+					Font = MyFontEnum.White,
+					Destination = -1,
+					DestType = BaseMessage.DEST_TYPE.EVERYONE
+				};
+				m_MailMan.send(endedMessage);
 
-				byte[] test = new byte[10] { 65, 66, 67, 68, 69, 70, 71, 72, 73, 74 };
-				MyAPIGateway.Multiplayer.SendMessageToOthers(Constants.GCMessageId, test);
-				log("Sent packet: " + Encoding.Default.GetString(test), "roundEnd");
+				// Report round results
+				
 
 			} catch (Exception e) {
 				log("An exception occured: " + e, "roundEnd", Logger.severity.ERROR);

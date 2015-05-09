@@ -27,18 +27,29 @@ namespace GardenConquest {
 			}
 		}
 
-		public void incomming(byte[] stream) {
-			// Deserialize the message
-			//BaseMessage msg = null;
-			//VRage.ByteStream bstream = new VRage.ByteStream(stream, stream.Length);
-			//m_Serializer.Deserialize(bstream, out msg);
+		public void incomming(byte[] buffer) {
+			try {
+				// Deserialize the message
+				BaseMessage msg = BaseMessage.messageFromBytes(buffer);
 
-			// Process based on type
-			//switch (msg.MsgType) {
-			//	case BaseMessage.TYPE.NOTIFICATION:
-			//		processNotificationResponse(msg as NotificationResponse);
-			//		break;
-			//}
+				// Is this message even intended for us?
+				if (msg.DestType == BaseMessage.DEST_TYPE.FACTION) {
+					IMyFaction fac = MyAPIGateway.Session.Factions.TryGetPlayerFaction(
+						MyAPIGateway.Session.Player.PlayerID);
+					if (fac == null || fac.FactionId == msg.Destination)
+						return; // Message not meant for us
+				} else if (msg.DestType == BaseMessage.DEST_TYPE.PLAYER) {
+					if (msg.Destination != MyAPIGateway.Session.Player.PlayerID)
+						return; // Message not meant for us
+				}
+
+				switch (msg.MsgType) {
+					case BaseMessage.TYPE.NOTIFICATION:
+						processNotificationResponse(msg as NotificationResponse);
+						break;
+				}
+			} catch (Exception e) {
+			}
 		}
 
 		private void processNotificationResponse(NotificationResponse noti) {

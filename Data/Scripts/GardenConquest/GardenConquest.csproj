@@ -55,6 +55,7 @@
   <ItemGroup>
     <Compile Include="CommandProcessor.cs" />
     <Compile Include="BaseMessage.cs" />
+    <Compile Include="ByteConverterExtension.cs" />
     <Compile Include="NotificationResponse.cs" />
     <Compile Include="Constants.cs" />
     <Compile Include="CoreComponent.cs" />

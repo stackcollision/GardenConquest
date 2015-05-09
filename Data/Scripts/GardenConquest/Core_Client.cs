@@ -14,6 +14,7 @@ namespace GardenConquest {
 		#region Class Members
 
 		private CommandProcessor m_CmdProc = null;
+		private ResponseProcessor m_MailMan = null;
 
 		#endregion
 		#region Inherited Methods
@@ -24,8 +25,7 @@ namespace GardenConquest {
 
 			// Chat command processor will already hook into message entered event
 			m_CmdProc = new CommandProcessor();
-			if (MyAPIGateway.Multiplayer != null)
-				MyAPIGateway.Multiplayer.RegisterMessageHandler(Constants.GCMessageId, testHandler);
+			m_MailMan = new ResponseProcessor();
 		}
 
 		public override void unloadData() {
@@ -38,10 +38,6 @@ namespace GardenConquest {
 
 		#endregion
 		#region Hooks
-
-		public void testHandler(byte[] buffer) {
-			log(Encoding.Default.GetString(buffer), "testHandler");
-		}
 
 		#endregion
 	}
