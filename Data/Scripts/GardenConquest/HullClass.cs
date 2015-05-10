@@ -8,33 +8,60 @@ namespace GardenConquest {
 	public static class HullClass {
 		public enum CLASS {
 			UNCLASSIFIED = 0,
-			FIGHTER = 1,
-			CORVETTE = 2,
-			FRIGATE = 3,
-			DESTROYER = 4,
-			CRUISER = 5,
-			BATTLESHIP = 6,
-			DREADNAUGHT = 7,
-			UTILITY = 8,
-			UNLICENSED = 9
+			// Unlicensed
+			UNLICENSED = 1,
+			// Utility
+			WORKER = 2,
+			FOUNDRY = 3,
+			// Strikecraft
+			SCOUT = 4,
+			FIGHTER = 5,
+			GUNSHIP = 6,
+			// Capital ships
+			CORVETTE = 7,
+			FRIGATE = 8,
+			DESTROYER = 9,
+			CRUISER = 10,
+			BATTLESHIP = 11,
+			DREADNAUGHT = 12,
+			// Stations
+			OUTPOST = 13,
+			INSTALLATION = 14,
+			FORTRESS = 15
 		}
 
 		public static String[] ClassStrings = {
 										   "Unclassified",
+										   "Unlicensed",
+										   "Worker",
+										   "Foundry",
+										   "Scout",
 										   "Fighter",
+										   "Gunship",
 										   "Corvette",
 										   "Frigate",
 										   "Destroyer",
 										   "Cruiser",
 										   "Battleship",
 										   "Dreadnaught",
-										   "Utility",
-										   "Unlicensed"
+										   "Outpost",
+										   "Installation",
+										   "Fortress"
 									   };
 
 		public static CLASS hullClassFromString(String subtype) {
-			if (subtype.Contains("Fighter")) {
+			if (subtype.Contains("Unlicensed")) {
+				return CLASS.UNLICENSED;
+			} else if (subtype.Contains("Utility")) {
+				return CLASS.WORKER;
+			} else if (subtype.Contains("Foundry")) {
+				return CLASS.FOUNDRY;
+			} else if (subtype.Contains("Scout")) {
+				return CLASS.SCOUT;
+			} else if (subtype.Contains("Fighter")) {
 				return CLASS.FIGHTER;
+			} else if (subtype.Contains("Gunship")) {
+				return CLASS.GUNSHIP;
 			} else if (subtype.Contains("Corvette")) {
 				return CLASS.CORVETTE;
 			} else if (subtype.Contains("Frigate")) {
@@ -47,10 +74,12 @@ namespace GardenConquest {
 				return CLASS.BATTLESHIP;
 			} else if (subtype.Contains("Dreadnaught")) {
 				return CLASS.DREADNAUGHT;
-			} else if (subtype.Contains("Utility")) {
-				return CLASS.UTILITY;
-			} else if (subtype.Contains("Unlicensed")) {
-				return CLASS.UNLICENSED;
+			} else if (subtype.Contains("Outpost")) {
+				return CLASS.OUTPOST;
+			} else if (subtype.Contains("Installation")) {
+				return CLASS.INSTALLATION;
+			} else if (subtype.Contains("Fortress")) {
+				return CLASS.FORTRESS;
 			} else {
 				return CLASS.UNCLASSIFIED;
 			}

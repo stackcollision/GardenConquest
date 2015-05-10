@@ -45,10 +45,10 @@ namespace GardenConquest {
 				if (msg.DestType == BaseMessage.DEST_TYPE.FACTION) {
 					IMyFaction fac = MyAPIGateway.Session.Factions.TryGetPlayerFaction(
 						MyAPIGateway.Session.Player.PlayerID);
-					if (fac == null || fac.FactionId != msg.Destination)
+					if (fac == null || !msg.Destination.Contains(fac.FactionId))
 						return; // Message not meant for us
 				} else if (msg.DestType == BaseMessage.DEST_TYPE.PLAYER) {
-					if (msg.Destination != MyAPIGateway.Session.Player.PlayerID)
+					if (!msg.Destination.Contains(MyAPIGateway.Session.Player.PlayerID))
 						return; // Message not meant for us
 				}
 
@@ -58,6 +58,7 @@ namespace GardenConquest {
 						break;
 				}
 			} catch (Exception e) {
+				log("Exception occured: " + e, "incomming");
 			}
 		}
 

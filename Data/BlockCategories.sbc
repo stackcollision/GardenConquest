@@ -1,0 +1,27 @@
+<?xml version="1.0"  encoding="utf-8"?>
+<Definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <CategoryClasses>
+    <Category xsi:type="MyObjectBuilder_GuiBlockCategoryDefinition">
+      <Id>
+        <TypeId>GuiBlockCategoryDefinition</TypeId>
+        <SubtypeId/>
+      </Id>
+      <DisplayName>Hull Classifiers</DisplayName>
+      <Name>Hull Classifiers</Name>
+      <ItemIds>
+        <string>Beacon/GCUnlicensedHullClassifier</string>
+        <string>Beacon/GCWorkerHullClassifier</string>
+        <string>Beacon/GCFoundryHullClassifier</string>
+        <string>Beacon/GCScoutHullClassifier</string>
+        <string>Beacon/GCFighterHullClassifier</string>
+        <string>Beacon/GCGunshipHullClassifier</string>
+        <string>Beacon/GCCorvetteHullClassifier</string>
+        <string>Beacon/GCFrigateHullClassifier</string>
+        <string>Beacon/GCDestroyerHullClassifier</string>
+        <string>Beacon/GCCruiserHullClassifier</string>
+        <string>Beacon/GCBattleshipHullClassifier</string>
+        <string>Beacon/GCDreadnaughtHullClassifier</string>
+      </ItemIds>
+    </Category>
+  </CategoryClasses>
+</Definitions>

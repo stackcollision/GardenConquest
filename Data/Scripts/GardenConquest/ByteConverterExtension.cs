@@ -41,8 +41,10 @@ namespace GardenConquest {
 		}
 
 		public static void addString(this VRage.ByteStream stream, string s) {
-			if (s.Length > ushort.MaxValue)
+			if (s.Length > ushort.MaxValue) {
+				stream.addUShort(0);
 				return;
+			}
 
 			// Write length
 			stream.addUShort((ushort)s.Length);
@@ -62,6 +64,35 @@ namespace GardenConquest {
 			for (ushort i = 0; i < len; ++i)
 				cstr[i] = (char)stream.ReadByte();
 			return new string(cstr);
+		}
+
+		public static void addLongList(this VRage.ByteStream stream, List<long> L) {
+			if (L == null) {
+				stream.addUShort(0);
+				return;
+			}
+
+			// Write length
+			stream.addUShort((ushort)L.Count);
+
+			// Write data
+			foreach (long l in L)
+				stream.addLong(l);
+		}
+
+		public static List<long> getLongList(this VRage.ByteStream stream) {
+			List<long> L = new List<long>();
+
+			// Read length
+			ushort len = stream.getUShort();
+			if (len == 0)
+				return null;
+
+			// Read data
+			for (ushort i = 0; i < len; ++i)
+				L.Add(stream.getLong());
+
+			return L;
 		}
 
 	}

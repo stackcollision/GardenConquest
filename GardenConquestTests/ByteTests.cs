@@ -1,6 +1,7 @@
 ﻿using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using GardenConquest;
+using System.Collections.Generic;
 
 namespace GardenConquestTests {
 	[TestClass]
@@ -42,6 +43,17 @@ namespace GardenConquestTests {
 
 			Assert.AreEqual(input.Length, output.Length);
 			Assert.AreEqual(input, output);
+		}
+
+		[TestMethod]
+		public void TestLongList() {
+			List<long> input = new List<long>() { 1, 2, 3, 4 };
+			VRage.ByteStream stream = new VRage.ByteStream(1, true);
+			stream.addLongList(input);
+			stream.Seek(0, System.IO.SeekOrigin.Begin);
+			List<long> output = stream.getLongList();
+
+			CollectionAssert.AreEqual(input, output);
 		}
 	}
 }

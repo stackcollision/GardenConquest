@@ -59,8 +59,8 @@ namespace GardenConquest {
 		#endregion
 		#region Events
 
-		private static Action<GridEnforcer, IMyCubeBlock, VIOLATION_TYPE> eventOnViolation;
-		public static event Action<GridEnforcer, IMyCubeBlock, VIOLATION_TYPE> OnViolation {
+		private static Action<GridEnforcer, VIOLATION_TYPE> eventOnViolation;
+		public static event Action<GridEnforcer, VIOLATION_TYPE> OnViolation {
 			add { eventOnViolation += value; }
 			remove { eventOnViolation -= value; }
 		}
@@ -97,9 +97,9 @@ namespace GardenConquest {
 			// If this is not the server we don't need this class.
 			// When we modify the grid on the server the changes should be
 			// sent to all clients
-			if (!Utility.isServer()) {
+			m_IsServer = Utility.isServer();
+			if (!m_IsServer) {
 				// No cleverness allowed :[
-				m_IsServer = false;
 				log("Disabled.  Not server.", "Init");
 				return;
 			}
@@ -127,7 +127,14 @@ namespace GardenConquest {
 			m_Grid.OnBlockRemoved -= blockRemoved;
 			m_Grid.OnBlockOwnershipChanged -= blockOwnerChanged;
 
+			if (m_DerelictTimer != null) {
+				m_DerelictTimer.Timer.Stop();
+				m_DerelictTimer.Timer = null;
+				m_DerelictTimer = null;
+			}
+
 			m_Grid = null;
+			m_Logger = null;
 		}
 
 		#endregion
@@ -234,7 +241,7 @@ namespace GardenConquest {
 			// Check if we are violating class rules
 			VIOLATION_TYPE check = checkRules();
 			if (check != VIOLATION_TYPE.NONE) {
-				eventOnViolation(this, added.FatBlock, check);
+				eventOnViolation(this, check);
 				removeBlock(added);
 			}
 		}
@@ -249,6 +256,7 @@ namespace GardenConquest {
 				return VIOLATION_TYPE.NONE;
 
 			HullRule r = ConquestSettings.getInstance().HullRules[(int)m_Class];
+			log("Count: " + m_BlockCount + " Limit: " + r.MaxBlocks, "checkRules");
 
 			// Check general block count limit
 			if (m_BlockCount > r.MaxBlocks) {

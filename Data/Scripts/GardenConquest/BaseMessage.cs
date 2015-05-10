@@ -27,9 +27,9 @@ namespace GardenConquest {
 
 		public TYPE MsgType { get; protected set; }
 		public DEST_TYPE DestType { get; set; }
-		public long Destination { get; set; }
+		public List<long> Destination { get; set; }
 
-		protected const int HeaderSize = sizeof(ushort) + sizeof(ushort) + sizeof(long);
+		protected const int HeaderSize = sizeof(ushort) * 3;
 
 		protected BaseMessage(TYPE t) {
 			MsgType = t;
@@ -37,17 +37,19 @@ namespace GardenConquest {
 
 		// Thanks Keen for making me have to write these myself
 		public virtual byte[] serialize() {
-			VRage.ByteStream bs = new VRage.ByteStream(HeaderSize, true);
+			int destBytes = Destination == null ? 0 : sizeof(long) * Destination.Count;
+			VRage.ByteStream bs = 
+				new VRage.ByteStream(HeaderSize + destBytes, true);
 			bs.addUShort((ushort)MsgType);
 			bs.addUShort((ushort)DestType);
-			bs.addLong(Destination);
+			bs.addLongList(Destination);
 			return bs.Data;
 		}
 
 		public virtual void deserialize(VRage.ByteStream stream) {
 			MsgType = (TYPE)stream.getUShort();
 			DestType = (DEST_TYPE)stream.getUShort();
-			Destination = (long)stream.getLong();
+			Destination = stream.getLongList();
 		}
 
 		public static BaseMessage messageFromBytes(byte[] buffer) {

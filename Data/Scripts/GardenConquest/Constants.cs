@@ -28,6 +28,6 @@ namespace GardenConquest {
 		/// <summary>
 		/// Time between state saves (in seconds)
 		/// </summary>
-		public const int SaveInterval = 20;
+		public const int SaveInterval = 300;
 	}
 }

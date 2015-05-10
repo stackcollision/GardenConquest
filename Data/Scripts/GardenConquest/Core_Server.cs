@@ -75,7 +75,7 @@ namespace GardenConquest {
 			m_MailMan = new RequestProcessor();
 
 			// Subscribe events
-			//GridEnforcer.OnViolation += eventGridViolation;
+			GridEnforcer.OnViolation += eventGridViolation;
 			GridEnforcer.OnDerelictStart += eventDerelictStart;
 			GridEnforcer.OnDerelictEnd += eventDerelictEnd;
 
@@ -85,7 +85,7 @@ namespace GardenConquest {
 		public override void unloadData() {
 			log("Unloading", "unloadData");
 
-			//GridEnforcer.OnViolation -= eventGridViolation;
+			GridEnforcer.OnViolation -= eventGridViolation;
 			GridEnforcer.OnDerelictStart -= eventDerelictStart;
 			GridEnforcer.OnDerelictEnd -= eventDerelictEnd;
 
@@ -106,27 +106,27 @@ namespace GardenConquest {
 		#endregion
 		#region Event Handlers
 
-		// TODO: Doesn't seem to be a good way to find out who placed the block.
-		// can't send a message until I figure this out
-		//public void eventGridViolation(GridEnforcer ge, IMyCubeBlock b, GridEnforcer.VIOLATION_TYPE v) {
-			// Send a message to the player who placed it
-			// TODO: Slim blocks have no owner so there's no way to get a message to them :[
-			//if (b == null)
-			//	return;
+		public void eventGridViolation(GridEnforcer ge, GridEnforcer.VIOLATION_TYPE v) {
+			// Check for players within the vicinity of the grid, since there's no
+			// built-in way to tell who just placed the block
+			List<long> players = getPlayersNearGrid(ge.Grid);
+			
+			string message = "";
+			if(v == GridEnforcer.VIOLATION_TYPE.BLOCK)
+				message = "Block limit reached";
+			else
+				message = "Turret limit reached";
 
-			//string message = "";
-			//if(v == GridEnforcer.VIOLATION_TYPE.BLOCK)
-			//	message = "Block limit reached";
-			//else
-			//	message = "Turret limit reached";
-
-			//log(b.OwnerId.ToString(), "eventGridViolation");
-			//if (b.OwnerId == MyAPIGateway.Session.Player.PlayerID) {
-			//	MyAPIGateway.Utilities.ShowNotification(message, 2000, MyFontEnum.Red);
-			//} else {
-
-			//}
-		//}
+			log("Sending message", "eventDerelictStart");
+			NotificationResponse noti = new NotificationResponse() {
+				NotificationText = message,
+				Time = 4000,
+				Font = MyFontEnum.Red,
+				Destination = players,
+				DestType = BaseMessage.DEST_TYPE.FACTION
+			};
+			m_MailMan.send(noti);
+		}
 
 		public void eventDerelictStart(ActiveDerelictTimer dt) {
 			GridEnforcer ge = dt.Grid.Components.Get<MyGameLogicComponent>() as GridEnforcer;
@@ -142,7 +142,7 @@ namespace GardenConquest {
 				NotificationText = message,
 				Time = 10000,
 				Font = MyFontEnum.Red,
-				Destination = ge.Faction.FactionId,
+				Destination = new List<long>() { ge.Faction.FactionId },
 				DestType = BaseMessage.DEST_TYPE.FACTION
 			};
 			m_MailMan.send(noti);
@@ -173,7 +173,7 @@ namespace GardenConquest {
 				NotificationText = message,
 				Time = 10000,
 				Font = font,
-				Destination = ge.Faction.FactionId,
+				Destination = new List<long>() { ge.Faction.FactionId },
 				DestType = BaseMessage.DEST_TYPE.FACTION
 			};
 			m_MailMan.send(noti);
@@ -292,9 +292,9 @@ namespace GardenConquest {
 				MyAPIGateway.Utilities.ShowNotification("Conquest Round Ended", 6000);
 				NotificationResponse endedMessage = new NotificationResponse() {
 					NotificationText = "Conquest Round Ended",
-					Time = 6000,
+					Time = 10000,
 					Font = MyFontEnum.White,
-					Destination = -1,
+					Destination = null,
 					DestType = BaseMessage.DEST_TYPE.EVERYONE
 				};
 				m_MailMan.send(endedMessage);
@@ -309,6 +309,28 @@ namespace GardenConquest {
 
 		#endregion
 		#region Class Helpers
+
+		/// <summary>
+		/// Returns a list of players near a grid.  Used to send messages
+		/// </summary>
+		/// <param name="grid"></param>
+		/// <returns></returns>
+		private List<long> getPlayersNearGrid(IMyCubeGrid grid) {
+			VRageMath.Vector3 size = grid.LocalAABB.Size;
+			float maxAxis = Math.Max(size.X, Math.Max(size.Y, size.Z));
+			VRageMath.BoundingSphereD bounds =
+				new VRageMath.BoundingSphereD(grid.GetPosition(), maxAxis * 2.0);
+			List<IMyEntity> ents =
+				MyAPIGateway.Entities.GetEntitiesInSphere(ref bounds);
+
+			List<long> players = new List<long>();
+			foreach (IMyEntity e in ents) {
+				if (e is IMyPlayer)
+					players.Add((e as IMyPlayer).PlayerID);
+			}
+
+			return players;
+		}
 
 		/// <summary>
 		/// Returns a list of grids in the vicinity of the CP

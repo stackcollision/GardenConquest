@@ -16,7 +16,7 @@
       <Mass>8</Mass>
       <Volume>140</Volume>
       <Model>Models\Components\radio_communication_components_component.mwm</Model>
-      <MaxIntegrity>15</MaxIntegrity>
+      <MaxIntegrity>1</MaxIntegrity>
       <DropProbability>0.1</DropProbability>
     </Component>
   </Components>

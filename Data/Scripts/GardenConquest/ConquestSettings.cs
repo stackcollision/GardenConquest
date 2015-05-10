@@ -108,24 +108,36 @@ namespace GardenConquest {
 
 			HullRules[(int)HullClass.CLASS.UNCLASSIFIED] =
 				new HullRule() { MaxBlocks = 25, MaxTurrets = 0 };
-			HullRules[(int)HullClass.CLASS.FIGHTER] = 
-				new HullRule() { MaxBlocks = 600, MaxTurrets = 0 };
-			HullRules[(int)HullClass.CLASS.CORVETTE] =
-				new HullRule() { MaxBlocks = 300, MaxTurrets = 2 };
-			HullRules[(int)HullClass.CLASS.FRIGATE] =
-				new HullRule() { MaxBlocks = 500, MaxTurrets = 4 };
-			HullRules[(int)HullClass.CLASS.DESTROYER] =
-				new HullRule() { MaxBlocks = 700, MaxTurrets = 4 };
-			HullRules[(int)HullClass.CLASS.CRUISER] =
-				new HullRule() { MaxBlocks = 1500, MaxTurrets = 6 };
-			HullRules[(int)HullClass.CLASS.BATTLESHIP] =
-				new HullRule() { MaxBlocks = 2500, MaxTurrets = 8 };
-			HullRules[(int)HullClass.CLASS.DREADNAUGHT] =
-				new HullRule() { MaxBlocks = 10000, MaxTurrets = 8 };
-			HullRules[(int)HullClass.CLASS.UTILITY] =
-				new HullRule() { MaxBlocks = 300, MaxTurrets = 0 };
 			HullRules[(int)HullClass.CLASS.UNLICENSED] =
-				new HullRule() { MaxBlocks = 150, MaxTurrets = 2 };
+				new HullRule() { MaxBlocks = 50, MaxTurrets = 2 };
+			HullRules[(int)HullClass.CLASS.WORKER] =
+				new HullRule() { MaxBlocks = 200, MaxTurrets = 0 };
+			HullRules[(int)HullClass.CLASS.FOUNDRY] =
+				new HullRule() { MaxBlocks = 1000, MaxTurrets = 0 };
+			HullRules[(int)HullClass.CLASS.SCOUT] =
+				new HullRule() { MaxBlocks = 200, MaxTurrets = 0 };
+			HullRules[(int)HullClass.CLASS.FIGHTER] =
+				new HullRule() { MaxBlocks = 525, MaxTurrets = 0 };
+			HullRules[(int)HullClass.CLASS.GUNSHIP] =
+				new HullRule() { MaxBlocks = 1025, MaxTurrets = 1 };
+			HullRules[(int)HullClass.CLASS.CORVETTE] =
+				new HullRule() { MaxBlocks = 200, MaxTurrets = 2 };
+			HullRules[(int)HullClass.CLASS.FRIGATE] =
+				new HullRule() { MaxBlocks = 600, MaxTurrets = 4 };
+			HullRules[(int)HullClass.CLASS.DESTROYER] =
+				new HullRule() { MaxBlocks = 1800, MaxTurrets = 4 };
+			HullRules[(int)HullClass.CLASS.CRUISER] =
+				new HullRule() { MaxBlocks = 2700, MaxTurrets = 6 };
+			HullRules[(int)HullClass.CLASS.BATTLESHIP] =
+				new HullRule() { MaxBlocks = 4050, MaxTurrets = 8 };
+			HullRules[(int)HullClass.CLASS.DREADNAUGHT] =
+				new HullRule() { MaxBlocks = 6075, MaxTurrets = 10 };
+			HullRules[(int)HullClass.CLASS.OUTPOST] =
+				new HullRule() { MaxBlocks = 600, MaxTurrets = 2 };
+			HullRules[(int)HullClass.CLASS.INSTALLATION] =
+				new HullRule() { MaxBlocks = 1800, MaxTurrets = 4 };
+			HullRules[(int)HullClass.CLASS.FORTRESS] =
+				new HullRule() { MaxBlocks = 2700, MaxTurrets = 6 };
 
 			// Default dereliction time 7200 seconds (2 hours)
 			DerelictCountdown = 7200;
