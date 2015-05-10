@@ -36,7 +36,7 @@ namespace GardenConquest {
 				if (msg.DestType == BaseMessage.DEST_TYPE.FACTION) {
 					IMyFaction fac = MyAPIGateway.Session.Factions.TryGetPlayerFaction(
 						MyAPIGateway.Session.Player.PlayerID);
-					if (fac == null || fac.FactionId == msg.Destination)
+					if (fac == null || fac.FactionId != msg.Destination)
 						return; // Message not meant for us
 				} else if (msg.DestType == BaseMessage.DEST_TYPE.PLAYER) {
 					if (msg.Destination != MyAPIGateway.Session.Player.PlayerID)

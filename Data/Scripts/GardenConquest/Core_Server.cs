@@ -158,7 +158,7 @@ namespace GardenConquest {
 					// This will only return grids which conform to the rules which make them valid
 					// for counting.  All other grids discarded.
 					Dictionary<long, List<FACGRID>> allFactionGrids = 
-						groupFactionGrids(gridsInSOI, cp.Radius);
+						groupFactionGrids(gridsInSOI, cp.Position);
 					log("After aggregation there are " + allFactionGrids.Count + " factions present", "roundEnd");
 					foreach (KeyValuePair<long, List<FACGRID>> entry in allFactionGrids) {
 						log("Grids for faction " + entry.Key, "roundEnd");
@@ -197,6 +197,10 @@ namespace GardenConquest {
 						log("Sorting list of grids", "roundEnd");
 						List<FACGRID> grids = allFactionGrids[greatestFaction];
 						grids.Sort(s_Sorter);
+
+						//foreach (FACGRID g in grids) {
+						//	log(g.grid.EntityId + " " + g.gtype + " " + g.blockCount);
+						//}
 
 						// Go through the sorted list and find the first ship with a cargo container
 						// with space.  If the faction has no free cargo container they are S.O.L.
@@ -275,9 +279,9 @@ namespace GardenConquest {
 		/// Separates a list of grids by their faction.  Also discards invalid grids.
 		/// </summary>
 		/// <param name="grids">Grids to aggregate</param>
-		/// <param name="radius">The radius of the CP</param>
+		/// <param name="cpPos">The position of the CP</param>
 		/// <returns></returns>
-		private Dictionary<long, List<FACGRID>> groupFactionGrids(List<IMyCubeGrid> grids, float radius) {
+		private Dictionary<long, List<FACGRID>> groupFactionGrids(List<IMyCubeGrid> grids, VRageMath.Vector3D cpPos) {
 			Dictionary<long, List<FACGRID>> result = new Dictionary<long, List<FACGRID>>();
 
 			foreach (IMyCubeGrid grid in grids) {
@@ -312,17 +316,17 @@ namespace GardenConquest {
 							if (fat.BlockDefinition.SubtypeName.Contains("HullClassifier")) {
 								hasHC |= fat.IsFunctional;
 								
-								// Since we're only checking grids inside the bounding sphere
-								// as long as the radius of the beacon is >= radius of the CP
-								// it must encompass the center
-								InGame.IMyBeacon beacon = fat as InGame.IMyBeacon; 
-								radiusOK |= beacon.Radius >= radius;
+								InGame.IMyBeacon beacon = fat as InGame.IMyBeacon;
+								radiusOK |= beacon.Radius >= VRageMath.Vector3.Distance(
+									cpPos, grid.GetPosition());
 							}
 						}
 					}
 				}
 
 				// If the grid doesn't pass the above conditions, skip it
+				log("Grid " + grid.EntityId + ": " + isPowered + " " + hasHC + " " 
+					+ radiusOK, "groupFactionGrids");
 				if (!(isPowered && hasHC && radiusOK))
 					continue;
 
@@ -352,8 +356,6 @@ namespace GardenConquest {
 		/// <param name="numTok"></param>
 		/// <returns></returns>
 		private InGame.IMyCargoContainer getFirstAvailableCargo(List<FACGRID> grids, int numTok) {
-			InGame.IMyCargoContainer result = null;
-
 			// This list is sorted by preference rules
 			// Find the first one which has a cargo container with space
 			List<IMySlimBlock> containers = new List<IMySlimBlock>();
@@ -372,8 +374,7 @@ namespace GardenConquest {
 						//if (inv.CanItemsBeAdded(numTok, 
 						//	(Sandbox.Common.ObjectBuilders.Definitions.SerializableDefinitionId)m_TokenDef)) {
 						log("Can fit tokens", "getFirstAvailableCargo");
-						result = c;
-						break;
+						return c;
 						//}
 					}
 				}
@@ -381,7 +382,7 @@ namespace GardenConquest {
 				containers.Clear();
 			}
 
-			return result;
+			return null;
 		}
 
 		/*private List<MyPlayer> playersToAlert(ActiveDerelictTimer dt) {
