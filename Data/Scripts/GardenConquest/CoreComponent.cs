@@ -34,6 +34,8 @@ namespace GardenConquest {
 
 			if (m_CoreProcessor == null)
 				startCore();
+
+			m_CoreProcessor.updateBeforeSimulation();
 		}
 
 		protected override void UnloadData() {

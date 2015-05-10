@@ -32,6 +32,9 @@ namespace GardenConquest {
 		private MyTimer m_SaveTimer = null;
 		private RequestProcessor m_MailMan = null;
 
+		private bool m_RoundEnded = false;
+		private Object m_SyncObject = new Object();
+
 		private static MyObjectBuilder_Component s_TokenBuilder = null;
 		private static Sandbox.Common.ObjectBuilders.Definitions.SerializableDefinitionId? s_TokenDef = null;
 		private static IComparer<FACGRID> s_Sorter = null;
@@ -92,8 +95,12 @@ namespace GardenConquest {
 		}
 
 		public override void updateBeforeSimulation() {
-			// Empty
-			// This can probably go
+			//lock (m_SyncObject) {
+				if (m_RoundEnded) {
+					distributeRewards();
+					m_RoundEnded = false;
+				}
+			//}
 		}
 
 		#endregion
@@ -176,9 +183,24 @@ namespace GardenConquest {
 		#region Class Timer Events
 
 		/// <summary>
-		/// Called at the end of a round.  Distributes rewards to winning factions.
+		/// Sets the round ended flag.  Necessary because of synchonization issues
 		/// </summary>
 		private void roundEnd() {
+			log("hit", "roundEnd");
+			//lock (m_SyncObject) {
+				m_RoundEnded = true;
+			//}
+		}
+
+		private void saveTimer() {
+			log("Save timer triggered", "saveTimer");
+			StateTracker.getInstance().saveState();
+		}
+
+		/// <summary>
+		/// Called at the end of a round.  Distributes rewards to winning factions.
+		/// </summary>
+		private void distributeRewards() {
 			log("Timer triggered", "roundEnd");
 
 			try {
@@ -278,20 +300,14 @@ namespace GardenConquest {
 				m_MailMan.send(endedMessage);
 
 				// Report round results
-				
+
 
 			} catch (Exception e) {
 				log("An exception occured: " + e, "roundEnd", Logger.severity.ERROR);
 			}
 		}
 
-		private void saveTimer() {
-			log("Save timer triggered", "saveTimer");
-			StateTracker.getInstance().saveState();
-		}
-
 		#endregion
-
 		#region Class Helpers
 
 		/// <summary>
