@@ -133,6 +133,9 @@ namespace GardenConquest {
 		#endregion
 
 		public override void UpdateBeforeSimulation100() {
+			if (!m_IsServer)
+				return;
+
 			// NOTE: Can't turn off this update, because other scripts might also want it
 			if (!m_BeyondFirst100) {
 				m_BeyondFirst100 = true;
@@ -206,6 +209,10 @@ namespace GardenConquest {
 
 						log("Hull has been classified as " +
 							HullClass.ClassStrings[(int)m_Class], "blockAdded");
+
+						// If we're counting down to dereliction, cancel it
+						if(m_DerelictTimer != null)
+							cancelDerelictionTimer();
 					} else {
 						log("Classification as " + HullClass.ClassStrings[(int)c] + " not permitted",
 							"blockAdded");

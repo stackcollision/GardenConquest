@@ -17,17 +17,26 @@ namespace GardenConquest {
 	/// Client side message hooks.  Processed messages coming from the server.
 	/// </summary>
 	public class ResponseProcessor {
-		//private static VRage.Serialization.ProtoSerializer<BaseMessage> m_Serializer = null;
+		private static Logger s_Logger = null;
 
 		public ResponseProcessor() {
-			//m_Serializer = new VRage.Serialization.ProtoSerializer<BaseMessage>();
+			if (s_Logger == null)
+				s_Logger = new Logger("Conquest Core", "ResponseProcessor");
 
+			log("Started", "ctor");
 			if (MyAPIGateway.Multiplayer != null) {
 				MyAPIGateway.Multiplayer.RegisterMessageHandler(Constants.GCMessageId, incomming);
 			}
 		}
 
+		public void unload() {
+			if (MyAPIGateway.Multiplayer != null)
+				MyAPIGateway.Multiplayer.UnregisterMessageHandler(Constants.GCMessageId, incomming);
+		}
+
 		public void incomming(byte[] buffer) {
+			log("Got message of size " + buffer.Length, "incomming");
+
 			try {
 				// Deserialize the message
 				BaseMessage msg = BaseMessage.messageFromBytes(buffer);
@@ -53,7 +62,13 @@ namespace GardenConquest {
 		}
 
 		private void processNotificationResponse(NotificationResponse noti) {
+			log("Hit", "processNotificationResponse");
 			MyAPIGateway.Utilities.ShowNotification(noti.NotificationText, noti.Time, noti.Font);
+		}
+
+		private void log(String message, String method = null, Logger.severity level = Logger.severity.DEBUG) {
+			if (s_Logger != null)
+				s_Logger.log(level, method, message);
 		}
 
 	}

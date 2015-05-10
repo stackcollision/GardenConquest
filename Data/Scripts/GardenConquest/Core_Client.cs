@@ -29,7 +29,8 @@ namespace GardenConquest {
 		}
 
 		public override void unloadData() {
-			// TODO
+			log("Unloading", "unloadData");
+			m_MailMan.unload();
 		}
 
 		public override void updateBeforeSimulation() {

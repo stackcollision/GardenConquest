@@ -80,9 +80,13 @@ namespace GardenConquest {
 		}
 
 		public override void unloadData() {
+			log("Unloading", "unloadData");
+
 			//GridEnforcer.OnViolation -= eventGridViolation;
 			GridEnforcer.OnDerelictStart -= eventDerelictStart;
 			GridEnforcer.OnDerelictEnd -= eventDerelictEnd;
+
+			m_MailMan.unload();
 
 			s_Logger = null;
 		}
@@ -126,6 +130,7 @@ namespace GardenConquest {
 				"derelict in " + ConquestSettings.getInstance().DerelictCountdown / 60.0f +
 				" minutes";
 
+			log("Sending message", "eventDerelictStart");
 			NotificationResponse noti = new NotificationResponse() {
 				NotificationText = message,
 				Time = 10000,
@@ -156,6 +161,7 @@ namespace GardenConquest {
 				font = MyFontEnum.Red;
 			}
 
+			log("Sending message", "eventDerelictEnd");
 			NotificationResponse noti = new NotificationResponse() {
 				NotificationText = message,
 				Time = 10000,
@@ -260,6 +266,7 @@ namespace GardenConquest {
 				}
 
 				// Anounce round ended
+				log("Sending message", "roundEnd");
 				MyAPIGateway.Utilities.ShowNotification("Conquest Round Ended", 6000);
 				NotificationResponse endedMessage = new NotificationResponse() {
 					NotificationText = "Conquest Round Ended",

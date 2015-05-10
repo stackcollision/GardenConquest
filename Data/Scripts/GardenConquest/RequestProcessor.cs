@@ -34,6 +34,11 @@ namespace GardenConquest {
 			}
 		}
 
+		public void unload() {
+			if (MyAPIGateway.Multiplayer != null)
+				MyAPIGateway.Multiplayer.UnregisterMessageHandler(Constants.GCMessageId, incomming);
+		}
+
 		public void incomming(byte[] stream) {
 
 		}
