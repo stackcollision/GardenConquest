@@ -16,6 +16,7 @@ using InGame = Sandbox.ModAPI.Ingame;
 using Sandbox.Game.Multiplayer;
 using Sandbox.Game.World;
 using Sandbox.Common.Components;
+using Sandbox.Game.Entities;
 
 namespace GardenConquest {
 
@@ -29,7 +30,6 @@ namespace GardenConquest {
 		private bool m_Initialized = false;
 		private MyTimer m_RoundTimer = null;
 		private MyTimer m_SaveTimer = null;
-		private byte m_Frame = 0;
 		private RequestProcessor m_MailMan = null;
 
 		private static MyObjectBuilder_Component s_TokenBuilder = null;
@@ -71,65 +71,99 @@ namespace GardenConquest {
 
 			m_MailMan = new RequestProcessor();
 
+			// Subscribe events
+			//GridEnforcer.OnViolation += eventGridViolation;
+			GridEnforcer.OnDerelictStart += eventDerelictStart;
+			GridEnforcer.OnDerelictEnd += eventDerelictEnd;
+
 			m_Initialized = true;
 		}
 
 		public override void unloadData() {
-
+			//GridEnforcer.OnViolation -= eventGridViolation;
+			GridEnforcer.OnDerelictStart -= eventDerelictStart;
+			GridEnforcer.OnDerelictEnd -= eventDerelictEnd;
 
 			s_Logger = null;
 		}
 
 		public override void updateBeforeSimulation() {
-			// Do this only every 100 frames
-			if (m_Frame++ > 100) {
-				m_Frame = 0;
+			// Empty
+			// This can probably go
+		}
 
-				// Check for new derelict timers
-				StateTracker st = StateTracker.getInstance();
-				while (st.newDerelictTimers()) {
-					ActiveDerelictTimer dt = st.nextNewDerelictTimer();
-					GridEnforcer ge = dt.Grid.Components.Get<MyGameLogicComponent>() as GridEnforcer;
-					if (ge == null || ge.Faction == null)
-						continue;
+		#endregion
+		#region Event Handlers
 
-					string message = "Your faction's grid " + dt.Grid.DisplayName + " will become a " +
-						"derelict in " + ConquestSettings.getInstance().DerelictCountdown/60.0f +
-						" minutes";
+		// TODO: Doesn't seem to be a good way to find out who placed the block.
+		// can't send a message until I figure this out
+		//public void eventGridViolation(GridEnforcer ge, IMyCubeBlock b, GridEnforcer.VIOLATION_TYPE v) {
+			// Send a message to the player who placed it
+			// TODO: Slim blocks have no owner so there's no way to get a message to them :[
+			//if (b == null)
+			//	return;
 
-					MyAPIGateway.Utilities.ShowNotification("Conquest Round Ended", 6000);
-					NotificationResponse noti = new NotificationResponse() {
-						NotificationText = message,
-						Time = 1000,
-						Font = MyFontEnum.Red,
-						Destination = ge.Faction.FactionId,
-						DestType = BaseMessage.DEST_TYPE.FACTION
-					};
-					m_MailMan.send(noti);
-				}
+			//string message = "";
+			//if(v == GridEnforcer.VIOLATION_TYPE.BLOCK)
+			//	message = "Block limit reached";
+			//else
+			//	message = "Turret limit reached";
 
-				while (st.finishedDerelictTimers()) {
-					ActiveDerelictTimer.COMPLETED_TIMER ct = st.nextFinishedDerelictTimer();
-					GridEnforcer ge = 
-						ct.Timer.Grid.Components.Get<MyGameLogicComponent>() as GridEnforcer;
-					if (ge == null || ge.Faction == null)
-						continue;
+			//log(b.OwnerId.ToString(), "eventGridViolation");
+			//if (b.OwnerId == MyAPIGateway.Session.Player.PlayerID) {
+			//	MyAPIGateway.Utilities.ShowNotification(message, 2000, MyFontEnum.Red);
+			//} else {
 
-					string message = "Your faction's grid " + ct.Timer.Grid.DisplayName + 
-						" is no longer " +
-						"in danger of becoming a derelict";
+			//}
+		//}
 
-					MyAPIGateway.Utilities.ShowNotification("Conquest Round Ended", 6000);
-					NotificationResponse noti = new NotificationResponse() {
-						NotificationText = message,
-						Time = 1000,
-						Font = MyFontEnum.Red,
-						Destination = ge.Faction.FactionId,
-						DestType = BaseMessage.DEST_TYPE.FACTION
-					};
-					m_MailMan.send(noti);
-				}
+		public void eventDerelictStart(ActiveDerelictTimer dt) {
+			GridEnforcer ge = dt.Grid.Components.Get<MyGameLogicComponent>() as GridEnforcer;
+			if (ge == null || ge.Faction == null)
+				return;
+
+			string message = "Your faction's grid " + dt.Grid.DisplayName + " will become a " +
+				"derelict in " + ConquestSettings.getInstance().DerelictCountdown / 60.0f +
+				" minutes";
+
+			NotificationResponse noti = new NotificationResponse() {
+				NotificationText = message,
+				Time = 10000,
+				Font = MyFontEnum.Red,
+				Destination = ge.Faction.FactionId,
+				DestType = BaseMessage.DEST_TYPE.FACTION
+			};
+			m_MailMan.send(noti);
+		}
+
+		public void eventDerelictEnd(ActiveDerelictTimer dt, ActiveDerelictTimer.COMPLETION c) {
+			GridEnforcer ge =
+				dt.Grid.Components.Get<MyGameLogicComponent>() as GridEnforcer;
+			if (ge == null || ge.Faction == null)
+				return;
+
+			string message = "";
+			MyFontEnum font = MyFontEnum.Red;
+
+			if (c == ActiveDerelictTimer.COMPLETION.CANCELLED) {
+				message = "Your faction's grid " + dt.Grid.DisplayName +
+					" is no longer " +
+					"in danger of becoming a derelict";
+				font = MyFontEnum.Green;
+			} else if (c == ActiveDerelictTimer.COMPLETION.ELAPSED) {
+				message = "Your faction's grid " + dt.Grid.DisplayName +
+					" has become a derelict";
+				font = MyFontEnum.Red;
 			}
+
+			NotificationResponse noti = new NotificationResponse() {
+				NotificationText = message,
+				Time = 10000,
+				Font = font,
+				Destination = ge.Faction.FactionId,
+				DestType = BaseMessage.DEST_TYPE.FACTION
+			};
+			m_MailMan.send(noti);
 		}
 
 		#endregion
@@ -384,36 +418,6 @@ namespace GardenConquest {
 
 			return null;
 		}
-
-		/*private List<MyPlayer> playersToAlert(ActiveDerelictTimer dt) {
-			List<MyPlayer> players = new List<MyPlayer>();
-			if (MyAPIGateway.Multiplayer == null)
-				return players;
-
-			GridEnforcer enf =
-				dt.Grid.Components.Get<MyGameLogicComponent>() as GridEnforcer;
-			IMyFaction fac = enf.Faction;
-
-			MyPlayerCollection allPlayers = MyAPIGateway.Multiplayer.Players as MyPlayerCollection;
-
-			// If there is no faction only alert the player who owns it
-			if (fac == null) {
-				// Alert the big owner.  If no big owner, no one gets an alert
-				if (dt.Grid.BigOwners.Count > 0) {
-					// TODO: Figure out how to get the PlayerId based on this number
-				}
-			} else {
-				Dictionary<MyPlayer.PlayerId, MyPlayer>.ValueCollection online = 
-					allPlayers.GetOnlinePlayers();
-				foreach (MyPlayer p in online) {
-					if (fac.IsMember((p as IMyPlayer).PlayerID)) {
-						players.Add(p);
-					}
-				}
-			}
-
-			return players;
-		}*/
 
 		#endregion
 	}

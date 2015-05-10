@@ -35,11 +35,6 @@ namespace GardenConquest {
 			CANCELLED
 		}
 
-		public struct COMPLETED_TIMER {
-			public ActiveDerelictTimer Timer;
-			public COMPLETION Reason;
-		}
-
 		[XmlIgnore]
 		public IMyCubeGrid Grid;
 		[XmlIgnore]

@@ -18,8 +18,6 @@ namespace GardenConquest {
 
 		public Dictionary<long, long> TokensLastRound { get; private set; }
 		private Dictionary<long, FactionFleet> m_Fleets = null;
-		private Queue<ActiveDerelictTimer> m_NewDerelictTimers = null;
-		private Queue<ActiveDerelictTimer.COMPLETED_TIMER> m_FinishedDerelictTimers = null;
 		private SavedState m_SavedState = null;
 
 		private static StateTracker s_Instance = null;
@@ -32,8 +30,6 @@ namespace GardenConquest {
 
 			TokensLastRound = new Dictionary<long, long>();
 			m_Fleets = new Dictionary<long, FactionFleet>();
-			m_NewDerelictTimers = new Queue<ActiveDerelictTimer>();
-			m_FinishedDerelictTimers = new Queue<ActiveDerelictTimer.COMPLETED_TIMER>();
 
 			if (!loadState()) {
 				// If the state is not loaded from the file we need to create an
@@ -65,54 +61,12 @@ namespace GardenConquest {
 		}
 
 		/// <summary>
-		/// 
-		/// </summary>
-		/// <returns>True if queue has at least one grid</returns>
-		public bool newDerelictTimers() {
-			return m_NewDerelictTimers.Count > 0;
-		}
-
-		/// <summary>
-		/// Gets the next grid off the new derelict timer queue
-		/// </summary>
-		/// <returns>Next grid</returns>
-		public ActiveDerelictTimer nextNewDerelictTimer() {
-			return m_NewDerelictTimers.Dequeue();
-		}
-
-		/// <summary>
 		/// Adds a new derelict timer to the queue.
 		/// This will be used to alert the faction
 		/// </summary>
 		/// <param name="dt"></param>
 		public void addNewDerelictTimer(ActiveDerelictTimer dt) {
-			m_NewDerelictTimers.Enqueue(dt);
 			m_SavedState.DerelictTimers.Add(dt);
-		}
-
-		/// <summary>
-		/// 
-		/// </summary>
-		/// <returns>True if there is at least one new finished timer</returns>
-		public bool finishedDerelictTimers() {
-			return m_FinishedDerelictTimers.Count > 0;
-		}
-
-		/// <summary>
-		/// Gets the next completed derelict timer
-		/// </summary>
-		/// <returns></returns>
-		public ActiveDerelictTimer.COMPLETED_TIMER nextFinishedDerelictTimer() {
-			return m_FinishedDerelictTimers.Dequeue();
-		}
-
-		public ActiveDerelictTimer findActiveDerelictTimer(long gridId) {
-			foreach (ActiveDerelictTimer dt in m_SavedState.DerelictTimers) {
-				if (dt.GridID == gridId)
-					return dt;
-			}
-
-			return null;
 		}
 
 		/// <summary>
@@ -121,12 +75,18 @@ namespace GardenConquest {
 		/// Removes the timer from tracking.
 		/// </summary>
 		/// <param name="dt"></param>
-		public void addFinishedDerelictTimer(ActiveDerelictTimer dt, ActiveDerelictTimer.COMPLETION c) {
-			m_FinishedDerelictTimers.Enqueue(new ActiveDerelictTimer.COMPLETED_TIMER() {
-				Timer = dt,
-				Reason = c
-			});
+		public void removeDerelictTimer(ActiveDerelictTimer dt) {
 			m_SavedState.DerelictTimers.Remove(dt);
+		}
+
+
+		public ActiveDerelictTimer findActiveDerelictTimer(long gridId) {
+			foreach (ActiveDerelictTimer dt in m_SavedState.DerelictTimers) {
+				if (dt.GridID == gridId)
+					return dt;
+			}
+
+			return null;
 		}
 
 		/// <summary>

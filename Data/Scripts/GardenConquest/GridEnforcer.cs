@@ -25,6 +25,17 @@ namespace GardenConquest {
 	[MyEntityComponentDescriptor(typeof(MyObjectBuilder_CubeGrid))]
 	public class GridEnforcer : MyGameLogicComponent {
 
+		#region Structs and Enums
+
+		public enum VIOLATION_TYPE {
+			NONE,
+			BLOCK,
+			TURRET
+		}
+
+		#endregion
+		#region Class Members
+
 		private IMyCubeGrid m_Grid = null;
 		public InGame.IMyBeacon m_Classifier { get; private set; }
 		private IMyFaction m_OwningFaction;
@@ -43,9 +54,35 @@ namespace GardenConquest {
 		private Logger m_Logger = null;
 
 		public IMyFaction Faction { get { return m_OwningFaction; } }
+		public IMyCubeGrid Grid { get { return m_Grid; } }
+
+		#endregion
+		#region Events
+
+		private static Action<GridEnforcer, IMyCubeBlock, VIOLATION_TYPE> eventOnViolation;
+		public static event Action<GridEnforcer, IMyCubeBlock, VIOLATION_TYPE> OnViolation {
+			add { eventOnViolation += value; }
+			remove { eventOnViolation -= value; }
+		}
+
+		private static Action<ActiveDerelictTimer> eventOnDerelictStart;
+		public static event Action<ActiveDerelictTimer> OnDerelictStart {
+			add { eventOnDerelictStart += value; }
+			remove { eventOnDerelictStart -= value; }
+		}
+
+		private static Action<ActiveDerelictTimer, ActiveDerelictTimer.COMPLETION> eventOnDerelictEnd;
+		public static event Action<ActiveDerelictTimer, ActiveDerelictTimer.COMPLETION> OnDerelictEnd {
+			add { eventOnDerelictEnd += value; }
+			remove { eventOnDerelictEnd -= value; }
+		}
+
+		#endregion
+		#region Class Lifecycle
 
 		public GridEnforcer() {
 			m_Classifier = null;
+			m_OwningFaction = null;
 		}
 
 		public override void Init(MyObjectBuilder_EntityBase objectBuilder) {
@@ -93,6 +130,8 @@ namespace GardenConquest {
 			m_Grid = null;
 		}
 
+		#endregion
+
 		public override void UpdateBeforeSimulation100() {
 			// NOTE: Can't turn off this update, because other scripts might also want it
 			if (!m_BeyondFirst100) {
@@ -114,7 +153,7 @@ namespace GardenConquest {
 
 			// If we just completed a merge check if this grid is violating rules
 			if (m_Merging) {
-				if (checkRules())
+				if (checkRules() != VIOLATION_TYPE.NONE)
 					startDerelictionTimer();
 				m_Merging = false;
 			}
@@ -186,7 +225,9 @@ namespace GardenConquest {
 				return;
 
 			// Check if we are violating class rules
-			if (checkRules()) {
+			VIOLATION_TYPE check = checkRules();
+			if (check != VIOLATION_TYPE.NONE) {
+				eventOnViolation(this, added.FatBlock, check);
 				removeBlock(added);
 			}
 		}
@@ -195,28 +236,26 @@ namespace GardenConquest {
 		/// Checks if the grid complies with the rules.  Returns true if any rule is violated.
 		/// </summary>
 		/// <returns></returns>
-		private bool checkRules() {
+		private VIOLATION_TYPE checkRules() {
 			// Don't apply rules until server startup is completed
 			if (!m_BeyondFirst100)
-				return false;
+				return VIOLATION_TYPE.NONE;
 
 			HullRule r = ConquestSettings.getInstance().HullRules[(int)m_Class];
 
 			// Check general block count limit
 			if (m_BlockCount > r.MaxBlocks) {
-				log("Grid has violated block limit for class", "blockAdded");
-				// TODO: Get a message to the player who placed it
-				return true;
+				log("Grid has violated block limit for class", "checkRules");
+				return VIOLATION_TYPE.BLOCK;
 			}
 
 			// Check number of turrets
 			if (m_TurretCount > r.MaxTurrets) {
-				log("Grid has violated turret limit for class", "blockAdded");
-				// TODO: Get a message to the player who placed it
-				return true;
+				log("Grid has violated turret limit for class", "checkRules");
+				return VIOLATION_TYPE.TURRET;
 			}
 
-			return false;
+			return VIOLATION_TYPE.NONE;
 		}
 
 		/// <summary>
@@ -342,14 +381,14 @@ namespace GardenConquest {
 
 			FactionFleet oldFleet = oldFac == null ? null :
 				StateTracker.getInstance().getFleet(oldFac.FactionId);
-			FactionFleet newFleet = newFac == null ? null : 
+			FactionFleet newFleet = newFac == null ? null :
 				StateTracker.getInstance().getFleet(newFac.FactionId);
 
 			// Subtract one from the old fleet, if there was one
 			if (oldFleet != null) {
 				oldFleet.removeClass(m_Class);
 			}
-			
+
 			// Add one to the new fleet, if there is one
 			if (newFleet != null) {
 				newFleet.addClass(m_Class);
@@ -384,7 +423,7 @@ namespace GardenConquest {
 			m_DerelictTimer.Grid = m_Grid;
 			m_DerelictTimer.GridID = m_Grid.EntityId;
 			m_DerelictTimer.Phase = ActiveDerelictTimer.PHASE.INITIAL;
-			m_DerelictTimer.MillisRemaining = 
+			m_DerelictTimer.MillisRemaining =
 				ConquestSettings.getInstance().DerelictCountdown * 1000;
 			m_DerelictTimer.Timer = new MyTimer(m_DerelictTimer.MillisRemaining, makeDerelict);
 			m_DerelictTimer.Timer.Start();
@@ -394,6 +433,7 @@ namespace GardenConquest {
 
 			// Add to state
 			StateTracker.getInstance().addNewDerelictTimer(m_DerelictTimer);
+			eventOnDerelictStart(m_DerelictTimer);
 
 			log("Dereliction timer started", "startDerelictionTimer");
 		}
@@ -420,8 +460,8 @@ namespace GardenConquest {
 		/// </summary>
 		private void cancelDerelictionTimer() {
 			if (m_DerelictTimer != null) {
-				StateTracker.getInstance().addFinishedDerelictTimer(
-					m_DerelictTimer, ActiveDerelictTimer.COMPLETION.CANCELLED);
+				StateTracker.getInstance().removeDerelictTimer(m_DerelictTimer);
+				eventOnDerelictEnd(m_DerelictTimer, ActiveDerelictTimer.COMPLETION.CANCELLED);
 
 				m_DerelictTimer.Timer.Stop();
 				m_DerelictTimer.Timer = null;
@@ -454,8 +494,8 @@ namespace GardenConquest {
 				block.CubeGrid.RemoveBlock(block);
 			}
 
-			StateTracker.getInstance().addFinishedDerelictTimer(
-				m_DerelictTimer, ActiveDerelictTimer.COMPLETION.ELAPSED);
+			StateTracker.getInstance().removeDerelictTimer(m_DerelictTimer);
+			eventOnDerelictEnd(m_DerelictTimer, ActiveDerelictTimer.COMPLETION.ELAPSED);
 
 			// Get rid of the timer
 			m_DerelictTimer.Timer.Stop();
