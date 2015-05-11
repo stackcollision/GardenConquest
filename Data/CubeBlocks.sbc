@@ -48,7 +48,7 @@
     <Definition>
       <Id>
         <TypeId>Beacon</TypeId>
-        <SubtypeId>GCUnlicensedHullClassifier</SubtypeId>
+        <SubtypeId>GCUnlicensedHullClassifierSmall</SubtypeId>
       </Id>
       <DisplayName>Unlicensed Class</DisplayName>
       <Icon>Textures\Icons\unlicensed-1-32.dds</Icon>
@@ -125,7 +125,7 @@
     <Definition>
       <Id>
         <TypeId>Beacon</TypeId>
-        <SubtypeId>GCWorkerHullClassifier</SubtypeId>
+        <SubtypeId>GCWorkerHullClassifierSmall</SubtypeId>
       </Id>
       <DisplayName>Worker Class</DisplayName>
       <Icon>Textures\Icons\utility-1-32.dds</Icon>

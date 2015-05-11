@@ -7,7 +7,7 @@
         <SubtypeId>ShipLicense</SubtypeId>
       </Id>
       <DisplayName>Ship License</DisplayName>
-      <Icon>Textures\Icons\license_ico.dds</Icon>
+      <Icon>Textures\Icons\license-128.dds</Icon>
       <Size>
         <X>1</X>
         <Y>0.5</Y>

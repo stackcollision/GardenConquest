@@ -33,7 +33,7 @@ namespace GardenConquest {
 		private RequestProcessor m_MailMan = null;
 
 		private bool m_RoundEnded = false;
-		private Object m_SyncObject = new Object();
+		//private Object m_SyncObject = new Object();
 
 		private static MyObjectBuilder_Component s_TokenBuilder = null;
 		private static Sandbox.Common.ObjectBuilders.Definitions.SerializableDefinitionId? s_TokenDef = null;
@@ -385,6 +385,7 @@ namespace GardenConquest {
 				bool hasHC = false;
 				bool radiusOK = false;
 
+				// TODO: Use GridEnforcer state here instead
 				foreach (IMySlimBlock block in blocks) {
 					IMyCubeBlock fat = block.FatBlock;
 
@@ -393,7 +394,7 @@ namespace GardenConquest {
 							isPowered |= fat.IsFunctional && fat.IsWorking;
 						} else if (fat is InGame.IMyBeacon) {
 							if (fat.BlockDefinition.SubtypeName.Contains("HullClassifier")) {
-								hasHC |= fat.IsFunctional;
+								hasHC |= fat.IsWorking;
 								
 								InGame.IMyBeacon beacon = fat as InGame.IMyBeacon;
 								radiusOK |= beacon.Radius >= VRageMath.Vector3.Distance(

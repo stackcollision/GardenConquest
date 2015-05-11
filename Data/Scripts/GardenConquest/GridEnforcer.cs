@@ -37,15 +37,20 @@ namespace GardenConquest {
 		#region Class Members
 
 		private IMyCubeGrid m_Grid = null;
-		public InGame.IMyBeacon m_Classifier { get; private set; }
-		private IMyFaction m_OwningFaction;
+		private InGame.IMyBeacon m_Classifier = null;
+		private IMyFaction m_OwningFaction = null;
+
+		// There are two different members for classification
+		// The first is the class of the placed grid classifier (m_Classifier)
+		// But if that block is incomplete/offline/damaged then the rules are
+		// still applied as if it was UNCLASSIFIED
+		private HullClass.CLASS m_ReservedClass = HullClass.CLASS.UNCLASSIFIED;
+		private HullClass.CLASS m_ActualClass = HullClass.CLASS.UNCLASSIFIED;
 
 		private bool m_IsServer = false;
 		private int m_BlockCount = 0;
 		private int m_TurretCount = 0;
-		private HullClass.CLASS m_Class = HullClass.CLASS.UNCLASSIFIED;
 		private bool m_BeyondFirst100 = false;
-		private bool m_DoubleClass = false;
 		private bool m_Merging = false;
 
 		private ActiveDerelictTimer m_DerelictTimer = null;
@@ -55,6 +60,7 @@ namespace GardenConquest {
 
 		public IMyFaction Faction { get { return m_OwningFaction; } }
 		public IMyCubeGrid Grid { get { return m_Grid; } }
+		public InGame.IMyBeacon Classifier { get { return m_Classifier; } }
 
 		#endregion
 		#region Events
@@ -127,6 +133,11 @@ namespace GardenConquest {
 			m_Grid.OnBlockRemoved -= blockRemoved;
 			m_Grid.OnBlockOwnershipChanged -= blockOwnerChanged;
 
+			if (m_Classifier != null) {
+				(m_Classifier as IMyCubeBlock).IsWorkingChanged -= classifierWorkingChanged;
+				m_Classifier = null;
+			}
+
 			if (m_DerelictTimer != null) {
 				m_DerelictTimer.Timer.Stop();
 				m_DerelictTimer.Timer = null;
@@ -149,7 +160,7 @@ namespace GardenConquest {
 
 				// Once the server has loaded all block for this grid, check if we are
 				// classified.  If not, warn the owner about the timer
-				if (m_Class == HullClass.CLASS.UNCLASSIFIED) {
+				if (m_ActualClass == HullClass.CLASS.UNCLASSIFIED) {
 					// Since the game is just starting, we need to check if we're supposed
 					// to resume this timer or start a brand new one
 					ActiveDerelictTimer dt = StateTracker.getInstance().findActiveDerelictTimer(
@@ -199,33 +210,9 @@ namespace GardenConquest {
 				added.FatBlock is InGame.IMyBeacon &&
 				added.FatBlock.BlockDefinition.SubtypeName.Contains("HullClassifier")
 			) {
-				// Is this grid already classified?
-				if (m_Class != HullClass.CLASS.UNCLASSIFIED) {
-					log("Grid is already classified.  Removing this new one.", "blockAdded");
-					// Prevent unclassification in blockRemoved
-					m_DoubleClass = true;
-					removeBlock(added);
-				} else {
-					HullClass.CLASS c = HullClass.hullClassFromString(
-						added.FatBlock.BlockDefinition.SubtypeName);
-					if (checkClassAllowed(c)) {
-						m_Class = c;
-						m_Classifier = added.FatBlock as InGame.IMyBeacon;
-
-						onClassChange(HullClass.CLASS.UNCLASSIFIED, m_Class);
-
-						log("Hull has been classified as " +
-							HullClass.ClassStrings[(int)m_Class], "blockAdded");
-
-						// If we're counting down to dereliction, cancel it
-						if(m_DerelictTimer != null)
-							cancelDerelictionTimer();
-					} else {
-						log("Classification as " + HullClass.ClassStrings[(int)c] + " not permitted",
-							"blockAdded");
-						removeBlock(added);
-					}
-				}
+				// Reserve the grid class
+				if (!reserveClass(added))
+					removeBlock(added); // Class could not be reserved, so remove block
 
 				// Return after classification
 				// It is recommended that the distance between the unclassified block limit and 
@@ -255,7 +242,9 @@ namespace GardenConquest {
 			if (!m_BeyondFirst100)
 				return VIOLATION_TYPE.NONE;
 
-			HullRule r = ConquestSettings.getInstance().HullRules[(int)m_Class];
+			// Test rules based on actual class, so they only get the block limit
+			// if the classifier beacon is complete
+			HullRule r = ConquestSettings.getInstance().HullRules[(int)m_ActualClass];
 			log("Count: " + m_BlockCount + " Limit: " + r.MaxBlocks, "checkRules");
 
 			// Check general block count limit
@@ -302,23 +291,15 @@ namespace GardenConquest {
 		/// <param name="removed"></param>
 		private void blockRemoved(IMySlimBlock removed) {
 			m_BlockCount--;
-			log("Block removed from grid.  Count now: " + m_BlockCount, "blockAdded");
+			log("Block removed from grid.  Count now: " + m_BlockCount, "blockRemoved");
 
 			// Check if the removed block was the class beacon
 			if (removed.FatBlock != null &&
 				removed.FatBlock is InGame.IMyBeacon &&
 				removed.FatBlock.BlockDefinition.SubtypeName.Contains("HullClassifier")
 			) {
-				// This check prevents the hull from being unclassified
-				if (m_DoubleClass) {
-					m_DoubleClass = false;
-				} else {
-					// If the classifier was removed change the class and start the timer
-					onClassChange(m_Class, HullClass.CLASS.UNCLASSIFIED);
-					m_Class = HullClass.CLASS.UNCLASSIFIED;
-					m_Classifier = null;
-					startDerelictionTimer();
-				}
+				if (removed.FatBlock == m_Classifier)
+					removeClass();
 			} else if (removed.FatBlock != null && (
 					removed.FatBlock is InGame.IMyLargeGatlingTurret ||
 					removed.FatBlock is InGame.IMyLargeMissileTurret
@@ -346,6 +327,92 @@ namespace GardenConquest {
 		private void removeBlock(IMySlimBlock b) {
 			// TODO: spawn materials in place so they're not lost
 			m_Grid.RemoveBlock(b);
+		}
+
+		/// <summary>
+		/// Reserve the class for this grid.  The block rule will not be applied until the
+		/// beacon is complete"
+		/// </summary>
+		/// <param name="added"></param>
+		/// <returns>False if the class cannot be reserved</returns>
+		private bool reserveClass(IMySlimBlock added) {
+			// Two classifiers not allowed
+			if (m_Classifier != null) {
+				log("Grid already has a classifier.  Removing this new one.", "reserveClass");
+				return false;
+			} else {
+				m_Classifier = added.FatBlock as InGame.IMyBeacon;
+				(m_Classifier as IMyCubeBlock).IsWorkingChanged += classifierWorkingChanged;
+
+				HullClass.CLASS c = HullClass.hullClassFromString(
+					added.FatBlock.BlockDefinition.SubtypeName);
+				if (checkClassAllowed(c)) {
+					// If the grid can be this class, set only the reserved class
+					// The actual class will be set when the thing powers on
+					m_ReservedClass = c;
+					onClassChange(HullClass.CLASS.UNCLASSIFIED, m_ReservedClass);
+
+					log("Hull class reserved as " +
+						HullClass.ClassStrings[(int)m_ReservedClass], "reserveClass");
+
+					// Do not cancel the dereliction timer yet, only do that when powered on
+					return true;
+				} else {
+					log("Class reservation as " + HullClass.ClassStrings[(int)c] +
+						" not permitted.", "reserveClass");
+					return false;
+				}
+			}
+		}
+
+		/// <summary>
+		/// Promotes the grid's actual class to its reserved class so the rule is applied
+		/// </summary>
+		private void promoteClass() {
+			m_ActualClass = m_ReservedClass;
+
+			log("Actual class promoted to " + m_ActualClass, "promoteClass");
+
+			// Cancel dereliction timer if we have one
+			// But only if the grid is within this new class's limits
+			if (checkRules() == VIOLATION_TYPE.NONE) {
+				if (m_DerelictTimer != null)
+					cancelDerelictionTimer();
+			} else {
+				log("This grid is still in violation of its new class.  Timer NOT stopped",
+					"promoteClass");
+			}
+		}
+
+		/// <summary>
+		/// Sets the actual class back to unclassified and starts the dereliction timer
+		/// A beacon must be working to have its rules applied
+		/// </summary>
+		private void demoteClass() {
+			m_ActualClass = HullClass.CLASS.UNCLASSIFIED;
+
+			log("Actual class returned to " + m_ActualClass, "demoteClass");
+
+			// Start dereliction timer
+			startDerelictionTimer();
+		}
+
+		/// <summary>
+		/// Removes the class reservation, the grid goes back to unclassified
+		/// </summary>
+		private void removeClass() {
+			onClassChange(m_ReservedClass, HullClass.CLASS.UNCLASSIFIED);
+
+			m_ReservedClass = HullClass.CLASS.UNCLASSIFIED;
+			m_ActualClass = HullClass.CLASS.UNCLASSIFIED;
+
+			(m_Classifier as IMyCubeBlock).IsWorkingChanged -= classifierWorkingChanged;
+			m_Classifier = null;
+
+			log("Hull classification removed", "removeClass");
+
+			// Start dereliction timer
+			startDerelictionTimer();
 		}
 
 		/// <summary>
@@ -401,12 +468,12 @@ namespace GardenConquest {
 
 			// Subtract one from the old fleet, if there was one
 			if (oldFleet != null) {
-				oldFleet.removeClass(m_Class);
+				oldFleet.removeClass(m_ReservedClass);
 			}
 
 			// Add one to the new fleet, if there is one
 			if (newFleet != null) {
-				newFleet.addClass(m_Class);
+				newFleet.addClass(m_ReservedClass);
 			}
 		}
 
@@ -518,6 +585,18 @@ namespace GardenConquest {
 			m_DerelictTimer = null;
 
 			log("Timer expired.  Grid turned into a derelict.", "makeDerelict");
+		}
+
+		private void classifierWorkingChanged(IMyCubeBlock b) {
+			log("Working: " + b.IsWorking, "classifierWorkingChanged");
+
+			if (b.IsWorking) {
+				// If the block is working, apply the class
+				promoteClass();
+			} else {
+				// If the block has stopped working, demote
+				demoteClass();
+			}
 		}
 
 		public override MyObjectBuilder_EntityBase GetObjectBuilder(bool copy = false) {
