@@ -26,13 +26,15 @@ namespace GardenConquest.Core {
 			if (s_Logger == null)
 				s_Logger = new Logger("Conquest Core", "Client");
 
-			// Chat command processor will already hook into message entered event
 			m_CmdProc = new CommandProcessor();
+			m_CmdProc.initialize();
+
 			m_MailMan = new ResponseProcessor();
 		}
 
 		public override void unloadData() {
 			log("Unloading", "unloadData");
+			m_CmdProc.shutdown();
 			m_MailMan.unload();
 		}
 

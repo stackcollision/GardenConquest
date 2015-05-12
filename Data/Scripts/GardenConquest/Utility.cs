@@ -57,5 +57,9 @@ namespace GardenConquest {
 			else
 				return MyAPIGateway.Multiplayer.IsServer;
 		}
+
+		public static void showDialog(string topic, string body, string button) {
+			MyAPIGateway.Utilities.ShowMissionScreen("Garden Conquest", null, topic, body, null, button);
+		}
 	}
 }

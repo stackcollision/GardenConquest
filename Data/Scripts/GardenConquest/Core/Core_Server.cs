@@ -35,6 +35,7 @@ namespace GardenConquest.Core {
 		private MyTimer m_RoundTimer = null;
 		private MyTimer m_SaveTimer = null;
 		private RequestProcessor m_MailMan = null;
+		private CommandProcessor m_CmdProc = null;
 
 		private bool m_RoundEnded = false;
 		//private Object m_SyncObject = new Object();
@@ -84,6 +85,10 @@ namespace GardenConquest.Core {
 			GridEnforcer.OnDerelictEnd += eventDerelictEnd;
 			GridEnforcer.OnClassProhibited += eventClassProhibited;
 
+			// For testing only
+			m_CmdProc = new CommandProcessor();
+			m_CmdProc.initialize();
+
 			m_Initialized = true;
 		}
 
@@ -94,6 +99,8 @@ namespace GardenConquest.Core {
 			GridEnforcer.OnDerelictStart -= eventDerelictStart;
 			GridEnforcer.OnDerelictEnd -= eventDerelictEnd;
 			GridEnforcer.OnClassProhibited -= eventClassProhibited;
+
+			m_CmdProc.shutdown();
 
 			m_MailMan.unload();
 
