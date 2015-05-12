@@ -503,13 +503,18 @@ namespace GardenConquest {
 		/// after x time
 		/// </summary>
 		private void startDerelictionTimer() {
+			int seconds = ConquestSettings.getInstance().DerelictCountdown;
+			if (seconds < 0) {
+				log("Dereliction timer disabled.  No timer started.", "startDerelictionTimer");
+				return;
+			}
+
 			// Create timer record
 			m_DerelictTimer = new ActiveDerelictTimer();
 			m_DerelictTimer.Grid = m_Grid;
 			m_DerelictTimer.GridID = m_Grid.EntityId;
 			m_DerelictTimer.Phase = ActiveDerelictTimer.PHASE.INITIAL;
-			m_DerelictTimer.MillisRemaining =
-				ConquestSettings.getInstance().DerelictCountdown * 1000;
+			m_DerelictTimer.MillisRemaining = seconds * 1000;
 			m_DerelictTimer.Timer = new MyTimer(m_DerelictTimer.MillisRemaining, makeDerelict);
 			m_DerelictTimer.Timer.Start();
 
@@ -530,6 +535,10 @@ namespace GardenConquest {
 		private void resumeDerelictionTimer(ActiveDerelictTimer dt) {
 			if (dt == null)
 				return;
+			if (ConquestSettings.getInstance().DerelictCountdown < 0) {
+				log("Dereliction timer disabled.  No timer resumed.", "resumeDerelictionTimer");
+				return;
+			}
 
 			m_DerelictTimer = dt;
 			m_DerelictTimer.Grid = m_Grid;
