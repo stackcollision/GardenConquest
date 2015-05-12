@@ -34,7 +34,7 @@ namespace GardenConquest {
 		}
 
 		public override void updateBeforeSimulation() {
-			// TODO
+			// Empty
 		}
 
 		#endregion

@@ -61,6 +61,7 @@ namespace GardenConquest {
 		public IMyFaction Faction { get { return m_OwningFaction; } }
 		public IMyCubeGrid Grid { get { return m_Grid; } }
 		public InGame.IMyBeacon Classifier { get { return m_Classifier; } }
+		public HullClass.CLASS ActualClass { get { return m_ActualClass; } }
 
 		#endregion
 		#region Events
@@ -81,6 +82,12 @@ namespace GardenConquest {
 		public static event Action<ActiveDerelictTimer, ActiveDerelictTimer.COMPLETION> OnDerelictEnd {
 			add { eventOnDerelictEnd += value; }
 			remove { eventOnDerelictEnd -= value; }
+		}
+
+		private static Action<GridEnforcer, HullClass.CLASS> eventOnClassProhibited;
+		public static event Action<GridEnforcer, HullClass.CLASS> OnClassProhibited {
+			add { eventOnClassProhibited += value; }
+			remove { eventOnClassProhibited -= value; }
 		}
 
 		#endregion
@@ -115,11 +122,7 @@ namespace GardenConquest {
 			// 25 blocks will be deleted on startup.
 			m_Grid.NeedsUpdate |= MyEntityUpdateEnum.EACH_100TH_FRAME;
 
-			// Get the initial block count
-			// TODO: Is this really necessary?  Will this always be 0?
-			List<IMySlimBlock> blocks = new List<IMySlimBlock>();
-			m_Grid.GetBlocks(blocks);
-			m_BlockCount = blocks.Count;
+			m_BlockCount = 0;
 
 			m_Grid.OnBlockAdded += blockAdded;
 			m_Grid.OnBlockRemoved += blockRemoved;
@@ -277,7 +280,7 @@ namespace GardenConquest {
 			if (c == HullClass.CLASS.UNLICENSED) {
 				FactionFleet fleet = StateTracker.getInstance().getFleet(m_OwningFaction.FactionId);
 				if (fleet.countClass(c) >= ConquestSettings.getInstance().UnlicensedPerFaction) {
-					// TODO: Send message
+					eventOnClassProhibited(this, c);
 					return false;
 				}
 			}

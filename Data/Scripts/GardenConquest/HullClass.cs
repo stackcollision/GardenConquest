@@ -30,6 +30,25 @@ namespace GardenConquest {
 			FORTRESS = 15
 		}
 
+		public static int[] captureMultiplier = {
+													0, //UNCLASSIFIED
+													1, //UNLICENSED
+													1, //WORKER
+													1, //FOUNDRY
+													1, //SCOUT
+													1, //FIGHTER
+													2, //GUNSHIP
+													2, //CORVETTE
+													3, //FRIGATE
+													4, //DESTROYER
+													5, //CRUISER
+													6, //BATTLESHIP
+													7, //DREADNAUGHT
+													2, //OUTPOST
+													4, //INSTALLATION
+													6, //FORTRESS
+												};
+
 		public static String[] ClassStrings = {
 										   "Unclassified",
 										   "Unlicensed",

@@ -11,6 +11,7 @@ namespace GardenConquest {
 		public IMyCubeGrid grid;
 		public long blockCount;
 		public Utility.GRIDTYPE gtype;
+		public HullClass.CLASS hullClass;
 	}
 
 	public class GridSorter : IComparer<FACGRID> {

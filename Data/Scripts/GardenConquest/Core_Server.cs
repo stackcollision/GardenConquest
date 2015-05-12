@@ -78,6 +78,7 @@ namespace GardenConquest {
 			GridEnforcer.OnViolation += eventGridViolation;
 			GridEnforcer.OnDerelictStart += eventDerelictStart;
 			GridEnforcer.OnDerelictEnd += eventDerelictEnd;
+			GridEnforcer.OnClassProhibited += eventClassProhibited;
 
 			m_Initialized = true;
 		}
@@ -88,6 +89,7 @@ namespace GardenConquest {
 			GridEnforcer.OnViolation -= eventGridViolation;
 			GridEnforcer.OnDerelictStart -= eventDerelictStart;
 			GridEnforcer.OnDerelictEnd -= eventDerelictEnd;
+			GridEnforcer.OnClassProhibited -= eventClassProhibited;
 
 			m_MailMan.unload();
 
@@ -179,6 +181,23 @@ namespace GardenConquest {
 			m_MailMan.send(noti);
 		}
 
+		public void eventClassProhibited(GridEnforcer ge, HullClass.CLASS c) {
+			List<long> players = getPlayersNearGrid(ge.Grid);
+
+			string message = "No more ships of class " + HullClass.ClassStrings[(int)c] +
+				" permitted for this faction.";
+
+			log("Sending message", "eventClassProhibited");
+			NotificationResponse noti = new NotificationResponse() {
+				NotificationText = message,
+				Time = 10000,
+				Font = MyFontEnum.Red,
+				Destination = players,
+				DestType = BaseMessage.DEST_TYPE.FACTION
+			};
+			m_MailMan.send(noti);
+		}
+
 		#endregion
 		#region Class Timer Events
 
@@ -208,7 +227,7 @@ namespace GardenConquest {
 					return;
 
 				// Check each CP in turn
-				Dictionary<long, long> totalTokens = new Dictionary<long, long>();
+				Dictionary<long, int> totalTokens = new Dictionary<long, int>();
 				foreach (ControlPoint cp in ConquestSettings.getInstance().ControlPoints) {
 					log("Processing control point " + cp.Name, "roundEnd");
 
@@ -232,19 +251,24 @@ namespace GardenConquest {
 					// Now that we have an aggregation of grids for factions
 					// in the SOI, we can decide who wins
 					long greatestFaction = -1;
-					int mostGrids = -1;
+					int greatestTotal = -1;
 					bool tie = false;
 					foreach (KeyValuePair<long, List<FACGRID>> entry in allFactionGrids) {
-						if (entry.Value.Count >= mostGrids) {
-							tie = entry.Value.Count == mostGrids;
+						int weightedTotal = 0;
+						foreach (FACGRID fg in entry.Value) {
+							weightedTotal += HullClass.captureMultiplier[(int)fg.hullClass];
+						}
+
+						if (weightedTotal >= greatestTotal) {
+							tie = weightedTotal == greatestTotal;
 
 							greatestFaction = entry.Key;
-							mostGrids = entry.Value.Count;
+							greatestTotal = weightedTotal;
 						}
 					}
 
 					log("Faction with most grids: " + greatestFaction, "roundEnd");
-					log("Number of grids: " + mostGrids, "roundEnd");
+					log("Number of (weighted) grids: " + greatestTotal, "roundEnd");
 					log("Tie? " + tie, "roundEnd");
 
 					// If we have a tie, nobody gets the tokens
@@ -300,6 +324,20 @@ namespace GardenConquest {
 				m_MailMan.send(endedMessage);
 
 				// Report round results
+				// For every faction that got rewards, tell them
+				NotificationResponse rewardMessage = new NotificationResponse() {
+					NotificationText = "",
+					Time = 10000,
+					Font = MyFontEnum.White,
+					Destination = new List<long>() { 0 },
+					DestType = BaseMessage.DEST_TYPE.FACTION
+				};
+				foreach (KeyValuePair<long, int> entry in totalTokens) {
+					rewardMessage.NotificationText = "Your faction has been awarded " +
+						entry.Value + " licenses";
+					rewardMessage.Destination[0] = entry.Key;
+					m_MailMan.send(endedMessage);
+				}
 
 
 			} catch (Exception e) {
@@ -378,36 +416,24 @@ namespace GardenConquest {
 				grid.GetBlocks(blocks);
 
 				// Conditions which must be met for the grid to count towards faction total:
-				// 1. Must be powered
-				// 2. Must have a HullClassifier beacon on it
-				// 3. HC beacon radius must be greater than the distance to the grid
-				bool isPowered = false;
+				// 1. Must have a powered hull classifier
+				// 2. HC beacon radius must be greater than the distance to the grid
 				bool hasHC = false;
 				bool radiusOK = false;
 
-				// TODO: Use GridEnforcer state here instead
-				foreach (IMySlimBlock block in blocks) {
-					IMyCubeBlock fat = block.FatBlock;
+				InGame.IMyBeacon beacon = ge.Classifier as InGame.IMyBeacon;
+				if (beacon == null)
+					continue;
 
-					if (fat != null) {
-						if (fat is InGame.IMyReactor) {
-							isPowered |= fat.IsFunctional && fat.IsWorking;
-						} else if (fat is InGame.IMyBeacon) {
-							if (fat.BlockDefinition.SubtypeName.Contains("HullClassifier")) {
-								hasHC |= fat.IsWorking;
-								
-								InGame.IMyBeacon beacon = fat as InGame.IMyBeacon;
-								radiusOK |= beacon.Radius >= VRageMath.Vector3.Distance(
-									cpPos, grid.GetPosition());
-							}
-						}
-					}
-				}
+				hasHC = beacon != null && beacon.IsWorking;
+
+				radiusOK = beacon.Radius >= VRageMath.Vector3.Distance(
+					cpPos, grid.GetPosition());
 
 				// If the grid doesn't pass the above conditions, skip it
-				log("Grid " + grid.EntityId + ": " + isPowered + " " + hasHC + " " 
+				log("Grid " + grid.EntityId + ": " + hasHC + " " 
 					+ radiusOK, "groupFactionGrids");
-				if (!(isPowered && hasHC && radiusOK))
+				if (!(hasHC && radiusOK))
 					continue;
 
 				// The grid can be counted
@@ -415,6 +441,7 @@ namespace GardenConquest {
 				fg.grid = grid;
 				fg.blockCount = blocks.Count;
 				fg.gtype = Utility.getGridType(grid);
+				fg.hullClass = ge.ActualClass;
 
 				List<FACGRID> gridsOfCurrent = null;
 				if (result.ContainsKey(fac.FactionId)) {
