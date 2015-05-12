@@ -8,7 +8,9 @@ using System.Threading.Tasks;
 using Sandbox.Common;
 using Sandbox.ModAPI;
 
-namespace GardenConquest {
+using GardenConquest.Records;
+
+namespace GardenConquest.Core {
 
 	/// <summary>
 	/// Singleton class which tracks state, accessible to other classes.

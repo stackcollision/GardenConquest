@@ -16,7 +16,10 @@ using VRage.Library.Utils;
 using Interfaces = Sandbox.ModAPI.Interfaces;
 using InGame = Sandbox.ModAPI.Ingame;
 
-namespace GardenConquest {
+using GardenConquest.Records;
+using GardenConquest.Core;
+
+namespace GardenConquest.Blocks {
 
 	/// <summary>
 	/// Applied to every grid.  Verifies that all grids comply with the rules and enforces them.
@@ -248,7 +251,7 @@ namespace GardenConquest {
 			// Test rules based on actual class, so they only get the block limit
 			// if the classifier beacon is complete
 			HullRule r = ConquestSettings.getInstance().HullRules[(int)m_ActualClass];
-			log("Count: " + m_BlockCount + " Limit: " + r.MaxBlocks, "checkRules");
+			log("Block count (" + m_BlockCount + "/" + r.MaxBlocks + ")", "checkRules");
 
 			// Check general block count limit
 			if (m_BlockCount > r.MaxBlocks) {

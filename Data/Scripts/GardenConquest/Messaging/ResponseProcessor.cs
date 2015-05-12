@@ -12,7 +12,7 @@ using VRage.Library.Utils;
 using Interfaces = Sandbox.ModAPI.Interfaces;
 using InGame = Sandbox.ModAPI.Ingame;
 
-namespace GardenConquest {
+namespace GardenConquest.Messaging {
 	/// <summary>
 	/// Client side message hooks.  Processed messages coming from the server.
 	/// </summary>

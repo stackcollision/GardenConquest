@@ -6,7 +6,9 @@ using System.Text;
 using System.Threading.Tasks;
 using VRage.Library;
 
-namespace GardenConquest {
+using GardenConquest.Extensions;
+
+namespace GardenConquest.Messaging {
 
 	/// <summary>
 	/// Base class for all messages sent between client and server

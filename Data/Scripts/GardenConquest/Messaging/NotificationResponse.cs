@@ -8,7 +8,9 @@ using VRage.Library;
 using Sandbox.Common;
 using System.IO;
 
-namespace GardenConquest {
+using GardenConquest.Extensions;
+
+namespace GardenConquest.Messaging {
 
 	public class NotificationResponse : BaseMessage {
 		public String NotificationText { get; set; }

@@ -15,7 +15,7 @@ using Sandbox.ModAPI;
 using Interfaces = Sandbox.ModAPI.Interfaces;
 using InGame = Sandbox.ModAPI.Ingame;
 
-namespace GardenConquest {
+namespace GardenConquest.Blocks {
 	[MyEntityComponentDescriptor(typeof(MyObjectBuilder_MergeBlock))]
 	class MergeBlock : MyGameLogicComponent {
 

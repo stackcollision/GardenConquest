@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
 
-namespace GardenConquest {
+namespace GardenConquest.Records {
 	public class HullRule {
 		public int MaxBlocks { get; set; }
 		public int MaxTurrets { get; set; }

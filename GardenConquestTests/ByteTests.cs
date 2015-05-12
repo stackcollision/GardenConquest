@@ -3,6 +3,8 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using GardenConquest;
 using System.Collections.Generic;
 
+using GardenConquest.Extensions;
+
 namespace GardenConquestTests {
 	[TestClass]
 	public class ByteTests {

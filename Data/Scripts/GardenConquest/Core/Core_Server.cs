@@ -18,7 +18,11 @@ using Sandbox.Game.World;
 using Sandbox.Common.Components;
 using Sandbox.Game.Entities;
 
-namespace GardenConquest {
+using GardenConquest.Messaging;
+using GardenConquest.Blocks;
+using GardenConquest.Records;
+
+namespace GardenConquest.Core {
 
 	/// <summary>
 	/// Core of the server.  Manages rounds and reward distribution.

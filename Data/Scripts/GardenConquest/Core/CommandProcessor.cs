@@ -12,7 +12,7 @@ using VRage.Library.Utils;
 using Interfaces = Sandbox.ModAPI.Interfaces;
 using InGame = Sandbox.ModAPI.Ingame;
 
-namespace GardenConquest {
+namespace GardenConquest.Core {
 
 	/// <summary>
 	/// Hooks into chat commands and sends requests to server.

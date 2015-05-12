@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using VRage.Library;
 
-namespace GardenConquest {
+namespace GardenConquest.Extensions {
 
 	/// <summary>
 	/// This class has to exist because apparently some of the most useful, basic stuff

@@ -3,6 +3,9 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using GardenConquest;
 using System.Collections.Generic;
 
+using GardenConquest.Extensions;
+using GardenConquest.Messaging;
+
 namespace GardenConquestTests {
 	[TestClass]
 	public class MessageTests {

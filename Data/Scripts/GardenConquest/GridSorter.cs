@@ -6,6 +6,8 @@ using System.Threading.Tasks;
 
 using Sandbox.ModAPI;
 
+using GardenConquest.Records;
+
 namespace GardenConquest {
 	public struct FACGRID {
 		public IMyCubeGrid grid;

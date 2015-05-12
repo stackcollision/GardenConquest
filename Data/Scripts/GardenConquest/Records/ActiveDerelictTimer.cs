@@ -8,7 +8,7 @@ using System.Xml.Serialization;
 using Sandbox.ModAPI;
 using VRage.Library.Utils;
 
-namespace GardenConquest {
+namespace GardenConquest.Records {
 
 	/// <summary>
 	/// A dereliction timer to be preserved across restarts

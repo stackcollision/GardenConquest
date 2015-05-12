@@ -12,7 +12,9 @@ using Sandbox.Engine;
 using Sandbox.Game;
 using Sandbox.ModAPI;
 
-namespace GardenConquest {
+using GardenConquest.Records;
+
+namespace GardenConquest.Core {
 	
 	/// <summary>
 	/// Singleton class to store settings for the server.
