@@ -19,8 +19,8 @@
         <string>Beacon/GCFrigateHullClassifier</string>
         <string>Beacon/GCDestroyerHullClassifier</string>
         <string>Beacon/GCCruiserHullClassifier</string>
+        <string>Beacon/GCHeavyCruiserHullClassifier</string>
         <string>Beacon/GCBattleshipHullClassifier</string>
-        <string>Beacon/GCDreadnaughtHullClassifier</string>
       </ItemIds>
     </Category>
   </CategoryClasses>

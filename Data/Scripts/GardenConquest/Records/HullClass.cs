@@ -22,8 +22,8 @@ namespace GardenConquest.Records {
 			FRIGATE = 8,
 			DESTROYER = 9,
 			CRUISER = 10,
-			BATTLESHIP = 11,
-			DREADNAUGHT = 12,
+			HEAVYCRUISER = 11,
+			BATTLESHIP = 12,
 			// Stations
 			OUTPOST = 13,
 			INSTALLATION = 14,
@@ -42,8 +42,8 @@ namespace GardenConquest.Records {
 													3, //FRIGATE
 													4, //DESTROYER
 													5, //CRUISER
-													6, //BATTLESHIP
-													7, //DREADNAUGHT
+													6, //HEAVYCRUISER
+													7, //BATTLESHIP
 													2, //OUTPOST
 													4, //INSTALLATION
 													6, //FORTRESS
@@ -61,8 +61,8 @@ namespace GardenConquest.Records {
 										   "Frigate",
 										   "Destroyer",
 										   "Cruiser",
+										   "Heavy Cruiser",
 										   "Battleship",
-										   "Dreadnaught",
 										   "Outpost",
 										   "Installation",
 										   "Fortress"
@@ -89,10 +89,10 @@ namespace GardenConquest.Records {
 				return CLASS.DESTROYER;
 			} else if (subtype.Contains("Cruiser")) {
 				return CLASS.CRUISER;
+			} else if (subtype.Contains("HeavyCruiser")) {
+				return CLASS.HEAVYCRUISER;
 			} else if (subtype.Contains("Battleship")) {
 				return CLASS.BATTLESHIP;
-			} else if (subtype.Contains("Dreadnaught")) {
-				return CLASS.DREADNAUGHT;
 			} else if (subtype.Contains("Outpost")) {
 				return CLASS.OUTPOST;
 			} else if (subtype.Contains("Installation")) {

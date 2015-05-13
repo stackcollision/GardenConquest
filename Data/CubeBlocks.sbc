@@ -476,9 +476,9 @@
     <Definition>
       <Id>
         <TypeId>Beacon</TypeId>
-        <SubtypeId>GCBattleshipHullClassifier</SubtypeId>
+        <SubtypeId>GCHeavyCruiserHullClassifier</SubtypeId>
       </Id>
-      <DisplayName>Battleship Class</DisplayName>
+      <DisplayName>Heavy Cruiser Class</DisplayName>
       <Icon>Textures\Icons\supercapital-1-32.dds</Icon>
       <CubeSize>Large</CubeSize>
       <BlockTopology>TriangleMesh</BlockTopology>
@@ -510,7 +510,7 @@
         <Model BuildPercentUpperBound="0.66" File="Models\Cubes\Large\BeaconConstruction_2.mwm" />
         <Model BuildPercentUpperBound="1.00" File="Models\Cubes\Large\BeaconConstruction_3.mwm" />
       </BuildProgressModels>
-      <BlockPairName>GardenConquest_BattleshipHullClassifier</BlockPairName>
+      <BlockPairName>GardenConquest_HeavyCruiserHullClassifier</BlockPairName>
       <EdgeType>Light</EdgeType>
       <BuildTimeSeconds>50</BuildTimeSeconds>
       <DamageEffectId>214</DamageEffectId>
@@ -519,9 +519,9 @@
     <Definition>
       <Id>
         <TypeId>Beacon</TypeId>
-        <SubtypeId>GCDreadnaughtHullClassifier</SubtypeId>
+        <SubtypeId>GCBattleshipHullClassifier</SubtypeId>
       </Id>
-      <DisplayName>Dreadnaught Class</DisplayName>
+      <DisplayName>Battleship Class</DisplayName>
       <Icon>Textures\Icons\supercapital-2-32.dds</Icon>
       <CubeSize>Large</CubeSize>
       <BlockTopology>TriangleMesh</BlockTopology>
@@ -553,7 +553,7 @@
         <Model BuildPercentUpperBound="0.66" File="Models\Cubes\Large\BeaconConstruction_2.mwm" />
         <Model BuildPercentUpperBound="1.00" File="Models\Cubes\Large\BeaconConstruction_3.mwm" />
       </BuildProgressModels>
-      <BlockPairName>GardenConquest_DreadnaughtHullClassifier</BlockPairName>
+      <BlockPairName>GardenConquest_BattleshipHullClassifier</BlockPairName>
       <EdgeType>Light</EdgeType>
       <BuildTimeSeconds>50</BuildTimeSeconds>
       <DamageEffectId>214</DamageEffectId>

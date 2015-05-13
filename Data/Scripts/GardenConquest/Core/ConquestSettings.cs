@@ -130,9 +130,9 @@ namespace GardenConquest.Core {
 				new HullRule() { MaxBlocks = 1800, MaxTurrets = 4 };
 			HullRules[(int)HullClass.CLASS.CRUISER] =
 				new HullRule() { MaxBlocks = 2700, MaxTurrets = 6 };
-			HullRules[(int)HullClass.CLASS.BATTLESHIP] =
+			HullRules[(int)HullClass.CLASS.HEAVYCRUISER] =
 				new HullRule() { MaxBlocks = 4050, MaxTurrets = 8 };
-			HullRules[(int)HullClass.CLASS.DREADNAUGHT] =
+			HullRules[(int)HullClass.CLASS.BATTLESHIP] =
 				new HullRule() { MaxBlocks = 6075, MaxTurrets = 10 };
 			HullRules[(int)HullClass.CLASS.OUTPOST] =
 				new HullRule() { MaxBlocks = 600, MaxTurrets = 2 };

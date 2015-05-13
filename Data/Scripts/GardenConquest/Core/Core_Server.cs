@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 
 using Sandbox.Common;
 using Sandbox.Common.ObjectBuilders;
+using BuilderDefs = Sandbox.Common.ObjectBuilders.Definitions;
 using Sandbox.Definitions;
 using Sandbox.ModAPI;
 using VRage.Library.Utils;
@@ -21,6 +22,7 @@ using Sandbox.Game.Entities;
 using GardenConquest.Messaging;
 using GardenConquest.Blocks;
 using GardenConquest.Records;
+using GardenConquest.Extensions;
 
 namespace GardenConquest.Core {
 
@@ -41,7 +43,7 @@ namespace GardenConquest.Core {
 		//private Object m_SyncObject = new Object();
 
 		private static MyObjectBuilder_Component s_TokenBuilder = null;
-		private static Sandbox.Common.ObjectBuilders.Definitions.SerializableDefinitionId? s_TokenDef = null;
+		private static BuilderDefs.SerializableDefinitionId? s_TokenDef = null;
 		private static IComparer<FACGRID> s_Sorter = null;
 
 		#endregion
@@ -86,6 +88,7 @@ namespace GardenConquest.Core {
 			GridEnforcer.OnClassProhibited += eventClassProhibited;
 
 			// For testing only
+			// TODO: Remove before release
 			m_CmdProc = new CommandProcessor();
 			m_CmdProc.initialize();
 
@@ -302,8 +305,13 @@ namespace GardenConquest.Core {
 						// Go through the sorted list and find the first ship with a cargo container
 						// with space.  If the faction has no free cargo container they are S.O.L.
 						log("Looking for valid container", "roundEnd");
-						InGame.IMyCargoContainer container =
-							getFirstAvailableCargo(grids, cp.TokensPerPeriod);
+						InGame.IMyCargoContainer container = null;
+						foreach (FACGRID grid in grids) {
+							container = grid.grid.getAvailableCargo(s_TokenDef, cp.TokensPerPeriod);
+							if (container != null)
+								break;
+						}
+						
 						if (container != null) {
 							// Award the tokens
 							log("Found a ship to put tokens in", "roundEnd");
@@ -465,42 +473,6 @@ namespace GardenConquest.Core {
 			}
 
 			return result;
-		}
-
-		/// <summary>
-		/// Finds the first cargo container in the list of grids which can hold the reward.
-		/// </summary>
-		/// <param name="grids"></param>
-		/// <param name="numTok"></param>
-		/// <returns></returns>
-		private InGame.IMyCargoContainer getFirstAvailableCargo(List<FACGRID> grids, int numTok) {
-			// This list is sorted by preference rules
-			// Find the first one which has a cargo container with space
-			List<IMySlimBlock> containers = new List<IMySlimBlock>();
-			foreach (FACGRID grid in grids) {
-				log("Checking grid " + grid.grid.Name, "getFirstAvailableCargo");
-				// Check if it has a cargo container
-				grid.grid.GetBlocks(containers, x => x.FatBlock != null && x.FatBlock is InGame.IMyCargoContainer);
-				if (containers.Count != 0) {
-					log("Has containers", "getFirstAvailableCargo");
-					// Find first container with space
-					foreach (IMySlimBlock block in containers) {
-						InGame.IMyCargoContainer c = block.FatBlock as InGame.IMyCargoContainer;
-						Interfaces.IMyInventoryOwner invo = c as Interfaces.IMyInventoryOwner;
-						Interfaces.IMyInventory inv = invo.GetInventory(0);
-						// TODO: Check that it can fit
-						//if (inv.CanItemsBeAdded(numTok, 
-						//	(Sandbox.Common.ObjectBuilders.Definitions.SerializableDefinitionId)m_TokenDef)) {
-						log("Can fit tokens", "getFirstAvailableCargo");
-						return c;
-						//}
-					}
-				}
-
-				containers.Clear();
-			}
-
-			return null;
 		}
 
 		#endregion

@@ -54,6 +54,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Core\CommandProcessor.cs" />
+    <Compile Include="Extensions\GridExtensions.cs" />
     <Compile Include="Messaging\BaseMessage.cs" />
     <Compile Include="Extensions\ByteConverterExtension.cs" />
     <Compile Include="Messaging\NotificationResponse.cs" />

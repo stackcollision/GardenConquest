@@ -18,6 +18,7 @@ using InGame = Sandbox.ModAPI.Ingame;
 
 using GardenConquest.Records;
 using GardenConquest.Core;
+using GardenConquest.Extensions;
 
 namespace GardenConquest.Blocks {
 
@@ -332,6 +333,9 @@ namespace GardenConquest.Blocks {
 		/// <param name="b"></param>
 		private void removeBlock(IMySlimBlock b) {
 			// TODO: spawn materials in place so they're not lost
+			// Need to find a way to get the stockpile status
+			// Currently locked behind MySlimBlock (non-interface)
+
 			m_Grid.RemoveBlock(b);
 		}
 
