@@ -185,6 +185,11 @@ namespace GardenConquest.Blocks {
 					startDerelictionTimer();
 				m_Merging = false;
 			}
+
+			if (m_IsDerelict) {
+				m_IsDerelict = false;
+				makeDerelict();
+			}
 		}
 
 		/// <summary>
@@ -522,7 +527,8 @@ namespace GardenConquest.Blocks {
 			m_DerelictTimer.GridID = m_Grid.EntityId;
 			m_DerelictTimer.Phase = ActiveDerelictTimer.PHASE.INITIAL;
 			m_DerelictTimer.MillisRemaining = seconds * 1000;
-			m_DerelictTimer.Timer = new MyTimer(m_DerelictTimer.MillisRemaining, makeDerelict);
+			m_DerelictTimer.Timer = new MyTimer(m_DerelictTimer.MillisRemaining,
+				derelictionTimerExpired);
 			m_DerelictTimer.Timer.Start();
 
 			m_DerelictTimer.StartingMillisRemaining = m_DerelictTimer.MillisRemaining;
@@ -549,7 +555,8 @@ namespace GardenConquest.Blocks {
 
 			m_DerelictTimer = dt;
 			m_DerelictTimer.Grid = m_Grid;
-			m_DerelictTimer.Timer = new MyTimer(m_DerelictTimer.MillisRemaining, makeDerelict);
+			m_DerelictTimer.Timer = new MyTimer(m_DerelictTimer.MillisRemaining,
+				derelictionTimerExpired);
 			m_DerelictTimer.Timer.Start();
 
 			log("Dereliction timer resumed with " + m_DerelictTimer.MillisRemaining,
@@ -572,19 +579,34 @@ namespace GardenConquest.Blocks {
 			}
 		}
 
+		private void derelictionTimerExpired() {
+			// How did we get here without a timer?
+			if (m_DerelictTimer == null)
+				return;
+
+			m_IsDerelict = true;
+
+			StateTracker.getInstance().removeDerelictTimer(m_DerelictTimer);
+			eventOnDerelictEnd(m_DerelictTimer, ActiveDerelictTimer.COMPLETION.ELAPSED);
+
+			// Get rid of the timer
+			m_DerelictTimer.Timer.Stop();
+			m_DerelictTimer.Timer = null;
+			m_DerelictTimer = null;
+		}
+
 		/// <summary>
 		/// When the dereliction timer expires this turns the grid into a derelict.
 		/// Destroys functional blocks and stops the grid.
 		/// </summary>
 		private void makeDerelict() {
-			// How did we get here without a timer?
-			if (m_DerelictTimer == null)
-				return;
+			log("Timer expired.  Grid turned into a derelict.", "makeDerelict");
 
 			// Get a list of all functional blocks
 			List<IMySlimBlock> funcBlocks = new List<IMySlimBlock>();
 			m_Grid.GetBlocks(funcBlocks,
 				x => x.FatBlock != null && x.FatBlock is IMyFunctionalBlock);
+			log(funcBlocks.Count + " blocks to remove", "makeDerelict");
 
 			// Go through the list and destroy them
 			// TODO: Do this in phases with damage instead of just poofing them
@@ -594,16 +616,6 @@ namespace GardenConquest.Blocks {
 				// stored grid to remove it
 				block.CubeGrid.RemoveBlock(block);
 			}
-
-			StateTracker.getInstance().removeDerelictTimer(m_DerelictTimer);
-			eventOnDerelictEnd(m_DerelictTimer, ActiveDerelictTimer.COMPLETION.ELAPSED);
-
-			// Get rid of the timer
-			m_DerelictTimer.Timer.Stop();
-			m_DerelictTimer.Timer = null;
-			m_DerelictTimer = null;
-
-			log("Timer expired.  Grid turned into a derelict.", "makeDerelict");
 		}
 
 		private void classifierWorkingChanged(IMyCubeBlock b) {
