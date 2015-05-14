@@ -51,11 +51,14 @@ namespace GardenConquest {
 		/// </summary>
 		/// <returns></returns>
 		public static bool isServer() {
-			// If multiplayer is inactive, we are the "server" in single player
-			if (MyAPIGateway.Multiplayer == null || !MyAPIGateway.Multiplayer.MultiplayerActive)
-				return true;
-			else
-				return MyAPIGateway.Multiplayer.IsServer;
+			try {
+				if (MyAPIGateway.Multiplayer.MultiplayerActive == false)
+					return true;
+				else
+					return MyAPIGateway.Multiplayer.IsServer;
+			} catch (Exception e) {
+				return false;
+			}
 		}
 
 		public static void showDialog(string topic, string body, string button) {

@@ -115,6 +115,7 @@ namespace GardenConquest.Blocks {
 			// When we modify the grid on the server the changes should be
 			// sent to all clients
 			m_IsServer = Utility.isServer();
+			log("Is server: " + m_IsServer, "Init");
 			if (!m_IsServer) {
 				// No cleverness allowed :[
 				log("Disabled.  Not server.", "Init");
@@ -161,34 +162,39 @@ namespace GardenConquest.Blocks {
 			if (!m_IsServer)
 				return;
 
-			// NOTE: Can't turn off this update, because other scripts might also want it
-			if (!m_BeyondFirst100) {
-				m_BeyondFirst100 = true;
+			try {
 
-				// Once the server has loaded all block for this grid, check if we are
-				// classified.  If not, warn the owner about the timer
-				if (m_ActualClass == HullClass.CLASS.UNCLASSIFIED) {
-					// Since the game is just starting, we need to check if we're supposed
-					// to resume this timer or start a brand new one
-					ActiveDerelictTimer dt = StateTracker.getInstance().findActiveDerelictTimer(
-						m_Grid.EntityId);
-					if (dt == null)
-						startDerelictionTimer();
-					else
-						resumeDerelictionTimer(dt);
+				// NOTE: Can't turn off this update, because other scripts might also want it
+				if (!m_BeyondFirst100) {
+					m_BeyondFirst100 = true;
+
+					// Once the server has loaded all block for this grid, check if we are
+					// classified.  If not, warn the owner about the timer
+					if (m_ActualClass == HullClass.CLASS.UNCLASSIFIED) {
+						// Since the game is just starting, we need to check if we're supposed
+						// to resume this timer or start a brand new one
+						ActiveDerelictTimer dt = StateTracker.getInstance().findActiveDerelictTimer(
+							m_Grid.EntityId);
+						if (dt == null)
+							startDerelictionTimer();
+						else
+							resumeDerelictionTimer(dt);
+					}
 				}
-			}
 
-			// If we just completed a merge check if this grid is violating rules
-			if (m_Merging) {
-				if (checkRules() != VIOLATION_TYPE.NONE)
-					startDerelictionTimer();
-				m_Merging = false;
-			}
+				// If we just completed a merge check if this grid is violating rules
+				if (m_Merging) {
+					if (checkRules() != VIOLATION_TYPE.NONE)
+						startDerelictionTimer();
+					m_Merging = false;
+				}
 
-			if (m_IsDerelict) {
-				m_IsDerelict = false;
-				makeDerelict();
+				if (m_IsDerelict) {
+					m_IsDerelict = false;
+					makeDerelict();
+				}
+			} catch (Exception e) {
+				log("Exception occured: " + e, "UpdateBeforeSimulation100");
 			}
 		}
 
