@@ -60,3 +60,34 @@ CP.
 
 If there is a tie in grid counts between factions, no one gets the reward.
 
+## Contributing
+
+### Requirements
+
+To develop SE Mods you will need:
+
+* [Visual Studo](#)
+
+If you're developing assets you may also need:
+
+* A graphic editor like [Photoshop](#) for textures
+* A way to export graphics to DDS for textures, i.e. [NVIDIA Texture Tools for Adobe Photoshop](https://developer.nvidia.com/nvidia-texture-tools-adobe-photoshop)
+* A 3d modeling program for models [Photoshop]
+
+### Installation
+
+
+#### Clone the repo into a new directory
+Navigate to your web projects directory and use git to clone the project files
+ into a new directory:
+
+via SSH
+```
+git clone git@github.com:stackcollision/GardenConquest.git
+```
+
+or via HTTPS
+```
+git clone https://github.com/stackcollision/GardenConquest
+```
+
