@@ -60,12 +60,52 @@ namespace GardenConquest.Messaging {
 			}
 		}
 
+		public void incommingResponse(byte[] buffer) {
+			log("Got message of size " + buffer.Length, "incomming");
+
+			try {
+				// Deserialize the message
+				BaseResponse msg = BaseResponse.messageFromBytes(buffer);
+
+				// Is this message even intended for us?
+				if (msg.DestType == BaseResponse.DEST_TYPE.FACTION) {
+					IMyFaction fac = MyAPIGateway.Session.Factions.TryGetPlayerFaction(
+						MyAPIGateway.Session.Player.PlayerID);
+					if (fac == null || !msg.Destination.Contains(fac.FactionId))
+						return; // Message not meant for us
+				} else if (msg.DestType == BaseResponse.DEST_TYPE.PLAYER) {
+					if (!msg.Destination.Contains(MyAPIGateway.Session.Player.PlayerID))
+						return; // Message not meant for us
+				}
+
+				switch (msg.MsgType) {
+					case BaseResponse.TYPE.NOTIFICATION:
+						processNotificationResponse(msg as NotificationResponse);
+						break;
+				}
+			} catch (Exception e) {
+				log("Exception occured: " + e, "incomming");
+			}
+		}
+
+		private void processNotificationResponse(NotificationResponse noti)
+		{
+			log("Hit", "processNotificationResponse");
+			MyAPIGateway.Utilities.ShowNotification(noti.NotificationText, noti.Time, noti.Font);
+		}
+
 		public void send(BaseResponse msg) {
 			if (msg == null)
 				return;
 
 			byte[] buffer = msg.serialize();
-			MyAPIGateway.Multiplayer.SendMessageToOthers(Constants.GCMessageId, buffer);
+
+			if (MyAPIGateway.Multiplayer.MultiplayerActive) {
+				MyAPIGateway.Multiplayer.SendMessageToOthers(Constants.GCMessageId, buffer);
+			} else {
+				incommingResponse(buffer);
+			}
+
 			log("Sent packet of " + buffer.Length + " bytes", "send");
 		}
 
