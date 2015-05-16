@@ -420,8 +420,16 @@ namespace GardenConquest.Core {
 				IMyFaction fac = ge.Faction;
 
 				// Player must be in a faction to get tokens
-				if (fac == null)
-					continue;
+				// If there is no faction, the player may have joined a faction after creating
+				// the last block on this grid.  Force a re-evaluation
+				if (fac == null) {
+					ge.reevaluateOwningFaction();
+					fac = ge.Faction;
+
+					// If faction is still null, continue
+					if (fac == null)
+						continue;
+				}
 
 				List<IMySlimBlock> blocks = new List<IMySlimBlock>();
 				grid.GetBlocks(blocks);

@@ -440,7 +440,7 @@ namespace GardenConquest.Blocks {
 		/// Figures out which faction owns this grid, if any
 		/// </summary>
 		/// <returns>Whether or not the owning faction changed.</returns>
-		private bool reevaluateOwningFaction() {
+		public bool reevaluateOwningFaction() {
 			IMyFaction fac = null;
 			bool changed = false;
 
