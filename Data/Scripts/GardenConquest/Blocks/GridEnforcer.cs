@@ -34,7 +34,8 @@ namespace GardenConquest.Blocks {
 		public enum VIOLATION_TYPE {
 			NONE,
 			BLOCK,
-			TURRET
+			TURRET,
+			FIXED
 		}
 
 		#endregion
@@ -54,6 +55,7 @@ namespace GardenConquest.Blocks {
 		private bool m_IsServer = false;
 		private int m_BlockCount = 0;
 		private int m_TurretCount = 0;
+		private int m_FixedCount = 0;
 		private bool m_BeyondFirst100 = false;
 		private bool m_Merging = false;
 
@@ -215,28 +217,40 @@ namespace GardenConquest.Blocks {
 		private void blockAdded(IMySlimBlock added) {
 			m_BlockCount++;
 			log("Block added to grid.  Count now: " + m_BlockCount, "blockAdded");
-			if (added.FatBlock != null && (
+
+			if (added.FatBlock != null) {
+				// Class beacon
+				if (
+					added.FatBlock is InGame.IMyBeacon &&
+					added.FatBlock.BlockDefinition.SubtypeName.Contains("HullClassifier")
+				) {
+					// Reserve the grid class
+					if (!reserveClass(added))
+						removeBlock(added); // Class could not be reserved, so remove block
+
+					// Return after classification
+					// It is recommended that the distance between the unclassified block limit and 
+					// the fighter/corvette block limits be substantial to prevent an issue
+					// where as soon as the hull is classified it's over the limit.
+					return;
+				}
+					// Turret weapons
+				else if (
 					added.FatBlock is InGame.IMyLargeGatlingTurret ||
 					added.FatBlock is InGame.IMyLargeMissileTurret
-			)) {
-				m_TurretCount++;
-				log("Turret count now: " + m_TurretCount, "blockAdded");
-			}
-
-			// Check if its a class beacon
-			if (added.FatBlock != null &&
-				added.FatBlock is InGame.IMyBeacon &&
-				added.FatBlock.BlockDefinition.SubtypeName.Contains("HullClassifier")
-			) {
-				// Reserve the grid class
-				if (!reserveClass(added))
-					removeBlock(added); // Class could not be reserved, so remove block
-
-				// Return after classification
-				// It is recommended that the distance between the unclassified block limit and 
-				// the fighter/corvette block limits be substantial to prevent an issue
-				// where as soon as the hull is classified it's over the limit.
-				return;
+				) {
+					m_TurretCount++;
+					log("Turret count now: " + m_TurretCount, "blockAdded");
+				}
+					// Fixed weapons
+				else if (
+					added.FatBlock is InGame.IMySmallMissileLauncher ||
+					added.FatBlock is InGame.IMySmallMissileLauncherReload ||
+					added.FatBlock is InGame.IMySmallGatlingGun
+				) {
+					m_FixedCount++;
+					log("Fixed weapon count now: " + m_FixedCount, "blockAdded");
+				}
 			}
 
 			// If this grid is currently being merged do not check rules
@@ -277,6 +291,12 @@ namespace GardenConquest.Blocks {
 				return VIOLATION_TYPE.TURRET;
 			}
 
+			// Check number of fixed weapons
+			if (m_FixedCount > r.MaxFixed) {
+				log("Grid has violated fixed weapon limit for class", "checkRules");
+				return VIOLATION_TYPE.FIXED;
+			}
+
 			return VIOLATION_TYPE.NONE;
 		}
 
@@ -312,17 +332,29 @@ namespace GardenConquest.Blocks {
 			log("Block removed from grid.  Count now: " + m_BlockCount, "blockRemoved");
 
 			// Check if the removed block was the class beacon
-			if (removed.FatBlock != null &&
-				removed.FatBlock is InGame.IMyBeacon &&
-				removed.FatBlock.BlockDefinition.SubtypeName.Contains("HullClassifier")
-			) {
-				if (removed.FatBlock == m_Classifier)
+			if (removed.FatBlock != null) {
+				// Class beacon
+				if (
+					removed.FatBlock is InGame.IMyBeacon &&
+					removed.FatBlock.BlockDefinition.SubtypeName.Contains("HullClassifier")
+				) {
 					removeClass();
-			} else if (removed.FatBlock != null && (
+				}
+				// Turret weapons
+				else if (
 					removed.FatBlock is InGame.IMyLargeGatlingTurret ||
 					removed.FatBlock is InGame.IMyLargeMissileTurret
-			)) {
-				m_TurretCount--;
+				) {
+					m_TurretCount--;
+				}
+				// Fixed weapons
+				else if (
+					removed.FatBlock is InGame.IMySmallMissileLauncher ||
+					removed.FatBlock is InGame.IMySmallMissileLauncherReload ||
+					removed.FatBlock is InGame.IMySmallGatlingGun
+				) {
+					m_FixedCount--;
+				}
 			}
 		}
 

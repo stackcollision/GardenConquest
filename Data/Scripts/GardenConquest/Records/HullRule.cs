@@ -9,10 +9,12 @@ namespace GardenConquest.Records {
 	public class HullRule {
 		public int MaxBlocks { get; set; }
 		public int MaxTurrets { get; set; }
+		public int MaxFixed { get; set; }
 
 		public HullRule() {
 			MaxBlocks = 1;
 			MaxTurrets = 0;
+			MaxFixed = 0;
 		}
 	}
 }

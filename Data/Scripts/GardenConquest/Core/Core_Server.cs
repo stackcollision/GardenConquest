@@ -115,15 +115,19 @@ namespace GardenConquest.Core {
 		#region Event Handlers
 
 		public void eventGridViolation(GridEnforcer ge, GridEnforcer.VIOLATION_TYPE v) {
+			log("hit", "eventGridViolation");
+
 			// Check for players within the vicinity of the grid, since there's no
 			// built-in way to tell who just placed the block
 			List<long> players = getPlayersNearGrid(ge.Grid);
 			
 			string message = "";
-			if(v == GridEnforcer.VIOLATION_TYPE.BLOCK)
+			if (v == GridEnforcer.VIOLATION_TYPE.BLOCK)
 				message = "Block limit reached";
-			else
+			else if (v == GridEnforcer.VIOLATION_TYPE.TURRET)
 				message = "Turret limit reached";
+			else
+				message = "Fixed weapon limit reached";
 
 			log("Sending message", "eventDerelictStart");
 			NotificationResponse noti = new NotificationResponse() {
