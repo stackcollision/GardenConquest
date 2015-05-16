@@ -11,6 +11,7 @@ using BuilderDefs = Sandbox.Common.ObjectBuilders.Definitions;
 using Sandbox.Definitions;
 using Sandbox.ModAPI;
 using VRage.Library.Utils;
+using VRageMath;
 using Interfaces = Sandbox.ModAPI.Interfaces;
 using InGame = Sandbox.ModAPI.Ingame;
 
@@ -149,7 +150,7 @@ namespace GardenConquest.Core {
 				Time = 4000,
 				Font = MyFontEnum.Red,
 				Destination = players,
-				DestType = BaseResponse.DEST_TYPE.FACTION
+				DestType = BaseResponse.DEST_TYPE.PLAYER
 			};
 			m_MailMan.send(noti);
 		}
@@ -217,7 +218,7 @@ namespace GardenConquest.Core {
 				Time = 10000,
 				Font = MyFontEnum.Red,
 				Destination = players,
-				DestType = BaseResponse.DEST_TYPE.FACTION
+				DestType = BaseResponse.DEST_TYPE.PLAYER
 			};
 			m_MailMan.send(noti);
 		}
@@ -382,20 +383,31 @@ namespace GardenConquest.Core {
 		/// <param name="grid"></param>
 		/// <returns></returns>
 		private List<long> getPlayersNearGrid(IMyCubeGrid grid) {
-			VRageMath.Vector3 size = grid.LocalAABB.Size;
-			float maxAxis = Math.Max(size.X, Math.Max(size.Y, size.Z));
-			VRageMath.BoundingSphereD bounds =
-				new VRageMath.BoundingSphereD(grid.GetPosition(), maxAxis * 2.0);
-			List<IMyEntity> ents =
-				MyAPIGateway.Entities.GetEntitiesInSphere(ref bounds);
+			log("Getting players near grid " + grid.DisplayName);
 
-			List<long> players = new List<long>();
-			foreach (IMyEntity e in ents) {
-				if (e is IMyPlayer)
-					players.Add((e as IMyPlayer).PlayerID);
+			Vector3 gridPos = grid.GetPosition();
+			VRageMath.Vector3 gridSize = grid.LocalAABB.Size;
+			float maxDistFromGrid =
+				Math.Max(gridSize.X, Math.Max(gridSize.Y, gridSize.Z)) * 2;
+
+			List<IMyPlayer> allPlayers = new List<IMyPlayer>();
+			MyAPIGateway.Players.GetPlayers(allPlayers);
+
+			float pDistFromGrid = 0.0f;
+			List<long> nearbyPlayerIds = new List<long>();
+			foreach (IMyPlayer p in allPlayers)
+			{
+				//log("checking if player is nearby: " + player.SteamUserId + " | " + p.GetPosition());
+				pDistFromGrid = VRageMath.Vector3.Distance(p.GetPosition(), gridPos);
+				if (pDistFromGrid < maxDistFromGrid)
+				{
+					//log("player is close enough to be considered ");
+					nearbyPlayerIds.Add((long)p.SteamUserId);
+				}
 			}
 
-			return players;
+			log(nearbyPlayerIds.Count + " Nearby players: " + String.Join(" ,", nearbyPlayerIds));
+			return nearbyPlayerIds;
 		}
 
 		/// <summary>
