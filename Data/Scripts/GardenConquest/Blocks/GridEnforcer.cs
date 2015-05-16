@@ -53,6 +53,8 @@ namespace GardenConquest.Blocks {
 		private HullClass.CLASS m_ActualClass = HullClass.CLASS.UNCLASSIFIED;
 
 		private bool m_IsServer = false;
+		private bool m_CheckServerLater = false;
+
 		private int m_BlockCount = 0;
 		private int m_TurretCount = 0;
 		private int m_FixedCount = 0;
@@ -116,12 +118,21 @@ namespace GardenConquest.Blocks {
 			// If this is not the server we don't need this class.
 			// When we modify the grid on the server the changes should be
 			// sent to all clients
-			m_IsServer = Utility.isServer();
-			log("Is server: " + m_IsServer, "Init");
-			if (!m_IsServer) {
-				// No cleverness allowed :[
-				log("Disabled.  Not server.", "Init");
-				return;
+			try {
+				m_IsServer = Utility.isServer();
+				log("Is server: " + m_IsServer, "Init");
+				if (!m_IsServer) {
+					// No cleverness allowed :[
+					log("Disabled.  Not server.", "Init");
+					return;
+				}
+			} catch (NullReferenceException e) {
+				log("Exception.  Multiplayer is not initialized.  Assuming server for time being: " + e,
+					"Init");
+				// If we get an exception because Multiplayer was null (WHY KEEN???)
+				// assume we are the server for a little while and check again later
+				m_IsServer = true;
+				m_CheckServerLater = true;
 			}
 
 			// We need to only turn on our rule checking after startup. Otherwise, if
@@ -139,20 +150,7 @@ namespace GardenConquest.Blocks {
 		public override void Close() {
 			log("Grid closed", "Close");
 
-			m_Grid.OnBlockAdded -= blockAdded;
-			m_Grid.OnBlockRemoved -= blockRemoved;
-			m_Grid.OnBlockOwnershipChanged -= blockOwnerChanged;
-
-			if (m_Classifier != null) {
-				(m_Classifier as IMyCubeBlock).IsWorkingChanged -= classifierWorkingChanged;
-				m_Classifier = null;
-			}
-
-			if (m_DerelictTimer != null) {
-				m_DerelictTimer.Timer.Stop();
-				m_DerelictTimer.Timer = null;
-				m_DerelictTimer = null;
-			}
+			unServerize();
 
 			m_Grid = null;
 			m_Logger = null;
@@ -160,9 +158,46 @@ namespace GardenConquest.Blocks {
 
 		#endregion
 
+		/// <summary>
+		/// Removes subscriptions to events if we prematurely declared outselves the server
+		/// </summary>
+		private void unServerize() {
+			if (m_IsServer) {
+				m_Grid.OnBlockAdded -= blockAdded;
+				m_Grid.OnBlockRemoved -= blockRemoved;
+				m_Grid.OnBlockOwnershipChanged -= blockOwnerChanged;
+
+				if (m_Classifier != null) {
+					(m_Classifier as IMyCubeBlock).IsWorkingChanged -= classifierWorkingChanged;
+					m_Classifier = null;
+				}
+
+				if (m_DerelictTimer != null)
+					cancelDerelictionTimer(false);
+			}
+
+		}
+
 		public override void UpdateBeforeSimulation100() {
 			if (!m_IsServer)
 				return;
+
+			// Do we need to verify that we are the server?
+			if (m_CheckServerLater && m_IsServer) {
+				try {
+					log("Late server check", "UpdateBeforeSimulation100");
+					m_IsServer = Utility.isServer();
+					log("Is server: " + m_IsServer, "Init");
+					m_CheckServerLater = false;
+
+					if (!m_IsServer)
+						unServerize();
+				} catch (NullReferenceException e) {
+					// Continue thinking we are server for the time being
+					// This shouldn't happen (lol)
+					log("Exception checking if server: " + e, "UpdateBeforeSimulation100");
+				}
+			}
 
 			try {
 
@@ -311,13 +346,19 @@ namespace GardenConquest.Blocks {
 			if (m_OwningFaction == null)
 				return true;
 
-			// If attempting to classify as Unlicensed, check that the faction has room
-			if (c == HullClass.CLASS.UNLICENSED) {
-				FactionFleet fleet = StateTracker.getInstance().getFleet(m_OwningFaction.FactionId);
-				if (fleet.countClass(c) >= ConquestSettings.getInstance().UnlicensedPerFaction) {
-					eventOnClassProhibited(this, c);
-					return false;
-				}
+			int limit = ConquestSettings.getInstance().FactionLimits[(int)c];
+			FactionFleet fleet = StateTracker.getInstance().getFleet(m_OwningFaction.FactionId);
+
+			log("Faction hull limit: (" + fleet.countClass(c) + "/" + limit + ")",
+				"checkClassAllowed");
+
+			// If limit < 0, this class is unrestricted
+			if (limit < 0)
+				return true;
+
+			if (fleet.countClass(c) >= limit) {
+				eventOnClassProhibited(this, c);
+				return false;
 			}
 
 			return true;
@@ -340,14 +381,14 @@ namespace GardenConquest.Blocks {
 				) {
 					removeClass();
 				}
-				// Turret weapons
+					// Turret weapons
 				else if (
 					removed.FatBlock is InGame.IMyLargeGatlingTurret ||
 					removed.FatBlock is InGame.IMyLargeMissileTurret
 				) {
 					m_TurretCount--;
 				}
-				// Fixed weapons
+					// Fixed weapons
 				else if (
 					removed.FatBlock is InGame.IMySmallMissileLauncher ||
 					removed.FatBlock is InGame.IMySmallMissileLauncherReload ||
@@ -604,10 +645,11 @@ namespace GardenConquest.Blocks {
 		/// <summary>
 		/// If the rules are met before the timer experies this cancels the timer
 		/// </summary>
-		private void cancelDerelictionTimer() {
+		private void cancelDerelictionTimer(bool notify = true) {
 			if (m_DerelictTimer != null) {
 				StateTracker.getInstance().removeDerelictTimer(m_DerelictTimer);
-				eventOnDerelictEnd(m_DerelictTimer, ActiveDerelictTimer.COMPLETION.CANCELLED);
+				if(notify)
+					eventOnDerelictEnd(m_DerelictTimer, ActiveDerelictTimer.COMPLETION.CANCELLED);
 
 				m_DerelictTimer.Timer.Stop();
 				m_DerelictTimer.Timer = null;

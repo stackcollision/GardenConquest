@@ -27,7 +27,7 @@ namespace GardenConquest.Core {
 			public int Period { get; set; }
 			public HullRule[] HullRules { get; set; }
 			public int DerelictCountdown { get; set; }
-			public int UnlicensedPerFaction { get; set; }
+			public int[] FactionLimits { get; set; }
 		}
 
 		private static Logger s_Logger = null;
@@ -40,10 +40,7 @@ namespace GardenConquest.Core {
 			get { return m_Settings.DerelictCountdown; }
 			set { m_Settings.DerelictCountdown = value; }
 		}
-		public int UnlicensedPerFaction {
-			get { return m_Settings.UnlicensedPerFaction; }
-			set { m_Settings.UnlicensedPerFaction = value; }
-		}
+		public int[] FactionLimits { get { return m_Settings.FactionLimits; } }
 
 		private static ConquestSettings s_Instance = null;
 
@@ -55,6 +52,7 @@ namespace GardenConquest.Core {
 			m_Settings = new SETTINGS();
 			m_Settings.ControlPoints = new List<ControlPoint>();
 			m_Settings.HullRules = new HullRule[Enum.GetValues(typeof(HullClass.CLASS)).Length];
+			m_Settings.FactionLimits = Enumerable.Repeat(-1, Enum.GetValues(typeof(HullClass.CLASS)).Length).ToArray();
 		}
 
 		/// <summary>
@@ -144,8 +142,8 @@ namespace GardenConquest.Core {
 			// Default dereliction time 7200 seconds (2 hours)
 			DerelictCountdown = 7200;
 
-			// Each faction gets 2 unlicensed ships by default
-			UnlicensedPerFaction = 2;
+			// By default only unlicensed ships have a count limit
+			FactionLimits[(int)HullClass.CLASS.UNLICENSED] = 2;
 
 			writeSettings();
 		}

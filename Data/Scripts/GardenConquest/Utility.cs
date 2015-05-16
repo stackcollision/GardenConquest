@@ -49,16 +49,13 @@ namespace GardenConquest {
 		/// <summary>
 		/// Checks if this session is the server
 		/// </summary>
-		/// <returns></returns>
+		/// <returns>True if this is a server</returns>
+		/// <exception cref="NullReferenceException">Thrown is Multiplayer pointer is null.</exception>
 		public static bool isServer() {
-			try {
-				if (MyAPIGateway.Multiplayer.MultiplayerActive == false)
-					return true;
-				else
-					return MyAPIGateway.Multiplayer.IsServer;
-			} catch (Exception e) {
-				return false;
-			}
+			if (MyAPIGateway.Multiplayer.MultiplayerActive == false)
+				return true;
+			else
+				return MyAPIGateway.Multiplayer.IsServer;
 		}
 
 		public static void showDialog(string topic, string body, string button) {
