@@ -11,11 +11,12 @@ using GardenConquest.Extensions;
 namespace GardenConquest.Messaging {
 
 	/// <summary>
-	/// Base class for all messages sent between client and server
+	/// Base class for all messages sent from server to client
 	/// </summary>
-	public abstract class BaseMessage {
+	public abstract class BaseResponse {
 		public enum TYPE {
-			NOTIFICATION
+			NOTIFICATION,
+			CPGPS
 		}
 
 		/// <summary>
@@ -33,7 +34,7 @@ namespace GardenConquest.Messaging {
 
 		protected const int HeaderSize = sizeof(ushort) * 3;
 
-		protected BaseMessage(TYPE t) {
+		protected BaseResponse(TYPE t) {
 			MsgType = t;
 		}
 
@@ -54,15 +55,19 @@ namespace GardenConquest.Messaging {
 			Destination = stream.getLongList();
 		}
 
-		public static BaseMessage messageFromBytes(byte[] buffer) {
+		public static BaseResponse messageFromBytes(byte[] buffer) {
 			VRage.ByteStream stream = new VRage.ByteStream(buffer, buffer.Length);
 			TYPE t = (TYPE)stream.getUShort();
 			stream.Seek(0, SeekOrigin.Begin);
 
-			BaseMessage msg = null;
+			BaseResponse msg = null;
 			switch (t) {
 				case TYPE.NOTIFICATION:
 					msg = new NotificationResponse();
+					break;
+
+				case TYPE.CPGPS:
+					msg = new CPGPSResponse();
 					break;
 			}
 

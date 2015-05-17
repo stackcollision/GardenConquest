@@ -135,7 +135,7 @@ namespace GardenConquest.Core {
 				Time = 4000,
 				Font = MyFontEnum.Red,
 				Destination = players,
-				DestType = BaseMessage.DEST_TYPE.FACTION
+				DestType = BaseResponse.DEST_TYPE.FACTION
 			};
 			m_MailMan.send(noti);
 		}
@@ -155,7 +155,7 @@ namespace GardenConquest.Core {
 				Time = 10000,
 				Font = MyFontEnum.Red,
 				Destination = new List<long>() { ge.Faction.FactionId },
-				DestType = BaseMessage.DEST_TYPE.FACTION
+				DestType = BaseResponse.DEST_TYPE.FACTION
 			};
 			m_MailMan.send(noti);
 		}
@@ -186,7 +186,7 @@ namespace GardenConquest.Core {
 				Time = 10000,
 				Font = font,
 				Destination = new List<long>() { ge.Faction.FactionId },
-				DestType = BaseMessage.DEST_TYPE.FACTION
+				DestType = BaseResponse.DEST_TYPE.FACTION
 			};
 			m_MailMan.send(noti);
 		}
@@ -203,7 +203,7 @@ namespace GardenConquest.Core {
 				Time = 10000,
 				Font = MyFontEnum.Red,
 				Destination = players,
-				DestType = BaseMessage.DEST_TYPE.FACTION
+				DestType = BaseResponse.DEST_TYPE.FACTION
 			};
 			m_MailMan.send(noti);
 		}
@@ -334,7 +334,7 @@ namespace GardenConquest.Core {
 					Time = 10000,
 					Font = MyFontEnum.White,
 					Destination = null,
-					DestType = BaseMessage.DEST_TYPE.EVERYONE
+					DestType = BaseResponse.DEST_TYPE.EVERYONE
 				};
 				m_MailMan.send(endedMessage);
 
@@ -345,7 +345,7 @@ namespace GardenConquest.Core {
 					Time = 10000,
 					Font = MyFontEnum.White,
 					Destination = new List<long>() { 0 },
-					DestType = BaseMessage.DEST_TYPE.FACTION
+					DestType = BaseResponse.DEST_TYPE.FACTION
 				};
 				foreach (KeyValuePair<long, int> entry in totalTokens) {
 					rewardMessage.NotificationText = "Your faction has been awarded " +

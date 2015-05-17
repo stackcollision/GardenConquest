@@ -55,8 +55,11 @@
   <ItemGroup>
     <Compile Include="Core\CommandProcessor.cs" />
     <Compile Include="Extensions\GridExtensions.cs" />
-    <Compile Include="Messaging\BaseMessage.cs" />
+    <Compile Include="Messaging\BaseRequest.cs" />
+    <Compile Include="Messaging\BaseResponse.cs" />
     <Compile Include="Extensions\ByteConverterExtension.cs" />
+    <Compile Include="Messaging\CPGPSRequest.cs" />
+    <Compile Include="Messaging\CPGPSResponse.cs" />
     <Compile Include="Messaging\NotificationResponse.cs" />
     <Compile Include="Constants.cs" />
     <Compile Include="Core\CoreComponent.cs" />

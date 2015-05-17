@@ -12,6 +12,9 @@ using VRage.Library.Utils;
 using Interfaces = Sandbox.ModAPI.Interfaces;
 using InGame = Sandbox.ModAPI.Ingame;
 
+using GardenConquest.Core;
+using GardenConquest.Records;
+
 namespace GardenConquest.Messaging {
 
 	/// <summary>
@@ -39,17 +42,49 @@ namespace GardenConquest.Messaging {
 				MyAPIGateway.Multiplayer.UnregisterMessageHandler(Constants.GCMessageId, incomming);
 		}
 
-		public void incomming(byte[] stream) {
+		public void incomming(byte[] buffer) {
+			log("Got message of size " + buffer.Length, "incomming");
 
+			try {
+				//Deserialize message
+				BaseRequest msg = BaseRequest.messageFromBytes(buffer);
+
+				// Process type
+				switch (msg.MsgType) {
+					case BaseRequest.TYPE.CPGPS:
+						processCPGPSRequest(msg as CPGPSRequest);
+						break;
+				}
+			} catch (Exception e) {
+				log("Exception occured: " + e, "incomming");
+			}
 		}
 
-		public void send(BaseMessage msg) {
+		public void send(BaseResponse msg) {
 			if (msg == null)
 				return;
 
 			byte[] buffer = msg.serialize();
 			MyAPIGateway.Multiplayer.SendMessageToOthers(Constants.GCMessageId, buffer);
 			log("Sent packet of " + buffer.Length + " bytes", "send");
+		}
+
+		private void processCPGPSRequest(CPGPSRequest req) {
+			CPGPSResponse resp = new CPGPSResponse();
+
+			resp.DestType = BaseResponse.DEST_TYPE.PLAYER;
+			resp.Destination = new List<long>() { req.ReturnAddress };
+
+			foreach(ControlPoint cp in ConquestSettings.getInstance().ControlPoints) {
+				resp.CPs.Add(new CPGPSResponse.CPGPS() {
+					x = (long)cp.Position.X,
+					y = (long)cp.Position.Y,
+					z = (long)cp.Position.Z,
+					name = cp.Name
+				});
+			}
+
+			send(resp);
 		}
 
 		private void log(String message, String method = null, Logger.severity level = Logger.severity.DEBUG) {

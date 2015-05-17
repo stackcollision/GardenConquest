@@ -19,6 +19,8 @@ namespace GardenConquest.Core {
 		private CommandProcessor m_CmdProc = null;
 		private ResponseProcessor m_MailMan = null;
 
+		private bool m_NeedCPGPS = false;
+
 		#endregion
 		#region Inherited Methods
 
@@ -30,6 +32,9 @@ namespace GardenConquest.Core {
 			m_CmdProc.initialize();
 
 			m_MailMan = new ResponseProcessor();
+
+			// Request a fresh set of GPS coordinates for the CPs
+			m_NeedCPGPS = !m_MailMan.requestCPGPS();
 		}
 
 		public override void unloadData() {
@@ -39,7 +44,9 @@ namespace GardenConquest.Core {
 		}
 
 		public override void updateBeforeSimulation() {
-			// Empty
+			if (m_NeedCPGPS) {
+				m_NeedCPGPS = !m_MailMan.requestCPGPS();
+			}
 		}
 
 		#endregion

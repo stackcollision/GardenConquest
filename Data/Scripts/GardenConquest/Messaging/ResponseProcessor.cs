@@ -34,27 +34,52 @@ namespace GardenConquest.Messaging {
 				MyAPIGateway.Multiplayer.UnregisterMessageHandler(Constants.GCMessageId, incomming);
 		}
 
+		public void send(BaseRequest msg) {
+			if (msg == null)
+				return;
+
+			byte[] buffer = msg.serialize();
+			MyAPIGateway.Multiplayer.SendMessageToServer(Constants.GCMessageId, buffer);
+			log("Sent packet of " + buffer.Length + " bytes", "send");
+		}
+
+		public bool requestCPGPS() {
+			try {
+				CPGPSRequest req = new CPGPSRequest();
+				req.ReturnAddress = MyAPIGateway.Session.Player.PlayerID;
+				send(req);
+				return true;
+			} catch (Exception e) {
+				log("Exception occured: " + e, "requestCPGPS");
+				return false;
+			}
+		}
+
 		public void incomming(byte[] buffer) {
 			log("Got message of size " + buffer.Length, "incomming");
 
 			try {
 				// Deserialize the message
-				BaseMessage msg = BaseMessage.messageFromBytes(buffer);
+				BaseResponse msg = BaseResponse.messageFromBytes(buffer);
 
 				// Is this message even intended for us?
-				if (msg.DestType == BaseMessage.DEST_TYPE.FACTION) {
+				if (msg.DestType == BaseResponse.DEST_TYPE.FACTION) {
 					IMyFaction fac = MyAPIGateway.Session.Factions.TryGetPlayerFaction(
 						MyAPIGateway.Session.Player.PlayerID);
 					if (fac == null || !msg.Destination.Contains(fac.FactionId))
 						return; // Message not meant for us
-				} else if (msg.DestType == BaseMessage.DEST_TYPE.PLAYER) {
+				} else if (msg.DestType == BaseResponse.DEST_TYPE.PLAYER) {
 					if (!msg.Destination.Contains(MyAPIGateway.Session.Player.PlayerID))
 						return; // Message not meant for us
 				}
 
 				switch (msg.MsgType) {
-					case BaseMessage.TYPE.NOTIFICATION:
+					case BaseResponse.TYPE.NOTIFICATION:
 						processNotificationResponse(msg as NotificationResponse);
+						break;
+
+					case BaseResponse.TYPE.CPGPS:
+						processCPGPSResponse(msg as CPGPSResponse);
 						break;
 				}
 			} catch (Exception e) {
@@ -65,6 +90,16 @@ namespace GardenConquest.Messaging {
 		private void processNotificationResponse(NotificationResponse noti) {
 			log("Hit", "processNotificationResponse");
 			MyAPIGateway.Utilities.ShowNotification(noti.NotificationText, noti.Time, noti.Font);
+		}
+
+		private void processCPGPSResponse(CPGPSResponse resp) {
+			log("Loading " + resp.CPs.Count + " GPS coordinates from server", "processCPGPSResponse");
+
+			foreach (CPGPSResponse.CPGPS cp in resp.CPs) {
+				IMyGps gps = MyAPIGateway.Session.GPS.Create(cp.name, "Conquest Capture Point",
+					new VRageMath.Vector3D(cp.x, cp.y, cp.z), true, true);
+				MyAPIGateway.Session.GPS.AddLocalGps(gps);
+			}
 		}
 
 		private void log(String message, String method = null, Logger.severity level = Logger.severity.DEBUG) {

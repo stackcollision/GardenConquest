@@ -12,7 +12,7 @@ using GardenConquest.Extensions;
 
 namespace GardenConquest.Messaging {
 
-	public class NotificationResponse : BaseMessage {
+	public class NotificationResponse : BaseResponse {
 		public String NotificationText { get; set; }
 		public ushort Time { get; set; }
 		public MyFontEnum Font { get; set; }
@@ -20,7 +20,7 @@ namespace GardenConquest.Messaging {
 		private const int BaseSize = sizeof(ushort) + sizeof(ushort);
 
 		public NotificationResponse()
-			: base(BaseMessage.TYPE.NOTIFICATION) {
+			: base(BaseResponse.TYPE.NOTIFICATION) {
 		}
 
 		public override byte[] serialize() {
