@@ -60,3 +60,9 @@ CP.
 
 If there is a tie in grid counts between factions, no one gets the reward.
 
+## Contributing
+
+See the [Contributing section of our wiki]
+(https://github.com/stackcollision/GardenConquest/wiki/Contributing) for
+instructions on getting up and running in development, as well as our policies
+on PRs, Testing, and Code Quality.

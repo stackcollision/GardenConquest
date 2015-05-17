@@ -74,24 +74,28 @@ namespace GardenConquest.Blocks {
 		#endregion
 		#region Events
 
+		// OnViolation
 		private static Action<GridEnforcer, VIOLATION_TYPE> eventOnViolation;
 		public static event Action<GridEnforcer, VIOLATION_TYPE> OnViolation {
 			add { eventOnViolation += value; }
 			remove { eventOnViolation -= value; }
 		}
 
+		// OnDerelictStart
 		private static Action<ActiveDerelictTimer> eventOnDerelictStart;
 		public static event Action<ActiveDerelictTimer> OnDerelictStart {
 			add { eventOnDerelictStart += value; }
 			remove { eventOnDerelictStart -= value; }
 		}
 
+		// OnDerelictEnd
 		private static Action<ActiveDerelictTimer, ActiveDerelictTimer.COMPLETION> eventOnDerelictEnd;
 		public static event Action<ActiveDerelictTimer, ActiveDerelictTimer.COMPLETION> OnDerelictEnd {
 			add { eventOnDerelictEnd += value; }
 			remove { eventOnDerelictEnd -= value; }
 		}
 
+		// OnClassProhibited
 		private static Action<GridEnforcer, HullClass.CLASS> eventOnClassProhibited;
 		public static event Action<GridEnforcer, HullClass.CLASS> OnClassProhibited {
 			add { eventOnClassProhibited += value; }
@@ -113,7 +117,7 @@ namespace GardenConquest.Blocks {
 			m_OwningFaction = null;
 
 			m_Logger = new Logger(m_Grid.EntityId.ToString(), "GridEnforcer");
-			log("Loaded into new grid");
+			log("Loaded into new grid", "Init");
 
 			// If this is not the server we don't need this class.
 			// When we modify the grid on the server the changes should be
@@ -251,7 +255,7 @@ namespace GardenConquest.Blocks {
 		/// <param name="added"></param>
 		private void blockAdded(IMySlimBlock added) {
 			m_BlockCount++;
-			log("Block added to grid.  Count now: " + m_BlockCount, "blockAdded");
+			log("Block added to grid '" + m_Grid.DisplayName + "'. Count now: " + m_BlockCount, "blockAdded");
 
 			if (added.FatBlock != null) {
 				// Class beacon
@@ -370,8 +374,7 @@ namespace GardenConquest.Blocks {
 		/// <param name="removed"></param>
 		private void blockRemoved(IMySlimBlock removed) {
 			m_BlockCount--;
-			log("Block removed from grid.  Count now: " + m_BlockCount, "blockRemoved");
-
+			log("Block removed from grid '" + m_Grid.DisplayName + "'. Count now: " + m_BlockCount, "blockRemoved");
 			// Check if the removed block was the class beacon
 			if (removed.FatBlock != null) {
 				// Class beacon
@@ -416,9 +419,18 @@ namespace GardenConquest.Blocks {
 		/// </summary>
 		/// <param name="b"></param>
 		private void removeBlock(IMySlimBlock b) {
-			// TODO: spawn materials in place so they're not lost
-			// Need to find a way to get the stockpile status
-			// Currently locked behind MySlimBlock (non-interface)
+			// spawn materials in place so they're not lost
+
+			// TODO: determine best inventory target
+			IMyInventory inventory = null;
+
+			// WAITING: once Keen accepts this PR
+			// https://github.com/KeenSoftwareHouse/SpaceEngineers/pull/52
+			// the below will spawn materials in the inventory if it exists and has space,
+			// or otherwise as floating objects in space,
+			//b.FullyDismount(inventory);
+			//b.MoveItemsFromConstructionStockpile(inventory);
+			//b.SpawnConstructionStockpile();
 
 			m_Grid.RemoveBlock(b);
 		}
