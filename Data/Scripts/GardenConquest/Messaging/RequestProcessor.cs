@@ -25,6 +25,12 @@ namespace GardenConquest.Messaging {
 
 		static Logger s_Logger = null;
 
+		private Action<byte[]> onSend;
+		public event Action<byte[]> localReceiver {
+			add { onSend += value; }
+			remove { onSend -= value; }
+		}
+
 		public RequestProcessor() {
 			if (s_Logger == null)
 				s_Logger = new Logger("Conquest Core", "RequestProcessor");
@@ -67,6 +73,8 @@ namespace GardenConquest.Messaging {
 			byte[] buffer = msg.serialize();
 			MyAPIGateway.Multiplayer.SendMessageToOthers(Constants.GCMessageId, buffer);
 			log("Sent packet of " + buffer.Length + " bytes", "send");
+
+			onSend(buffer);
 		}
 
 		private void processCPGPSRequest(CPGPSRequest req) {

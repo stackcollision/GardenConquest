@@ -37,6 +37,7 @@ namespace GardenConquest.Core {
 		private MyTimer m_RoundTimer = null;
 		private MyTimer m_SaveTimer = null;
 		private RequestProcessor m_MailMan = null;
+		private ResponseProcessor m_LocalReceiver = null;
 
 		private bool m_RoundEnded = false;
 		//private Object m_SyncObject = new Object();
@@ -79,6 +80,13 @@ namespace GardenConquest.Core {
 			log("Save timer started");
 
 			m_MailMan = new RequestProcessor();
+			
+			// If the server is a player (non-dedicated) they also need to receive notifications
+			if (!MyAPIGateway.Utilities.IsDedicated) {
+				m_LocalReceiver = new ResponseProcessor(false);
+				m_MailMan.localReceiver += m_LocalReceiver.incomming;
+				m_LocalReceiver.requestCPGPS();
+			}
 
 			// Subscribe events
 			GridEnforcer.OnViolation += eventGridViolation;
@@ -96,6 +104,12 @@ namespace GardenConquest.Core {
 			GridEnforcer.OnDerelictStart -= eventDerelictStart;
 			GridEnforcer.OnDerelictEnd -= eventDerelictEnd;
 			GridEnforcer.OnClassProhibited -= eventClassProhibited;
+
+			if (m_LocalReceiver != null) {
+				m_MailMan.localReceiver -= m_LocalReceiver.incomming;
+				m_LocalReceiver.unload();
+				m_LocalReceiver = null;
+			}
 
 			m_MailMan.unload();
 
@@ -328,7 +342,6 @@ namespace GardenConquest.Core {
 
 				// Anounce round ended
 				log("Sending message", "roundEnd");
-				MyAPIGateway.Utilities.ShowNotification("Conquest Round Ended", 6000);
 				NotificationResponse endedMessage = new NotificationResponse() {
 					NotificationText = "Conquest Round Ended",
 					Time = 10000,

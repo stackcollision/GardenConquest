@@ -19,18 +19,22 @@ namespace GardenConquest.Messaging {
 	public class ResponseProcessor {
 		private static Logger s_Logger = null;
 
-		public ResponseProcessor() {
+		private bool m_Registered = false;
+
+		public ResponseProcessor(bool register = true) {
 			if (s_Logger == null)
 				s_Logger = new Logger("Conquest Core", "ResponseProcessor");
 
 			log("Started", "ctor");
-			if (MyAPIGateway.Multiplayer != null) {
+			if (register && MyAPIGateway.Multiplayer != null) {
+				log("Registering for messages", "ctor");
+				m_Registered = true;
 				MyAPIGateway.Multiplayer.RegisterMessageHandler(Constants.GCMessageId, incomming);
 			}
 		}
 
 		public void unload() {
-			if (MyAPIGateway.Multiplayer != null)
+			if (m_Registered && MyAPIGateway.Multiplayer != null)
 				MyAPIGateway.Multiplayer.UnregisterMessageHandler(Constants.GCMessageId, incomming);
 		}
 
