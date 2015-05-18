@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<Definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <RespawnShips>
+    <Ship>
+      <Id>
+        <TypeId>RespawnShipDefinition</TypeId>
+        <SubtypeId>GCSpawnShip</SubtypeId>
+      </Id>
+      <DisplayName>Conquest Spawn Ship</DisplayName>
+      <Icon>Textures\GUI\Icons\Fake.dds</Icon>
+      <CooldownSeconds>900</CooldownSeconds>
+      <Prefab>GCSpawnShip</Prefab>
+    </Ship>
+  </RespawnShips>                
+</Definitions>
