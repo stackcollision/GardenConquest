@@ -73,7 +73,8 @@ namespace GardenConquest.Messaging {
 					if (fac == null || !msg.Destination.Contains(fac.FactionId))
 						return; // Message not meant for us
 				} else if (msg.DestType == BaseResponse.DEST_TYPE.PLAYER) {
-					if (!msg.Destination.Contains(MyAPIGateway.Session.Player.PlayerID))
+					long localUserId = (long)MyAPIGateway.Session.Player.SteamUserId;
+					if (!msg.Destination.Contains(localUserId))
 						return; // Message not meant for us
 				}
 
