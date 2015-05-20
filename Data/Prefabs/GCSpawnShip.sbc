@@ -4,7 +4,7 @@
     <Prefab>
       <Id>
         <TypeId>MyObjectBuilder_PrefabDefinition</TypeId>
-        <SubtypeId>Spawn Ship</SubtypeId>
+        <SubtypeId>GCSpawnShip</SubtypeId>
       </Id>
       <CubeGrids>
         <CubeGrid>
@@ -1036,16 +1036,17 @@
               <ChangeInterval>0</ChangeInterval>
               <FontSize>1.6</FontSize>
               <PublicDescription>-----------READ THIS----------- 
-Welcome to Conquest.   
-For full info type "/gc help". 
- 
-All grids must have a Hull 
-Classifier.  Grids without 
-one will be destroyed after 
-a set time. 
+Conquest Mode is Enabled!
+For full info type "/gc help".
+
+All ships/stations without
+a "Hull Classifier" block will
+eventually be destroyed.
+
+This is a PvP Server,
+people will try to kill you.
 -----------READ THIS-----------
-   WARNING: PVP Server
-  People will try to kill you</PublicDescription>
+              </PublicDescription>
               <PublicTitle>Public title</PublicTitle>
               <ShowText>PUBLIC</ShowText>
               <FontColor>

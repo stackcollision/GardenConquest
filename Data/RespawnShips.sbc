@@ -6,10 +6,45 @@
         <TypeId>RespawnShipDefinition</TypeId>
         <SubtypeId>GCSpawnShip</SubtypeId>
       </Id>
-      <DisplayName>Conquest Spawn Ship</DisplayName>
+      <DisplayName>Spawn Ship</DisplayName>
       <Icon>Textures\GUI\Icons\Fake.dds</Icon>
       <CooldownSeconds>900</CooldownSeconds>
       <Prefab>GCSpawnShip</Prefab>
+    </Ship>
+    <Ship Enabled="false">
+      <Id>
+        <TypeId>RespawnShipDefinition</TypeId>
+        <SubtypeId>RespawnShip</SubtypeId>
+      </Id>
+      <Prefab>GCSpawnShip</Prefab>
+    </Ship>
+    <Ship Enabled="false">
+      <Id>
+        <TypeId>RespawnShipDefinition</TypeId>
+        <SubtypeId>Assembler</SubtypeId>
+      </Id>
+      <Prefab>Respawn Ship 2</Prefab>
+    </Ship>
+    <Ship Enabled="false">
+      <Id>
+        <TypeId>RespawnShipDefinition</TypeId>
+        <SubtypeId>Drill</SubtypeId>
+      </Id>
+      <Prefab>Small Drill Ship</Prefab>
+    </Ship>
+    <Ship Enabled="false">
+      <Id>
+        <TypeId>RespawnShipDefinition</TypeId>
+        <SubtypeId>EscapePod</SubtypeId>
+      </Id>
+      <Prefab>Small Escape Pod</Prefab>
+    </Ship>
+    <Ship Enabled="false">
+      <Id>
+        <TypeId>RespawnShipDefinition</TypeId>
+        <SubtypeId>RefineryAssembler</SubtypeId>
+      </Id>
+      <Prefab>Respawn Ship 3</Prefab>
     </Ship>
   </RespawnShips>                
 </Definitions>
