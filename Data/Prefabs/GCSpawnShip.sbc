@@ -4,7 +4,7 @@
     <Prefab>
       <Id>
         <TypeId>MyObjectBuilder_PrefabDefinition</TypeId>
-        <SubtypeId>Spawn Ship</SubtypeId>
+        <SubtypeId>GCSpawnShip</SubtypeId>
       </Id>
       <CubeGrids>
         <CubeGrid>
