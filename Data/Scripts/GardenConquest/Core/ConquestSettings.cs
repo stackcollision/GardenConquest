@@ -109,7 +109,7 @@ namespace GardenConquest.Core {
 			HullRules[(int)HullClass.CLASS.UNCLASSIFIED] =
 				new HullRule() { MaxBlocks = 25, MaxTurrets = 0, MaxFixed = 0 };
 			HullRules[(int)HullClass.CLASS.UNLICENSED] =
-				new HullRule() { MaxBlocks = 50, MaxTurrets = 2, MaxFixed = 2 };
+				new HullRule() { MaxBlocks = 100, MaxTurrets = 2, MaxFixed = 2 };
 			HullRules[(int)HullClass.CLASS.WORKER] =
 				new HullRule() { MaxBlocks = 200, MaxTurrets = 0, MaxFixed = 0 };
 			HullRules[(int)HullClass.CLASS.FOUNDRY] =
