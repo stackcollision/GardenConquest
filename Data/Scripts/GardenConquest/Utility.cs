@@ -59,7 +59,7 @@ namespace GardenConquest {
 		}
 
 		public static void showDialog(string topic, string body, string button) {
-			MyAPIGateway.Utilities.ShowMissionScreen("Garden Conquest", null, topic, body, null, button);
+			MyAPIGateway.Utilities.ShowMissionScreen("Garden Conquest", "", topic, body, null, button);
 		}
 	}
 }
