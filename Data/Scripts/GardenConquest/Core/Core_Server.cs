@@ -35,6 +35,7 @@ namespace GardenConquest.Core {
 		#region Class Members
 
 		private bool m_Initialized = false;
+		private CommandProcessor m_CmdProc = null;
 		private MyTimer m_RoundTimer = null;
 		private MyTimer m_SaveTimer = null;
 		private RequestProcessor m_MailMan = null;
@@ -80,6 +81,8 @@ namespace GardenConquest.Core {
 			
 			// If the server is a player (non-dedicated) they also need to receive notifications
 			if (!MyAPIGateway.Utilities.IsDedicated) {
+				m_CmdProc = new CommandProcessor();
+				m_CmdProc.initialize();
 				m_LocalReceiver = new ResponseProcessor(false);
 				m_MailMan.localReceiver += m_LocalReceiver.incomming;
 				m_LocalReceiver.requestCPGPS();
@@ -109,6 +112,8 @@ namespace GardenConquest.Core {
 			}
 
 			m_MailMan.unload();
+
+			if (!MyAPIGateway.Utilities.IsDedicated) m_CmdProc.shutdown();
 
 			s_Logger = null;
 		}
