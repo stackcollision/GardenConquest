@@ -28,19 +28,24 @@ namespace GardenConquest.Core {
 			public HullRule[] HullRules { get; set; }
 			public int DerelictCountdown { get; set; }
 			public int[] FactionLimits { get; set; }
+			public int SoloPlayerLimit { get; set; }
 		}
 
 		private static Logger s_Logger = null;
 		private SETTINGS m_Settings;
 
 		public List<ControlPoint> ControlPoints { get { return m_Settings.ControlPoints; } }
-		public int Period { get { return m_Settings.Period; } set { m_Settings.Period = value; } }
+		public int Period { get { return m_Settings.Period; } private set { m_Settings.Period = value; } }
 		public HullRule[] HullRules { get { return m_Settings.HullRules; } }
 		public int DerelictCountdown {
 			get { return m_Settings.DerelictCountdown; }
 			set { m_Settings.DerelictCountdown = value; }
 		}
 		public int[] FactionLimits { get { return m_Settings.FactionLimits; } }
+		public int SoloPlayerLimit { 
+			get { return m_Settings.SoloPlayerLimit; } 
+			private set { m_Settings.SoloPlayerLimit = value; } 
+		}
 
 		private static ConquestSettings s_Instance = null;
 
@@ -144,6 +149,9 @@ namespace GardenConquest.Core {
 
 			// By default only unlicensed ships have a count limit
 			FactionLimits[(int)HullClass.CLASS.UNLICENSED] = 2;
+
+			// By default each solo player can have only two unlicensed grids
+			SoloPlayerLimit = 2;
 
 			writeSettings();
 		}

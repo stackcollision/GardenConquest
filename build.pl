@@ -2,12 +2,18 @@ use strict;
 use warnings;
 use File::Spec;
 use File::Copy;
-use File::Path qw(make_path);
+use File::Path qw(make_path rmtree);
 
 my @roots = ('Data', 'Textures');
 my $destination = '..\\GardenConquestDistro\\';
 
 foreach my $r (@roots) {
+	my $remove = File::Spec->catfile($destination, $r);
+	if(-e $remove) {
+		print("Cleaning root $remove\n");
+		rmtree($remove);
+	}
+	
 	processDir($r);
 }
 

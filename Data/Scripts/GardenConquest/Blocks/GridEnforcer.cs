@@ -276,6 +276,7 @@ namespace GardenConquest.Blocks {
 					// Turret weapons
 				else if (
 					added.FatBlock is InGame.IMyLargeGatlingTurret ||
+					added.FatBlock is InGame.IMyLargeInteriorTurret ||
 					added.FatBlock is InGame.IMyLargeMissileTurret
 				) {
 					m_TurretCount++;
@@ -346,26 +347,53 @@ namespace GardenConquest.Blocks {
 		/// <param name="c">Class to check</param>
 		/// <returns></returns>
 		private bool checkClassAllowed(HullClass.CLASS c) {
-			// QUESTION: maybe players not in factions shouldn't be able to classify?
-			if (m_OwningFaction == null)
+			// Players without a faction are permitted to have a certain number of unlicensed grids
+			// only
+			if (m_OwningFaction == null) {
+				log("No faction", "checkClassAllowed");
+				// ONLY unlicensed ships permitted for non-faction
+				if (c != HullClass.CLASS.UNLICENSED)
+					return false;
+
+				// Are there even any owned blocks on this grid?
+				// TODO: How can we get around the fact that grids with only armored blocks
+				// don't have any owner?
+				// No owner, so we can't attribute this grid to anyone.  Therefore can't be classed
+				if (m_Grid.BigOwners.Count == 0)
+					return false;
+
+				int limit = ConquestSettings.getInstance().SoloPlayerLimit;
+				FactionFleet playerFleet = StateTracker.getInstance().getPlayerFleet(
+					m_Grid.BigOwners[0]);
+
+				log("Private player fleet unlicensed count: (" + playerFleet.countClass(c) 
+					+ "/" + limit +")", "checkClassAllowed");
+
+				if (playerFleet.countClass(c) >= limit) {
+					eventOnClassProhibited(this, c);
+					return false;
+				}
+
 				return true;
 
-			int limit = ConquestSettings.getInstance().FactionLimits[(int)c];
-			FactionFleet fleet = StateTracker.getInstance().getFleet(m_OwningFaction.FactionId);
+			} else {
+				int limit = ConquestSettings.getInstance().FactionLimits[(int)c];
+				FactionFleet fleet = StateTracker.getInstance().getFleet(m_OwningFaction.FactionId);
 
-			log("Faction hull limit: (" + fleet.countClass(c) + "/" + limit + ")",
-				"checkClassAllowed");
+				log("Faction hull limit: (" + fleet.countClass(c) + "/" + limit + ")",
+					"checkClassAllowed");
 
-			// If limit < 0, this class is unrestricted
-			if (limit < 0)
+				// If limit < 0, this class is unrestricted
+				if (limit < 0)
+					return true;
+
+				if (fleet.countClass(c) >= limit) {
+					eventOnClassProhibited(this, c);
+					return false;
+				}
+
 				return true;
-
-			if (fleet.countClass(c) >= limit) {
-				eventOnClassProhibited(this, c);
-				return false;
 			}
-
-			return true;
 		}
 
 		/// <summary>
@@ -387,6 +415,7 @@ namespace GardenConquest.Blocks {
 					// Turret weapons
 				else if (
 					removed.FatBlock is InGame.IMyLargeGatlingTurret ||
+					removed.FatBlock is InGame.IMyLargeInteriorTurret ||
 					removed.FatBlock is InGame.IMyLargeMissileTurret
 				) {
 					m_TurretCount--;
@@ -567,10 +596,22 @@ namespace GardenConquest.Blocks {
 
 			log("Faction has changed", "onFactionChange");
 
-			FactionFleet oldFleet = oldFac == null ? null :
-				StateTracker.getInstance().getFleet(oldFac.FactionId);
-			FactionFleet newFleet = newFac == null ? null :
-				StateTracker.getInstance().getFleet(newFac.FactionId);
+			FactionFleet oldFleet = null;
+			FactionFleet newFleet = null;
+
+			if (oldFac == null) {
+				if (m_Grid.BigOwners.Count > 0)
+					oldFleet = StateTracker.getInstance().getPlayerFleet(m_Grid.BigOwners[0]);
+			} else {
+				oldFleet = StateTracker.getInstance().getFleet(oldFac.FactionId);
+			}
+
+			if (newFac == null) {
+				if (m_Grid.BigOwners.Count > 0)
+					newFleet = StateTracker.getInstance().getPlayerFleet(m_Grid.BigOwners[0]);
+			} else {
+				newFleet = StateTracker.getInstance().getFleet(newFac.FactionId);
+			}
 
 			// Subtract one from the old fleet, if there was one
 			if (oldFleet != null) {
@@ -590,15 +631,23 @@ namespace GardenConquest.Blocks {
 		/// <param name="oldClass"></param>
 		/// <param name="newClass"></param>
 		private void onClassChange(HullClass.CLASS oldClass, HullClass.CLASS newClass) {
-			if (oldClass == newClass || m_OwningFaction == null)
+			if (oldClass == newClass)
 				return;
 
 			log("Class has changed", "onClassChange");
 
-			FactionFleet fleet = StateTracker.getInstance().getFleet(m_OwningFaction.FactionId);
+			FactionFleet fleet = null;
+			if (m_OwningFaction == null) {
+				if(m_Grid.BigOwners.Count > 0)
+					fleet = StateTracker.getInstance().getPlayerFleet(m_Grid.BigOwners[0]);
+			} else {
+				fleet = StateTracker.getInstance().getFleet(m_OwningFaction.FactionId);
+			}
 
-			fleet.removeClass(oldClass);
-			fleet.addClass(newClass);
+			if(fleet != null) {
+				fleet.removeClass(oldClass);
+				fleet.addClass(newClass);
+			}
 		}
 
 		/// <summary>
@@ -606,6 +655,10 @@ namespace GardenConquest.Blocks {
 		/// after x time
 		/// </summary>
 		private void startDerelictionTimer() {
+			// Don't start a second timer
+			if (m_DerelictTimer != null)
+				return;
+
 			int seconds = ConquestSettings.getInstance().DerelictCountdown;
 			if (seconds < 0) {
 				log("Dereliction timer disabled.  No timer started.", "startDerelictionTimer");
@@ -660,7 +713,7 @@ namespace GardenConquest.Blocks {
 		private void cancelDerelictionTimer(bool notify = true) {
 			if (m_DerelictTimer != null) {
 				StateTracker.getInstance().removeDerelictTimer(m_DerelictTimer);
-				if(notify)
+				if (notify)
 					eventOnDerelictEnd(m_DerelictTimer, ActiveDerelictTimer.COMPLETION.CANCELLED);
 
 				m_DerelictTimer.Timer.Stop();

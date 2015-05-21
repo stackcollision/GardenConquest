@@ -20,6 +20,7 @@ namespace GardenConquest.Core {
 
 		public Dictionary<long, long> TokensLastRound { get; private set; }
 		private Dictionary<long, FactionFleet> m_Fleets = null;
+		private Dictionary<long, FactionFleet> m_PlayerFleets = null;
 		private SavedState m_SavedState = null;
 
 		private static StateTracker s_Instance = null;
@@ -32,6 +33,7 @@ namespace GardenConquest.Core {
 
 			TokensLastRound = new Dictionary<long, long>();
 			m_Fleets = new Dictionary<long, FactionFleet>();
+			m_PlayerFleets = new Dictionary<long, FactionFleet>();
 
 			if (!loadState()) {
 				// If the state is not loaded from the file we need to create an
@@ -60,6 +62,18 @@ namespace GardenConquest.Core {
 			if (!m_Fleets.ContainsKey(factionId))
 				m_Fleets.Add(factionId, new FactionFleet(factionId));
 			return m_Fleets[factionId];
+		}
+
+		/// <summary>
+		/// Some players are not in factions and have special grid restrictions.  This gets the
+		/// fleet of a player who is not in a faction.
+		/// </summary>
+		/// <param name="playerId"></param>
+		/// <returns></returns>
+		public FactionFleet getPlayerFleet(long playerId) {
+			if (!m_PlayerFleets.ContainsKey(playerId))
+				m_PlayerFleets.Add(playerId, new FactionFleet(playerId));
+			return m_PlayerFleets[playerId];
 		}
 
 		/// <summary>
