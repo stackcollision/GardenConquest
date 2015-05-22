@@ -9,7 +9,7 @@
         <TypeId>Beacon</TypeId>
         <SubtypeId>GCUnlicensedHullClassifier</SubtypeId>
       </Id>
-      <DisplayName>Unlicensed Class</DisplayName>
+      <DisplayName>Unlicensed Hull Classifier</DisplayName>
       <Icon>Textures\Icons\unlicensed-1-128.dds</Icon>
       <CubeSize>Large</CubeSize>
       <BlockTopology>TriangleMesh</BlockTopology>
@@ -50,7 +50,7 @@
         <TypeId>Beacon</TypeId>
         <SubtypeId>GCUnlicensedHullClassifierSmall</SubtypeId>
       </Id>
-      <DisplayName>Unlicensed Class</DisplayName>
+      <DisplayName>Unlicensed Hull Classifier</DisplayName>
       <Icon>Textures\Icons\unlicensed-1-128.dds</Icon>
       <CubeSize>Small</CubeSize>
       <BlockTopology>TriangleMesh</BlockTopology>
@@ -85,7 +85,7 @@
         <TypeId>Beacon</TypeId>
         <SubtypeId>GCWorkerHullClassifier</SubtypeId>
       </Id>
-      <DisplayName>Worker Class</DisplayName>
+      <DisplayName>Worker Hull Classifier</DisplayName>
       <Icon>Textures\Icons\utility-1-128.dds</Icon>
       <CubeSize>Large</CubeSize>
       <BlockTopology>TriangleMesh</BlockTopology>
@@ -127,7 +127,7 @@
         <TypeId>Beacon</TypeId>
         <SubtypeId>GCWorkerHullClassifierSmall</SubtypeId>
       </Id>
-      <DisplayName>Worker Class</DisplayName>
+      <DisplayName>Worker Hull Classifier</DisplayName>
       <Icon>Textures\Icons\utility-1-128.dds</Icon>
       <CubeSize>Small</CubeSize>
       <BlockTopology>TriangleMesh</BlockTopology>
@@ -159,7 +159,7 @@
         <TypeId>Beacon</TypeId>
         <SubtypeId>GCFoundryHullClassifier</SubtypeId>
       </Id>
-      <DisplayName>Foundry Class</DisplayName>
+      <DisplayName>Foundry Hull Classifier</DisplayName>
       <Icon>Textures\Icons\utility-2-128.dds</Icon>
       <CubeSize>Large</CubeSize>
       <BlockTopology>TriangleMesh</BlockTopology>
@@ -206,7 +206,7 @@
         <TypeId>Beacon</TypeId>
         <SubtypeId>GCScoutHullClassifier</SubtypeId>
       </Id>
-      <DisplayName>Scout Class</DisplayName>
+      <DisplayName>Scout Hull Classifier</DisplayName>
       <Icon>Textures\Icons\strikecraft-1-128.dds</Icon>
       <CubeSize>Small</CubeSize>
       <BlockTopology>TriangleMesh</BlockTopology>
@@ -238,7 +238,7 @@
         <TypeId>Beacon</TypeId>
         <SubtypeId>GCFighterHullClassifier</SubtypeId>
       </Id>
-      <DisplayName>Fighter Class</DisplayName>
+      <DisplayName>Fighter Hull Classifier</DisplayName>
       <Icon>Textures\Icons\strikecraft-2-128.dds</Icon>
       <CubeSize>Small</CubeSize>
       <BlockTopology>TriangleMesh</BlockTopology>
@@ -270,7 +270,7 @@
         <TypeId>Beacon</TypeId>
         <SubtypeId>GCGunshipHullClassifier</SubtypeId>
       </Id>
-      <DisplayName>Gunship Class</DisplayName>
+      <DisplayName>Gunship Hull Classifier</DisplayName>
       <Icon>Textures\Icons\strikecraft-3-128.dds</Icon>
       <CubeSize>Small</CubeSize>
       <BlockTopology>TriangleMesh</BlockTopology>
@@ -306,7 +306,7 @@
         <TypeId>Beacon</TypeId>
         <SubtypeId>GCCorvetteHullClassifier</SubtypeId>
       </Id>
-      <DisplayName>Corvette Class</DisplayName>
+      <DisplayName>Corvette Hull Classifier</DisplayName>
       <Icon>Textures\Icons\corvette-1-128.dds</Icon>
       <CubeSize>Large</CubeSize>
       <BlockTopology>TriangleMesh</BlockTopology>
@@ -349,7 +349,7 @@
         <TypeId>Beacon</TypeId>
         <SubtypeId>GCFrigateHullClassifier</SubtypeId>
       </Id>
-      <DisplayName>Frigate Class</DisplayName>
+      <DisplayName>Frigate Hull Classifier</DisplayName>
       <Icon>Textures\Icons\frigate-1-128.dds</Icon>
       <CubeSize>Large</CubeSize>
       <BlockTopology>TriangleMesh</BlockTopology>
@@ -392,7 +392,7 @@
         <TypeId>Beacon</TypeId>
         <SubtypeId>GCDestroyerHullClassifier</SubtypeId>
       </Id>
-      <DisplayName>Destroyer Class</DisplayName>
+      <DisplayName>Destroyer Hull Classifier</DisplayName>
       <Icon>Textures\Icons\capital-1-128.dds</Icon>
       <CubeSize>Large</CubeSize>
       <BlockTopology>TriangleMesh</BlockTopology>
@@ -435,7 +435,7 @@
         <TypeId>Beacon</TypeId>
         <SubtypeId>GCCruiserHullClassifier</SubtypeId>
       </Id>
-      <DisplayName>Cruiser Class</DisplayName>
+      <DisplayName>Cruiser Hull Classifier</DisplayName>
       <Icon>Textures\Icons\capital-2-128.dds</Icon>
       <CubeSize>Large</CubeSize>
       <BlockTopology>TriangleMesh</BlockTopology>
@@ -478,7 +478,7 @@
         <TypeId>Beacon</TypeId>
         <SubtypeId>GCHeavyCruiserHullClassifier</SubtypeId>
       </Id>
-      <DisplayName>Heavy Cruiser Class</DisplayName>
+      <DisplayName>Heavy Cruiser Hull Classifier</DisplayName>
       <Icon>Textures\Icons\supercapital-1-128.dds</Icon>
       <CubeSize>Large</CubeSize>
       <BlockTopology>TriangleMesh</BlockTopology>
@@ -521,7 +521,7 @@
         <TypeId>Beacon</TypeId>
         <SubtypeId>GCBattleshipHullClassifier</SubtypeId>
       </Id>
-      <DisplayName>Battleship Class</DisplayName>
+      <DisplayName>Battleship Hull Classifier</DisplayName>
       <Icon>Textures\Icons\supercapital-2-128.dds</Icon>
       <CubeSize>Large</CubeSize>
       <BlockTopology>TriangleMesh</BlockTopology>
