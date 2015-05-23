@@ -37,8 +37,10 @@ namespace GardenConquest.Records {
 		/// </summary>
 		/// <param name="c">Class to decrement</param>
 		public void removeClass(HullClass.CLASS c) {
-			if(m_Counts[(int)c] > 0)
+			if (m_Counts[(int)c] > 0)
 				m_Counts[(int)c] -= 1;
+			else
+				log("Class " + c + " is already 0", "removeClass", Logger.severity.ERROR);
 			debugPrint();
 		}
 
@@ -52,7 +54,7 @@ namespace GardenConquest.Records {
 		}
 
 		private void debugPrint() {
-			log("Faction " + m_FactionId + " has grid counts: " + 
+			log("Fleet " + m_FactionId + " has grid counts: " + 
 				string.Join(", ", m_Counts));
 		}
 

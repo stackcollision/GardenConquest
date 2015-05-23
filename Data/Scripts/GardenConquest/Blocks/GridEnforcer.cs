@@ -43,7 +43,7 @@ namespace GardenConquest.Blocks {
 
 		private IMyCubeGrid m_Grid = null;
 		private InGame.IMyBeacon m_Classifier = null;
-		private IMyFaction m_OwningFaction = null;
+		private GridOwner m_Owner = null;
 
 		// There are two different members for classification
 		// The first is the class of the placed grid classifier (m_Classifier)
@@ -66,7 +66,7 @@ namespace GardenConquest.Blocks {
 
 		private Logger m_Logger = null;
 
-		public IMyFaction Faction { get { return m_OwningFaction; } }
+		public IMyFaction Faction { get { return m_Owner.getFaction(); } }
 		public IMyCubeGrid Grid { get { return m_Grid; } }
 		public InGame.IMyBeacon Classifier { get { return m_Classifier; } }
 		public HullClass.CLASS ActualClass { get { return m_ActualClass; } }
@@ -107,14 +107,13 @@ namespace GardenConquest.Blocks {
 
 		public GridEnforcer() {
 			m_Classifier = null;
-			m_OwningFaction = null;
+			m_Owner = null;
 		}
 
 		public override void Init(MyObjectBuilder_EntityBase objectBuilder) {
 			base.Init(objectBuilder);
 			m_Grid = Entity as IMyCubeGrid;
 			m_Classifier = null;
-			m_OwningFaction = null;
 
 			m_Logger = new Logger(m_Grid.EntityId.ToString(), "GridEnforcer");
 			log("Loaded into new grid", "Init");
@@ -145,6 +144,8 @@ namespace GardenConquest.Blocks {
 			m_Grid.NeedsUpdate |= MyEntityUpdateEnum.EACH_100TH_FRAME;
 
 			m_BlockCount = 0;
+
+			m_Owner = new GridOwner(m_Grid);
 
 			m_Grid.OnBlockAdded += blockAdded;
 			m_Grid.OnBlockRemoved += blockRemoved;
@@ -178,6 +179,8 @@ namespace GardenConquest.Blocks {
 
 				if (m_DerelictTimer != null)
 					cancelDerelictionTimer(false);
+
+				m_Owner = null;
 			}
 
 		}
@@ -345,40 +348,35 @@ namespace GardenConquest.Blocks {
 		/// of this class.
 		/// </summary>
 		/// <param name="c">Class to check</param>
-		/// <returns></returns>
+		/// <returns>True if the class is allowed</returns>
 		private bool checkClassAllowed(HullClass.CLASS c) {
+			GridOwner.OWNER_TYPE ownerType = m_Owner.getOwnerType();
+
+			// If there is no owner at all we can't allow the class because there's no way to track
+			if (ownerType == GridOwner.OWNER_TYPE.UNOWNED)
+				return false;
+
 			// Players without a faction are permitted to have a certain number of unlicensed grids
 			// only
-			if (m_OwningFaction == null) {
-				log("No faction", "checkClassAllowed");
-				// ONLY unlicensed ships permitted for non-faction
+			if (ownerType == GridOwner.OWNER_TYPE.PLAYER) {
 				if (c != HullClass.CLASS.UNLICENSED)
 					return false;
 
-				// Are there even any owned blocks on this grid?
-				// TODO: How can we get around the fact that grids with only armored blocks
-				// don't have any owner?
-				// No owner, so we can't attribute this grid to anyone.  Therefore can't be classed
-				if (m_Grid.BigOwners.Count == 0)
-					return false;
-
 				int limit = ConquestSettings.getInstance().SoloPlayerLimit;
-				FactionFleet playerFleet = StateTracker.getInstance().getPlayerFleet(
-					m_Grid.BigOwners[0]);
+				FactionFleet fleet = m_Owner.getFleet();
 
-				log("Private player fleet unlicensed count: (" + playerFleet.countClass(c) 
-					+ "/" + limit +")", "checkClassAllowed");
+				log("Private player fleet unlicensed count: (" + fleet.countClass(c)
+					+ "/" + limit + ")", "checkClassAllowed");
 
-				if (playerFleet.countClass(c) >= limit) {
+				if (fleet.countClass(c) >= limit) {
 					eventOnClassProhibited(this, c);
 					return false;
+				} else {
+					return true;
 				}
-
-				return true;
-
-			} else {
+			} else if (ownerType == GridOwner.OWNER_TYPE.FACTION) {
 				int limit = ConquestSettings.getInstance().FactionLimits[(int)c];
-				FactionFleet fleet = StateTracker.getInstance().getFleet(m_OwningFaction.FactionId);
+				FactionFleet fleet = m_Owner.getFleet();
 
 				log("Faction hull limit: (" + fleet.countClass(c) + "/" + limit + ")",
 					"checkClassAllowed");
@@ -394,6 +392,8 @@ namespace GardenConquest.Blocks {
 
 				return true;
 			}
+
+			return false;
 		}
 
 		/// <summary>
@@ -440,7 +440,7 @@ namespace GardenConquest.Blocks {
 		/// <param name="changed"></param>
 		private void blockOwnerChanged(IMyCubeGrid changed) {
 			log("Ownership changed", "blockOwnerChanged");
-			reevaluateOwningFaction();
+			reevaluateOwnership();
 		}
 
 		/// <summary>
@@ -485,7 +485,7 @@ namespace GardenConquest.Blocks {
 					// If the grid can be this class, set only the reserved class
 					// The actual class will be set when the thing powers on
 					m_ReservedClass = c;
-					onClassChange(HullClass.CLASS.UNCLASSIFIED, m_ReservedClass);
+					m_Owner.setClassification(m_ReservedClass);
 
 					log("Hull class reserved as " +
 						HullClass.ClassStrings[(int)m_ReservedClass], "reserveClass");
@@ -536,10 +536,10 @@ namespace GardenConquest.Blocks {
 		/// Removes the class reservation, the grid goes back to unclassified
 		/// </summary>
 		private void removeClass() {
-			onClassChange(m_ReservedClass, HullClass.CLASS.UNCLASSIFIED);
-
 			m_ReservedClass = HullClass.CLASS.UNCLASSIFIED;
 			m_ActualClass = HullClass.CLASS.UNCLASSIFIED;
+
+			m_Owner.setClassification(m_ReservedClass);
 
 			(m_Classifier as IMyCubeBlock).IsWorkingChanged -= classifierWorkingChanged;
 			m_Classifier = null;
@@ -554,100 +554,15 @@ namespace GardenConquest.Blocks {
 		/// Figures out which faction owns this grid, if any
 		/// </summary>
 		/// <returns>Whether or not the owning faction changed.</returns>
-		public bool reevaluateOwningFaction() {
-			IMyFaction fac = null;
-			bool changed = false;
+		public bool reevaluateOwnership() {
+			bool changed = m_Owner.reevaluateOwnership();
 
-			// Do we have any owner at all?
-			if (m_Grid.BigOwners.Count == 0) {
-				// If there is no owner, was there one before?
-				if (m_OwningFaction != null) {
-					fac = null;
-					changed = true;
-				} else {
-					fac = null;
-					changed = false;
-				}
-			} else {
-				// NOTE: Hopefully this is sorted by number of blocks owned?
-				long biggestOwner = m_Grid.BigOwners[0];
-				fac = MyAPIGateway.Session.Factions.TryGetPlayerFaction(biggestOwner);
-				if (m_OwningFaction != fac)
-					changed = true;
-			}
-
-			if (changed) {
-				onFactionChange(m_OwningFaction, fac);
-				m_OwningFaction = fac;
-			}
+			// TODO: Grids without owners should have a dereliction timer started
+			// even if they have a classifier
+			// Likewise, grids which now have ownership which also have a classifier
+			// should have their dereliction timer stopped
 
 			return changed;
-		}
-
-		/// <summary>
-		/// When the owning faction changes we need to decrement this class's count on the old
-		/// faction and increment it on the new one.
-		/// </summary>
-		/// <param name="oldFac"></param>
-		/// <param name="newFac"></param>
-		private void onFactionChange(IMyFaction oldFac, IMyFaction newFac) {
-			if (oldFac == newFac)
-				return;
-
-			log("Faction has changed", "onFactionChange");
-
-			FactionFleet oldFleet = null;
-			FactionFleet newFleet = null;
-
-			if (oldFac == null) {
-				if (m_Grid.BigOwners.Count > 0)
-					oldFleet = StateTracker.getInstance().getPlayerFleet(m_Grid.BigOwners[0]);
-			} else {
-				oldFleet = StateTracker.getInstance().getFleet(oldFac.FactionId);
-			}
-
-			if (newFac == null) {
-				if (m_Grid.BigOwners.Count > 0)
-					newFleet = StateTracker.getInstance().getPlayerFleet(m_Grid.BigOwners[0]);
-			} else {
-				newFleet = StateTracker.getInstance().getFleet(newFac.FactionId);
-			}
-
-			// Subtract one from the old fleet, if there was one
-			if (oldFleet != null) {
-				oldFleet.removeClass(m_ReservedClass);
-			}
-
-			// Add one to the new fleet, if there is one
-			if (newFleet != null) {
-				newFleet.addClass(m_ReservedClass);
-			}
-		}
-
-		/// <summary>
-		/// When the class changes decrement the old class count and increment the new one
-		/// for the owning faction.
-		/// </summary>
-		/// <param name="oldClass"></param>
-		/// <param name="newClass"></param>
-		private void onClassChange(HullClass.CLASS oldClass, HullClass.CLASS newClass) {
-			if (oldClass == newClass)
-				return;
-
-			log("Class has changed", "onClassChange");
-
-			FactionFleet fleet = null;
-			if (m_OwningFaction == null) {
-				if(m_Grid.BigOwners.Count > 0)
-					fleet = StateTracker.getInstance().getPlayerFleet(m_Grid.BigOwners[0]);
-			} else {
-				fleet = StateTracker.getInstance().getFleet(m_OwningFaction.FactionId);
-			}
-
-			if(fleet != null) {
-				fleet.removeClass(oldClass);
-				fleet.addClass(newClass);
-			}
 		}
 
 		/// <summary>

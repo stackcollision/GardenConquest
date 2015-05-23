@@ -452,7 +452,7 @@ namespace GardenConquest.Core {
 				// If there is no faction, the player may have joined a faction after creating
 				// the last block on this grid.  Force a re-evaluation
 				if (fac == null) {
-					ge.reevaluateOwningFaction();
+					ge.reevaluateOwnership();
 					fac = ge.Faction;
 
 					// If faction is still null, continue
