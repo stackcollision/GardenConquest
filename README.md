@@ -60,6 +60,43 @@ CP.
 
 If there is a tie in grid counts between factions, no one gets the reward.
 
+### Rule Enforcement
+
+Class-based rule enforcement is applied in two ways:
+
+* Immediately when you try to place a block. If it would bring you over the
+  limit, it's removed.
+* Over time if your Ship/Station goes over the limit itself, i.e.
+	* its classifier is removed/destroyed
+	* you replace its classifier with one that has lower limits
+	* it merges with another grid
+	* it was created before the mod was applied
+
+### Example Gameplay Walkthrough
+
+When you first place a new grid, it will be **Unclassified**:
+* you can place up to 25 of any block
+* you're not allowed any of these per player/faction, so it will eventually be removed
+
+When a grid loads into a server with this mod enabled, it will be
+**Unclassified**:
+* you can't place any new blocks until you have less than 25
+* any existing blocks over 25 will eventually be removed
+* you're not allowed any per player/faction, so it will eventually be removed.
+
+To get around these issues, use/adapt the provided spawn ship or gather enough
+materials to build your own **Unlicensed** Hull Classifier:
+* you can place up to 100 blocks, with certain limits.
+* anything over 100 will eventually be removed
+* you're allowed 2 per player/faction.
+* These can have some weaponry on them.
+
+Use these (plus any existing ships that haven't yet been removed) to capture
+ CPs and get **License Components**.
+
+You can use those to build bigger and better Hull Classifiers. These will
+allow you to place and keep more blocks
+
 ## Contributing
 
 See the [Contributing section of our wiki]

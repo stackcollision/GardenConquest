@@ -1,0 +1,35 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Xml.Serialization;
+
+namespace GardenConquest.Records {
+
+	/// <summary>
+	/// Holds the rules for a specific Class
+	/// </summary>
+	[XmlType("Class")]
+	public class HullRuleSet {
+
+		// We include XML descriptors here, even though the names are the same,
+		// to help maintain backwards compatibility with saved settings
+
+		/// <summary>
+		/// Display name helps Admins know which class they're editing,
+		/// but is also used to represent the class in Notifications and Dialogs
+		/// </summary>
+		[XmlElement("DisplayName")]
+		public string DisplayName { get; set; }
+		[XmlElement("MaxPerFaction")]
+		public int MaxPerFaction { get; set; }
+		[XmlElement("MaxPerSoloPlayer")]
+		public int MaxPerSoloPlayer { get; set; }
+		[XmlElement("CaptureMultiplier")]
+		public int CaptureMultiplier { get; set; }
+		[XmlElement("MaxBlocks")]
+		public int MaxBlocks { get; set; }
+		[XmlArray("BlockTypeLimits")]
+		[XmlArrayItem("Limit")]
+		public int[] BlockTypeLimits { get; set; }
+	}
+}

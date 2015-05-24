@@ -48,6 +48,9 @@ namespace GardenConquest.Records {
 
 		public bool TimerExpired { get; private set; }
 		public DT_INFO.PHASE CompletedPhase { get; private set; }
+		public int SecondsRemaining {
+			get { return (int)(m_TimerInfo.MillisRemaining / 1000); }
+		}
 
 		private Logger m_Logger = null;
 
@@ -59,7 +62,6 @@ namespace GardenConquest.Records {
 			m_TimerInfo = null;
 			m_Timer = null;
 
-			TimerExpired = true;
 			CompletedPhase = DT_INFO.PHASE.NONE;
 
 			m_Logger = new Logger(m_Grid.EntityId.ToString(), "DerelictTimer");
@@ -70,7 +72,9 @@ namespace GardenConquest.Records {
 		/// </summary>
 		/// <returns>Returns false if dereliction is disabled</returns>
 		public bool start() {
-			int seconds = ConquestSettings.getInstance().DerelictCountdown;
+			int seconds = ConquestSettings.getInstance().CleanupPeriod;
+			log("Starting timer with settings start value of " + seconds + " seconds.", 
+				"start", Logger.severity.TRACE);
 			if (seconds < 0) {
 				log("Dereliction timers disabled.  No timer started.", "start");
 				return false;
@@ -99,8 +103,6 @@ namespace GardenConquest.Records {
 				m_TimerInfo.StartTime = DateTime.UtcNow;
 				m_TimerInfo.StartingMillisRemaining = m_TimerInfo.MillisRemaining;
 
-				TimerExpired = false;
-
 				m_Timer = new MyTimer(m_TimerInfo.MillisRemaining, timerExpired);
 				m_Timer.Start();
 				log("Timer started with " + m_TimerInfo.MillisRemaining + "ms", "start");
@@ -127,6 +129,8 @@ namespace GardenConquest.Records {
 		public bool cancel() {
 			if (m_Timer == null)
 				return false;
+
+			StateTracker.getInstance().removeDerelictTimer(m_TimerInfo.GridID);
 
 			m_Timer.Stop();
 			m_Timer = null;

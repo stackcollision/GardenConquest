@@ -74,7 +74,12 @@ namespace GardenConquest.Messaging {
 			MyAPIGateway.Multiplayer.SendMessageToOthers(Constants.GCMessageId, buffer);
 			log("Sent packet of " + buffer.Length + " bytes", "send");
 
-			onSend(buffer);
+			try {
+				onSend(buffer);
+			}
+			catch (Exception e) {
+				log("Error in onSend(buffer) " + e, "send", Logger.severity.ERROR);
+			}
 		}
 
 		private void processCPGPSRequest(CPGPSRequest req) {

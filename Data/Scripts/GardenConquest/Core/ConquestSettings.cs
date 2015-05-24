@@ -15,53 +15,76 @@ using Sandbox.ModAPI;
 using GardenConquest.Records;
 
 namespace GardenConquest.Core {
-	
+
 	/// <summary>
 	/// Singleton class to store settings for the server.
 	/// </summary>
 	public class ConquestSettings {
 
+		#region Static
+
 		[XmlType("GardenConquestSettings")]
 		public struct SETTINGS {
 			public List<ControlPoint> ControlPoints { get; set; }
-			public int Period { get; set; }
-			public HullRule[] HullRules { get; set; }
-			public int DerelictCountdown { get; set; }
-			public int[] FactionLimits { get; set; }
-			public int SoloPlayerLimit { get; set; }
+			public int CPPeriod { get; set; }
+			public int CleanupPeriod { get; set; }
+			public BlockType[] BlockTypes { get; set; }
+			[XmlElement("Classes")]
+			public HullRuleSet[] HullRules { get; set; }
 		}
 
-		private static Logger s_Logger = null;
+		private static readonly int DEFAULT_CP_PERIOD = 900; // 15 minutes
+		private static readonly int DEFAULT_CLEANUP_PERIOD = 1800; // 30 minutes
+		private static Logger s_Logger;
+		private static ConquestSettings s_Instance;
+
+		/// <summary>
+		/// Get singleton instance
+		/// </summary>
+		public static ConquestSettings getInstance() {
+			if (s_Instance == null)
+				s_Instance = new ConquestSettings();
+			return s_Instance;
+		}
+
+		#endregion
+		#region Properties
+
 		private SETTINGS m_Settings;
 
-		public List<ControlPoint> ControlPoints { get { return m_Settings.ControlPoints; } }
-		public int Period { get { return m_Settings.Period; } private set { m_Settings.Period = value; } }
-		public HullRule[] HullRules { get { return m_Settings.HullRules; } }
-		public int DerelictCountdown {
-			get { return m_Settings.DerelictCountdown; }
-			set { m_Settings.DerelictCountdown = value; }
+		public List<ControlPoint> ControlPoints {
+			get { return m_Settings.ControlPoints; }
 		}
-		public int[] FactionLimits { get { return m_Settings.FactionLimits; } }
-		public int SoloPlayerLimit { 
-			get { return m_Settings.SoloPlayerLimit; } 
-			private set { m_Settings.SoloPlayerLimit = value; } 
+		public int CPPeriod { 
+			get { return m_Settings.CPPeriod; }
+		}
+		public int CleanupPeriod {
+			get { return m_Settings.CleanupPeriod; }
+		}
+		public BlockType[] BlockTypes { 
+			get { return m_Settings.BlockTypes; }
+		}
+		public HullRuleSet[] HullRules {
+			get { return m_Settings.HullRules; }
 		}
 
-		private static ConquestSettings s_Instance = null;
+		#endregion
+		#region Lifecycle
 
 		private ConquestSettings() {
 			if (s_Logger == null)
 				s_Logger = new Logger("Conquest Core", "ConquestSettings");
-			log("Settings initialized", "ctor");
-
-			m_Settings = new SETTINGS();
-			m_Settings.ControlPoints = new List<ControlPoint>();
-			m_Settings.HullRules = new HullRule[Enum.GetValues(typeof(HullClass.CLASS)).Length];
-			m_Settings.FactionLimits = Enumerable.Repeat(-1, Enum.GetValues(typeof(HullClass.CLASS)).Length).ToArray();
 
 			if (!loadSettings())
 				loadDefaults();
+
+			log("Settings initialized", "ctor");
+			log("Period: " + CPPeriod + " seconds.", "start");
+			log("DerelictCountdown: " + CleanupPeriod + " seconds.", "start");
 		}
+
+		#endregion
+		#region Methods
 
 		/// <summary>
 		/// Loads settings from the configuration XML.
@@ -69,19 +92,51 @@ namespace GardenConquest.Core {
 		/// <returns>False if no file exists</returns>
 		private bool loadSettings() {
 			log("Attempting to load settings from file", "loadSettings");
-			if (MyAPIGateway.Utilities.FileExistsInLocalStorage(
-				Constants.ConfigFileName, typeof(SETTINGS))
-			) {
+
+			try {
+				// file missing?
+				if (!MyAPIGateway.Utilities.FileExistsInLocalStorage(
+					Constants.ConfigFileName, typeof(SETTINGS))) {
+					log("No config file found", "loadSettings");
+					return false;
+				}
+
+				// load file
 				TextReader reader = MyAPIGateway.Utilities.ReadFileInLocalStorage(
 					Constants.ConfigFileName, typeof(SETTINGS));
-				m_Settings =
-					MyAPIGateway.Utilities.SerializeFromXML<SETTINGS>(reader.ReadToEnd());
-				log("Config file successfully loaded", "loadSettings");
-				return true;
-			} else {
-				log("No config file found", "loadSettings");
-				return false;
+				m_Settings = MyAPIGateway.Utilities.SerializeFromXML<SETTINGS>(
+					reader.ReadToEnd());
 			}
+			catch (Exception e) {
+				log("Loading settings before MyAPIGateway is initialized. " +
+					"Using defaults instead. Error: " + e,
+					"loadSettings", Logger.severity.ERROR);
+			}
+
+			// Fill missing Settings with defaults
+			if (ControlPoints == null) {
+				log("No ControlPoints, using default", "loadSettings");
+				m_Settings.ControlPoints = defaultControlPoints();
+			}
+			if (CPPeriod == 0) {
+				log("No Period, using default", "loadSettings");
+				m_Settings.CPPeriod = DEFAULT_CP_PERIOD;
+			}
+			if (CleanupPeriod == 0) {
+				log("No DerelictCountdown, using default", "loadSettings");
+				m_Settings.CleanupPeriod = DEFAULT_CLEANUP_PERIOD;
+			}
+			if (BlockTypes == null) {
+				log("No BlockTypes, using default", "loadSettings");
+				m_Settings.BlockTypes = defaultBlockTypes();
+			}
+			if (HullRules == null) {
+				log("No HullRules, using default", "loadSettings");
+				m_Settings.HullRules = defaultHullRules();
+			}
+
+			log("Settings loaded", "loadSettings");
+			return true;
 		}
 
 		/// <summary>
@@ -103,71 +158,198 @@ namespace GardenConquest.Core {
 		/// </summary>
 		private void loadDefaults() {
 			log("Loading default settings", "loadDefaults");
-
-			ControlPoint cp = new ControlPoint();
-			cp.Name = "Center";
-			cp.Position = new VRageMath.Vector3D(0, 0, 0);
-			cp.Radius = 15000;
-			cp.TokensPerPeriod = 5;
-			ControlPoints.Add(cp);
-
-			// Default period 900 seconds (15 minutes)
-			Period = 900;
-
-			HullRules[(int)HullClass.CLASS.UNCLASSIFIED] =
-				new HullRule() { MaxBlocks = 25, MaxTurrets = 0, MaxFixed = 0 };
-			HullRules[(int)HullClass.CLASS.UNLICENSED] =
-				new HullRule() { MaxBlocks = 100, MaxTurrets = 2, MaxFixed = 2 };
-			HullRules[(int)HullClass.CLASS.WORKER] =
-				new HullRule() { MaxBlocks = 200, MaxTurrets = 0, MaxFixed = 0 };
-			HullRules[(int)HullClass.CLASS.FOUNDRY] =
-				new HullRule() { MaxBlocks = 1000, MaxTurrets = 0, MaxFixed = 0 };
-			HullRules[(int)HullClass.CLASS.SCOUT] =
-				new HullRule() { MaxBlocks = 200, MaxTurrets = 0, MaxFixed = 2 };
-			HullRules[(int)HullClass.CLASS.FIGHTER] =
-				new HullRule() { MaxBlocks = 525, MaxTurrets = 0, MaxFixed = 3 };
-			HullRules[(int)HullClass.CLASS.GUNSHIP] =
-				new HullRule() { MaxBlocks = 1025, MaxTurrets = 1, MaxFixed = 4 };
-			HullRules[(int)HullClass.CLASS.CORVETTE] =
-				new HullRule() { MaxBlocks = 200, MaxTurrets = 2, MaxFixed = 2 };
-			HullRules[(int)HullClass.CLASS.FRIGATE] =
-				new HullRule() { MaxBlocks = 600, MaxTurrets = 4, MaxFixed = 4 };
-			HullRules[(int)HullClass.CLASS.DESTROYER] =
-				new HullRule() { MaxBlocks = 1800, MaxTurrets = 4, MaxFixed = 4 };
-			HullRules[(int)HullClass.CLASS.CRUISER] =
-				new HullRule() { MaxBlocks = 2700, MaxTurrets = 6, MaxFixed = 6 };
-			HullRules[(int)HullClass.CLASS.HEAVYCRUISER] =
-				new HullRule() { MaxBlocks = 4050, MaxTurrets = 8, MaxFixed = 6 };
-			HullRules[(int)HullClass.CLASS.BATTLESHIP] =
-				new HullRule() { MaxBlocks = 6075, MaxTurrets = 10, MaxFixed = 6 };
-			HullRules[(int)HullClass.CLASS.OUTPOST] =
-				new HullRule() { MaxBlocks = 600, MaxTurrets = 2, MaxFixed = 0 };
-			HullRules[(int)HullClass.CLASS.INSTALLATION] =
-				new HullRule() { MaxBlocks = 1800, MaxTurrets = 4, MaxFixed = 0 };
-			HullRules[(int)HullClass.CLASS.FORTRESS] =
-				new HullRule() { MaxBlocks = 2700, MaxTurrets = 6, MaxFixed = 0 };
-
-			// Default dereliction time 7200 seconds (2 hours)
-			DerelictCountdown = 7200;
-
-			// By default only unlicensed ships have a count limit
-			FactionLimits[(int)HullClass.CLASS.UNLICENSED] = 2;
-
-			// By default each solo player can have only two unlicensed grids
-			SoloPlayerLimit = 2;
-
+			m_Settings = new SETTINGS();
+			m_Settings.ControlPoints = defaultControlPoints();
+			m_Settings.CPPeriod = DEFAULT_CP_PERIOD;
+			m_Settings.CleanupPeriod = DEFAULT_CLEANUP_PERIOD;
+			m_Settings.BlockTypes  = defaultBlockTypes();
+			m_Settings.HullRules = defaultHullRules();
 			writeSettings();
 		}
 
-		/// <summary>
-		/// Get singleton instance
-		/// </summary>
-		/// <returns></returns>
-		public static ConquestSettings getInstance() {
-			if (s_Instance == null)
-				s_Instance = new ConquestSettings();
-			return s_Instance;
+		public int blockTypeID(BlockType t) {
+			//log("start", "blockTypeID(BlockType t)");
+			for (int i = 0; i < BlockTypes.Length; i++) {
+				//log("comparing iterated type " + BlockTypes[i].GetHashCode() + " - " + BlockTypes[i].ToString() +" - " + BlockTypes[i].DisplayName, "blockTypeID(BlockType t)");
+				//log("to given type           " + t.GetHashCode() + " - " + t.ToString() + " - " + t.DisplayName, "blockTypeID(BlockType t)");
+				if (t.Equals(BlockTypes[i])) {
+					//log("they are equal!", "blockTypeID(BlockType t)");
+					return i;
+				}
+			}
+
+			log("BlockType not found! Pretending it's the first one.",
+				"blockTypeID",Logger.severity.ERROR);
+			return 0;
 		}
+
+		#endregion
+		#region Defaults
+
+		private List<ControlPoint> defaultControlPoints(){
+			return new List<ControlPoint> {
+				new ControlPoint() {
+					Name = "Center",
+					Position = new VRageMath.Vector3D(0, 0, 0),
+					Radius = 15000,
+					TokensPerPeriod = 5,
+				}
+			};
+		}
+
+		private BlockType[] defaultBlockTypes() {
+			return new BlockType[] {
+				new BlockType() {
+					DisplayName = "Turrets",
+					SubTypeStrings = new List<string>() { "turret" }
+				},
+				new BlockType() {
+					DisplayName = "Static Weapons",
+					SubTypeStrings = new List<string>() { "MissileLauncher",
+						"GatlingGun" }
+				}
+			};
+		}
+
+		private HullRuleSet[] defaultHullRules() {
+			// Hull Rules indexed by Class
+			int totalHullClasses = Enum.GetNames(typeof(HullClass.CLASS)).Length;
+			HullRuleSet[] results = new HullRuleSet[totalHullClasses];
+
+			results[(int)HullClass.CLASS.UNCLASSIFIED] = new HullRuleSet() {
+				DisplayName = "Unclassified",
+				MaxPerFaction = 0,
+				MaxPerSoloPlayer = 0,
+				CaptureMultiplier = 0,
+				MaxBlocks = 25,
+				BlockTypeLimits = new int[2] { 0, 0 }
+			};
+			results[(int)HullClass.CLASS.UNLICENSED] = new HullRuleSet() {
+				DisplayName = "Unlicensed",
+				MaxPerFaction = 2,
+				MaxPerSoloPlayer = 2,
+				CaptureMultiplier = 1,
+				MaxBlocks = 100,
+				BlockTypeLimits= new int[2] { 2, 2 }
+			};
+			results[(int)HullClass.CLASS.WORKER] = new HullRuleSet() {
+				DisplayName = "Worker",
+				MaxPerFaction = 12,
+				MaxPerSoloPlayer = 0,
+				CaptureMultiplier = 1,
+				MaxBlocks = 200,
+				BlockTypeLimits = new int[2] { 0, 0 }
+			};
+			results[(int)HullClass.CLASS.FOUNDRY] = new HullRuleSet() {
+				DisplayName = "Foundry",
+				MaxPerFaction = 2,
+				MaxPerSoloPlayer = 0,
+				CaptureMultiplier = 1,
+				MaxBlocks = 1000,
+				BlockTypeLimits = new int[2] { 0, 0 }
+			};
+			results[(int)HullClass.CLASS.SCOUT] = new HullRuleSet() {
+				DisplayName = "Scout",
+				MaxPerFaction = 16,
+				MaxPerSoloPlayer = 0,
+				CaptureMultiplier = 1,
+				MaxBlocks = 200,
+				BlockTypeLimits = new int[2] { 0, 2 }
+			};
+			results[(int)HullClass.CLASS.FIGHTER] = new HullRuleSet() {
+				DisplayName = "Fighter",
+				MaxPerFaction = 32,
+				MaxPerSoloPlayer = 0,
+				CaptureMultiplier = 1,
+				MaxBlocks = 525,
+				BlockTypeLimits = new int[2] { 0, 3 }
+			};
+			results[(int)HullClass.CLASS.GUNSHIP] = new HullRuleSet() {
+				DisplayName = "Gunship",
+				MaxPerFaction = 8,
+				MaxPerSoloPlayer = 0,
+				CaptureMultiplier = 2,
+				MaxBlocks = 1025,
+				BlockTypeLimits = new int[2] { 1, 4 }
+			};
+			results[(int)HullClass.CLASS.CORVETTE] = new HullRuleSet() {
+				DisplayName = "Corvette",
+				MaxPerFaction = 10,
+				MaxPerSoloPlayer = 0,
+				CaptureMultiplier = 2,
+				MaxBlocks = 200,
+				BlockTypeLimits = new int[2] { 2, 2 }
+			};
+			results[(int)HullClass.CLASS.FRIGATE] = new HullRuleSet() {
+				DisplayName = "Frigate",
+				MaxPerFaction = 5,
+				MaxPerSoloPlayer = 0,
+				CaptureMultiplier = 3,
+				MaxBlocks = 600,
+				BlockTypeLimits = new int[2] { 4, 4 }
+			};
+
+			results[(int)HullClass.CLASS.DESTROYER] = new HullRuleSet() {
+				DisplayName = "Destroyer",
+				MaxPerFaction = 3,
+				MaxPerSoloPlayer = 0,
+				CaptureMultiplier = 4,
+				MaxBlocks = 1800,
+				BlockTypeLimits = new int[2] { 4, 4 }
+			};
+			results[(int)HullClass.CLASS.CRUISER] = new HullRuleSet() {
+				DisplayName = "Cruiser",
+				MaxPerFaction = 2,
+				MaxPerSoloPlayer = 0,
+				CaptureMultiplier = 5,
+				MaxBlocks = 2700,
+				BlockTypeLimits = new int[2] { 6, 6 }
+			};
+			results[(int)HullClass.CLASS.HEAVYCRUISER] = new HullRuleSet() {
+				DisplayName = "Heavy Cruiser",
+				MaxPerFaction = 1,
+				MaxPerSoloPlayer = 0,
+				CaptureMultiplier = 6,
+				MaxBlocks = 4050,
+				BlockTypeLimits = new int[2] { 8, 6 }
+			};
+			results[(int)HullClass.CLASS.BATTLESHIP] = new HullRuleSet() {
+				DisplayName = "Battleship",
+				MaxPerFaction = 0,
+				MaxPerSoloPlayer = 0,
+				CaptureMultiplier = 7,
+				MaxBlocks = 6075,
+				BlockTypeLimits = new int[2] { 10, 6 }
+			};
+			results[(int)HullClass.CLASS.OUTPOST] = new HullRuleSet() {
+				DisplayName = "Outpost",
+				MaxPerFaction = 5,
+				MaxPerSoloPlayer = 0,
+				CaptureMultiplier = 2,
+				MaxBlocks = 600,
+				BlockTypeLimits = new int[2] { 2, 0 }
+			};
+			results[(int)HullClass.CLASS.INSTALLATION] = new HullRuleSet() {
+				DisplayName = "Installation",
+				MaxPerFaction = 2,
+				MaxPerSoloPlayer = 0,
+				CaptureMultiplier = 4,
+				MaxBlocks = 1800,
+				BlockTypeLimits = new int[2] { 4, 0 }
+			};
+			results[(int)HullClass.CLASS.FORTRESS] = new HullRuleSet() {
+				DisplayName = "Fortress",
+				MaxPerFaction = 1,
+				MaxPerSoloPlayer = 0,
+				CaptureMultiplier = 6,
+				MaxBlocks = 2700,
+				BlockTypeLimits = new int[2] { 6, 0 }
+			};
+
+			return results;
+		}
+			
+		#endregion
 
 		private void log(String message, String method = null, Logger.severity level = Logger.severity.DEBUG) {
 			if (s_Logger != null)

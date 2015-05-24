@@ -33,86 +33,153 @@ namespace GardenConquest.Blocks {
 
 		public enum VIOLATION_TYPE {
 			NONE,
-			BLOCK,
-			TURRET,
-			FIXED
+			TOTAL_BLOCKS,
+			BLOCK_TYPE,
+			DOUBLE_CLASSIFICATION,
+			TOO_MANY_OF_CLASS,
+			SHOULD_BE_STATIC
 		}
+
+		public struct VIOLATION {
+			public VIOLATION_TYPE Type { get; set; }
+			public BlockType BlockType { get; set; }
+			public String Name { get; set; }
+			public int Count { get; set; }
+			public int Limit { get; set; }
+		}
+
+		private static readonly int CLEANUP_CLASS_TICKS = 4; // So 2 hours with default 30 min ticks
+		private static readonly int CLEANUP_STATIC_TICKS = 2;
+		private static readonly int CLEANUP_NOTIFY_WAIT = 5;
+		private static readonly float CLEANUP_RATE = .25f;
+		private static readonly HullClass.CLASS DEFAULT_CLASS = HullClass.CLASS.UNCLASSIFIED;
+
+		private static ConquestSettings s_Settings;
 
 		#endregion
 		#region Class Members
 
+		// Grid and blocks
 		private IMyCubeGrid m_Grid = null;
-		private InGame.IMyBeacon m_Classifier = null;
-		private GridOwner m_Owner = null;
+		private bool m_GridSubscribed;
+		private int m_BlockCount;
+		private int[] m_BlockTypeCounts;
 
+		// Ownership
+		private GridOwner m_Owner = null;
+		private bool m_Supported;
+
+		// Class
 		// There are two different members for classification
 		// The first is the class of the placed grid classifier (m_Classifier)
 		// But if that block is incomplete/offline/damaged then the rules are
 		// still applied as if it was UNCLASSIFIED
-		private HullClass.CLASS m_ReservedClass = HullClass.CLASS.UNCLASSIFIED;
-		private HullClass.CLASS m_ActualClass = HullClass.CLASS.UNCLASSIFIED;
+		private HullClassifier m_Classifier;
+		private HullClass.CLASS m_ReservedClass;
+		private HullClass.CLASS m_EffectiveClass;
+		private HullRuleSet m_ReservedRules;
+		private HullRuleSet m_EffectiveRules;
 
+		// Cleanup
+		private DateTime m_CleanupNotifyAfter;
+		private List<VIOLATION> m_CurrentViolations;
+		private DerelictTimer m_CleanupTimer;
+		private int m_TooManyOfClassTicks = 0;
+		private int m_ShouldBeStaticTicks = 0;
+
+		// SE update flags
 		private bool m_IsServer = false;
 		private bool m_CheckServerLater = false;
-
-		private int m_BlockCount = 0;
-		private int m_TurretCount = 0;
-		private int m_FixedCount = 0;
 		private bool m_BeyondFirst100 = false;
 		private bool m_Merging = false;
+		private bool m_CheckCleanupNextUpdate;
+		private bool m_NotifyViolationsNextUpdate;
+		private bool m_DeleteNextUpdate;
+		private bool m_FinishDeleteNextUpdate;
+		private bool m_MarkedForClose;
 
-		private DerelictTimer m_DerelictTimer = null;
-
+		// Utility
 		private Logger m_Logger = null;
 
-		public IMyFaction Faction { get { return m_Owner.getFaction(); } }
+		public GridOwner Owner { get { return m_Owner; } }
+		public HullClass.CLASS Class { get { return m_EffectiveClass; } }
+		private List<long> BigOwners { get {
+			try { return m_Grid.BigOwners; }
+			catch {
+				log("BigOwners called without ownership manager",
+					"BigOwners", Logger.severity.WARNING);
+				return new List<long>();
+			}
+		}}
 		public IMyCubeGrid Grid { get { return m_Grid; } }
-		public InGame.IMyBeacon Classifier { get { return m_Classifier; } }
-		public HullClass.CLASS ActualClass { get { return m_ActualClass; } }
+		public HullClassifier Classifier { get { return m_Classifier; } }
+		public int BlockCount { get { return m_BlockCount; } }
+		public int TimeUntilCleanup { get {
+			if (m_CleanupTimer == null) return -1;
+			return m_CleanupTimer.SecondsRemaining;
+		}}
+		public bool SupportedByFleet { get { return m_Supported; } }
 
 		#endregion
 		#region Events
 
-		// OnViolation
-		private static Action<GridEnforcer, VIOLATION_TYPE> eventOnViolation;
-		public static event Action<GridEnforcer, VIOLATION_TYPE> OnViolation {
-			add { eventOnViolation += value; }
-			remove { eventOnViolation -= value; }
+		// OnPlacementViolation
+		private static Action<GridEnforcer, VIOLATION_TYPE> eventOnPlacementViolation;
+		public static event Action<GridEnforcer, VIOLATION_TYPE> OnPlacementViolation {
+			add { eventOnPlacementViolation += value; }
+			remove { eventOnPlacementViolation -= value; }
+		}
+		private void notifyPlacementViolation(VIOLATION_TYPE violation) {
+			if (eventOnPlacementViolation != null)
+				eventOnPlacementViolation(this, violation);
 		}
 
-		// OnDerelictStart
-		private static Action<IMyCubeGrid> eventOnDerelictStart;
-		public static event Action<IMyCubeGrid> OnDerelictStart {
-			add { eventOnDerelictStart += value; }
-			remove { eventOnDerelictStart -= value; }
+		// OnCleanupViolation
+		private static Action<GridEnforcer, List<VIOLATION>> eventCleanupViolation;
+		public static event Action<GridEnforcer, List<VIOLATION>> OnCleanupViolation {
+			add { eventCleanupViolation += value; }
+			remove { eventCleanupViolation -= value; }
+		}
+		private void notifyCleanupViolation(List<VIOLATION> violations) {
+			if (eventCleanupViolation != null)
+				eventCleanupViolation(this, violations);
 		}
 
-		// OnDerelictEnd
-		private static Action<IMyCubeGrid, DerelictTimer.COMPLETION> eventOnDerelictEnd;
-		public static event Action<IMyCubeGrid, DerelictTimer.COMPLETION> OnDerelictEnd {
-			add { eventOnDerelictEnd += value; }
-			remove { eventOnDerelictEnd -= value; }
+		// OnCleanupTimerStart
+		private static Action<GridEnforcer, int> eventOnCleanupTimerStart;
+		public static event Action<GridEnforcer, int> OnCleanupTimerStart {
+			add { eventOnCleanupTimerStart += value; }
+			remove { eventOnCleanupTimerStart -= value; }
+		}
+		private void notifyCleanupTimerStart(int secondsRemaining) {
+			if (eventOnCleanupTimerStart != null)
+				eventOnCleanupTimerStart(this, secondsRemaining);
 		}
 
-		// OnClassProhibited
-		private static Action<GridEnforcer, HullClass.CLASS> eventOnClassProhibited;
-		public static event Action<GridEnforcer, HullClass.CLASS> OnClassProhibited {
-			add { eventOnClassProhibited += value; }
-			remove { eventOnClassProhibited -= value; }
+		// OnCleanupTimerEnd
+		// This carries notifications for both CANCELLED and ELAPSED
+		private static Action<GridEnforcer, DerelictTimer.COMPLETION> eventOnCleanupTimerEnd;
+		public static event Action<GridEnforcer, DerelictTimer.COMPLETION> OnCleanupTimerEnd {
+			add { eventOnCleanupTimerEnd += value; }
+			remove { eventOnCleanupTimerEnd -= value; }
+		}
+		private void notifyCleanupTimerEnd(DerelictTimer.COMPLETION completionState) {
+			if (eventOnCleanupTimerEnd != null)
+				eventOnCleanupTimerEnd(this, completionState);
 		}
 
 		#endregion
 		#region Class Lifecycle
 
 		public GridEnforcer() {
-			m_Classifier = null;
-			m_Owner = null;
+			if (s_Settings == null) {
+				s_Settings = ConquestSettings.getInstance();
+			}
 		}
 
 		public override void Init(MyObjectBuilder_EntityBase objectBuilder) {
 			base.Init(objectBuilder);
 			m_Grid = Entity as IMyCubeGrid;
-			m_Classifier = null;
 
 			m_Logger = new Logger(m_Grid.EntityId.ToString(), "GridEnforcer");
 			log("Loaded into new grid", "Init");
@@ -126,6 +193,8 @@ namespace GardenConquest.Blocks {
 				if (!m_IsServer) {
 					// No cleverness allowed :[
 					log("Disabled.  Not server.", "Init");
+					m_Logger = null;
+					m_Grid = null;
 					return;
 				}
 			} catch (NullReferenceException e) {
@@ -143,49 +212,56 @@ namespace GardenConquest.Blocks {
 			m_Grid.NeedsUpdate |= MyEntityUpdateEnum.EACH_100TH_FRAME;
 
 			m_BlockCount = 0;
+			m_BlockTypeCounts = new int[s_Settings.BlockTypes.Length];
+			log("new m_Owner" + m_IsServer, "Init");
+			m_Owner = new GridOwner(this);
 
-			m_Owner = new GridOwner(m_Grid);
+			setReservedToDefault();
+			setEffectiveToDefault();
+			log("setClassification" + m_IsServer, "Init");
+			m_Owner.setClassification(m_EffectiveClass);
+			log("end setClassification" + m_IsServer, "Init");
 
 			m_Grid.OnBlockAdded += blockAdded;
 			m_Grid.OnBlockRemoved += blockRemoved;
 			m_Grid.OnBlockOwnershipChanged += blockOwnerChanged;
+			m_GridSubscribed = true;
 		}
 
 		public override void Close() {
 			log("Grid closed", "Close");
-
 			unServerize();
+		}
 
-			m_Grid = null;
+		/// <summary>
+		/// Removes hooks and references
+		/// </summary>
+		private void unServerize() {
+			detatchGrid();
+			detatchClassifier();
+			detatchCleanupTimer();
+			m_Owner = null;
 			m_Logger = null;
 		}
 
-		#endregion
-
-		/// <summary>
-		/// Removes subscriptions to events if we prematurely declared outselves the server
-		/// </summary>
-		private void unServerize() {
-			if (m_IsServer) {
-				m_Grid.OnBlockAdded -= blockAdded;
-				m_Grid.OnBlockRemoved -= blockRemoved;
-				m_Grid.OnBlockOwnershipChanged -= blockOwnerChanged;
-
-				if (m_Classifier != null) {
-					(m_Classifier as IMyCubeBlock).IsWorkingChanged -= classifierWorkingChanged;
-					m_Classifier = null;
+		private void detatchGrid() {
+			if (m_Grid != null) {
+				if (m_GridSubscribed) {
+					m_Grid.OnBlockAdded -= blockAdded;
+					m_Grid.OnBlockRemoved -= blockRemoved;
+					m_Grid.OnBlockOwnershipChanged -= blockOwnerChanged;
 				}
-
-				if (m_DerelictTimer != null)
-					cancelDerelictionTimer(false);
-
-				m_Owner = null;
+				m_Grid = null;
 			}
-
 		}
 
+		#endregion
+		#region SE Hooks - Simulation
+
 		public override void UpdateBeforeSimulation100() {
-			if (!m_IsServer)
+			// Must be server, not be closing
+			// Must not be transparent - aka a new grid not yet placed
+			if (!m_IsServer || m_MarkedForClose || m_Grid.MarkedForClose || m_Grid.Transparent)
 				return;
 
 			// Do we need to verify that we are the server?
@@ -205,33 +281,80 @@ namespace GardenConquest.Blocks {
 				}
 			}
 
+			// = Main update logic
 			try {
-
-				// NOTE: Can't turn off this update, because other scripts might also want it
-				if (!m_BeyondFirst100) {
-					m_BeyondFirst100 = true;
-
-					// Once the server has loaded all block for this grid, check if we are
-					// classified.  If not, warn the owner about the timer
-					if (m_ActualClass == HullClass.CLASS.UNCLASSIFIED) {
-						startDerelictionTimer();
-					}
+				// if cleanup previously marked this grid for deletion, do it and get us out of here
+				if (m_DeleteNextUpdate) {
+					m_DeleteNextUpdate = false;
+					log("deleting all blocks and closing grid", "UpdateBeforeSimulation100");
+					removeAllBlocks();
+					m_MarkedForClose = true;
+					return;
 				}
 
-				// If we just completed a merge check if this grid is violating rules
+				// when initing or merging, if any blocks are added they will flag m_CheckCleanup,
+				// but blockAdded uses these flags to know it must allow any block through temporarily
+				if (!m_BeyondFirst100) {
+					m_BeyondFirst100 = true;
+				}
 				if (m_Merging) {
-					if (checkRules() != VIOLATION_TYPE.NONE)
-						startDerelictionTimer();
 					m_Merging = false;
 				}
 
-				if (m_DerelictTimer != null && m_DerelictTimer.TimerExpired)
-					executeDerelictionPhase();
+				if (m_CleanupTimer != null && m_CleanupTimer.TimerExpired) {
+					log("timer expired, running cleanup", "UpdateBeforeSimulation100");
+
+					updateViolations();
+					doCleanupPhase();
+
+					m_CheckCleanupNextUpdate = true;
+					log("finishing cleanup round, m_DeleteNextUpdate? " + m_DeleteNextUpdate, "UpdateBeforeSimulation100");
+				}
+
+				if (m_CheckCleanupNextUpdate) {
+					log("checking cleanup state due to flag", "UpdateBeforeSimulation100");
+					m_CheckCleanupNextUpdate = false;
+
+					updateViolations();
+					updateCleanupTimers(false);
+
+					m_NotifyViolationsNextUpdate = true;
+				} 
+
+				if (m_NotifyViolationsNextUpdate) {
+					m_NotifyViolationsNextUpdate = false;
+
+					notifyViolations();
+				}
+
 
 			} catch (Exception e) {
 				log("Exception occured: " + e, "UpdateBeforeSimulation100");
 			}
 		}
+
+		/*
+		public override void UpdateAfterSimulation100() {
+			base.UpdateAfterSimulation100();
+
+			if (m_Grid.Transparent)
+				return;
+
+			if (m_FinishDeleteNextUpdate) {
+			
+				log("trying to delete blocks...", "UpdateAfterSimulation100");
+				try {
+					List<IMySlimBlock> allBlocks = new List<IMySlimBlock>();
+					m_Grid.GetBlocks(allBlocks);
+					foreach (IMySlimBlock block in allBlocks) {
+						removeBlock(block);
+					}
+				} catch (Exception e) {
+					log("Exception " + e, "UpdateAfterSimulation100");
+				}
+				log("finished deleting blocks...", "UpdateAfterSimulation100");
+			}
+		}* */
 
 		/// <summary>
 		/// Marks the grid to skip rule enforcement for the next few frames because of a grid merge.
@@ -241,98 +364,198 @@ namespace GardenConquest.Blocks {
 			m_Merging = true;
 		}
 
+		#endregion
+		#region SE Hooks - Block Added
+
 		/// <summary>
 		/// Called when a block is added to the grid.
 		/// Decides whether or not to allow the block to be placed.
-		/// Increments counts and checks for classification.
+		/// Increments counts, checks for classification, and sets
+		/// a flag to refresh cleanup status 
 		/// </summary>
-		/// <param name="added"></param>
+		/// <param name="added">block that was added to the grid</param>
 		private void blockAdded(IMySlimBlock added) {
-			m_BlockCount++;
-			log("Block added to grid '" + m_Grid.DisplayName + "'. Count now: " + m_BlockCount, "blockAdded");
+			log(added.ToString() + " added to grid " + m_Grid.DisplayName, "blockAdded");
 
-			if (added.FatBlock != null) {
-				// Class beacon
-				if (
-					added.FatBlock is InGame.IMyBeacon &&
-					added.FatBlock.BlockDefinition.SubtypeName.Contains("HullClassifier")
-				) {
-					// Reserve the grid class
-					if (!reserveClass(added))
-						removeBlock(added); // Class could not be reserved, so remove block
+			try {
+				// = update block counts and grid state, get violations
+				//
+				// Block counts must be updated whether we're removing the block or not,
+				// because blockRemoved has no way of knowing if we touched counts for it
 
-					// Return after classification
-					// It is recommended that the distance between the unclassified block limit and 
-					// the fighter/corvette block limits be substantial to prevent an issue
-					// where as soon as the hull is classified it's over the limit.
-					return;
+				// update classification first since this influences limits
+				bool classified;
+				VIOLATION_TYPE classifierViolation = updateClassificationWith(added, out classified);
+
+				// update total count
+				VIOLATION_TYPE totalBlocksViolation = incrementTotalBlocks(classified);
+
+				// update type counts
+				List<BlockType> violatedTypes = updateBlockTypeCountsWith(added);
+
+				// = If there are violations, remove the block and notify the appropriate parties
+
+				// we skip violation checks for blocks being added that aren't actually placed by a user,
+				// i.e. during World Load or a Merge
+				// we clean those up over time with Cleanup
+				if (classified || m_Merging || !m_BeyondFirst100) {
+					log("Currently merging, initing, or classifying", "blockAdded");
+					m_CheckCleanupNextUpdate = true;
+					goto Allowed;
 				}
-					// Turret weapons
-				else if (
-					added.FatBlock is InGame.IMyLargeGatlingTurret ||
-					added.FatBlock is InGame.IMyLargeInteriorTurret ||
-					added.FatBlock is InGame.IMyLargeMissileTurret
-				) {
-					m_TurretCount++;
-					log("Turret count now: " + m_TurretCount, "blockAdded");
+
+				// if violations, notify and deny
+				if (classifierViolation != VIOLATION_TYPE.NONE) {
+					log("classifierViolation", "blockAdded");
+					notifyPlacementViolation(classifierViolation);
+					goto Denied;
 				}
-					// Fixed weapons
-				else if (
-					added.FatBlock is InGame.IMySmallMissileLauncher ||
-					added.FatBlock is InGame.IMySmallMissileLauncherReload ||
-					added.FatBlock is InGame.IMySmallGatlingGun
-				) {
-					m_FixedCount++;
-					log("Fixed weapon count now: " + m_FixedCount, "blockAdded");
+				else if (totalBlocksViolation != VIOLATION_TYPE.NONE) {
+					log("totalBlocksViolation", "blockAdded");
+					notifyPlacementViolation(totalBlocksViolation);
+					goto Denied;
+				}
+				else if (violatedTypes.Count > 0) {
+					log("block type violation", "blockAdded");
+					notifyPlacementViolation(VIOLATION_TYPE.BLOCK_TYPE);
+					goto Denied;
 				}
 			}
-
-			// If this grid is currently being merged do not check rules
-			if (m_Merging)
-				return;
-
-			// Check if we are violating class rules
-			VIOLATION_TYPE check = checkRules();
-			if (check != VIOLATION_TYPE.NONE) {
-				if(eventOnViolation != null)
-					eventOnViolation(this, check);
-				removeBlock(added);
+			catch (Exception e) {
+				log("Error: " + e, "blockAdded");
 			}
+
+		Allowed:
+			log("allowed, Count now: " + m_BlockCount, "blockAdded");
+			//m_NotifyViolationsNextUpdate = false;
+			return;
+
+		Denied:
+			log("denied", "blockAdded");
+			removeBlock(added);
 		}
 
 		/// <summary>
-		/// Checks if the grid complies with the rules.  Returns true if any rule is violated.
+		/// Applies the new class if block is a Classifier and we can reserve the Class
+		/// Returns true if this was a happy update,
+		/// false if the block needs to be removed
 		/// </summary>
-		/// <returns></returns>
-		private VIOLATION_TYPE checkRules() {
-			// Don't apply rules until server startup is completed
-			if (!m_BeyondFirst100)
-				return VIOLATION_TYPE.NONE;
+		/// <param name="block"></param>
+		private VIOLATION_TYPE updateClassificationWith(IMySlimBlock block, out bool applied) {
+			//log("", "updateClassificationWith");
+			try {
+				// If it's not a classifier, we don't care about it
+				if (!HullClassifier.isClassifierBlock(block)) {
+					applied = false;
+					return VIOLATION_TYPE.NONE;
+				}
 
-			// Test rules based on actual class, so they only get the block limit
-			// if the classifier beacon is complete
-			HullRule r = ConquestSettings.getInstance().HullRules[(int)m_ActualClass];
-			log("Block count (" + m_BlockCount + "/" + r.MaxBlocks + ")", "checkRules");
+				// load up the classifier helper object
+				HullClassifier classifier = new HullClassifier(block);
+				HullClass.CLASS classID = classifier.Class;
+				log("Adding a classifier for class " + classID + " - " +
+					s_Settings.HullRules[(int)classID].DisplayName,
+					"updateClassificationWith");
 
-			// Check general block count limit
-			if (m_BlockCount > r.MaxBlocks) {
-				log("Grid has violated block limit for class", "checkRules");
-				return VIOLATION_TYPE.BLOCK;
+				// if we're initializing or merging this grid, the block must be placed,
+				// so determine which classifier to use. The others will be cleaned up later
+				if ((!m_BeyondFirst100 || m_Merging)) {
+					log("init/merge, must add it", "updateClassificationWith");
+					if (classID > m_ReservedClass) {
+						log("this one's better than what we have", "updateClassificationWith");
+						if (m_Classifier != null) {
+							//log("removing existing classifier", "updateClassificationWith");
+							demoteClass();
+							detatchClassifier();
+						}
+						goto Reserve;
+					}
+					applied = false;
+					return VIOLATION_TYPE.NONE;
+				}
+
+				// Two classifiers not allowed
+				//log("Existing classifier? " + (m_Classifier != null), "updateClassificationWith");
+				if (m_Classifier != null) {
+					log("Too many classifiers", "updateClassificationWith");
+					applied = false;
+					return VIOLATION_TYPE.DOUBLE_CLASSIFICATION;
+				}
+
+				// Too many per Player/Faction not allowed
+				bool fleetAllows = checkClassAllowed(classID);
+				//log("Too many per Player/Faction? " + !fleetAllows, "updateClassificationWith");
+				if (!fleetAllows) {
+					log("Too many of this class for this owner", "updateClassificationWith");
+					applied = false;
+					return VIOLATION_TYPE.TOO_MANY_OF_CLASS;
+				}
+
+			Reserve:
+				log("Applying classifier", "updateClassificationWith", Logger.severity.ERROR);
+				setClassifier(classifier);
+
+				// let block enforcement know to let this thing through
+				applied = true;
+
+				// the rules of the new class might be broken by existing blocks,
+				// check next update
+				m_CheckCleanupNextUpdate = true;
 			}
-
-			// Check number of turrets
-			if (m_TurretCount > r.MaxTurrets) {
-				log("Grid has violated turret limit for class", "checkRules");
-				return VIOLATION_TYPE.TURRET;
-			}
-
-			// Check number of fixed weapons
-			if (m_FixedCount > r.MaxFixed) {
-				log("Grid has violated fixed weapon limit for class", "checkRules");
-				return VIOLATION_TYPE.FIXED;
+			catch (Exception e) {
+				log("Error: " + e, "updateClassificationWith", Logger.severity.ERROR);
+				applied = false;
 			}
 
 			return VIOLATION_TYPE.NONE;
+		}
+
+		/// <summary>
+		/// Adds 1 to total block count
+		/// returns a violation if over the limit
+		/// </summary>
+		private VIOLATION_TYPE incrementTotalBlocks(bool classified) {
+			m_BlockCount++;
+			//log("new count " + m_BlockCount, "incrementTotalBlocks");
+			//log("m_EffectiveRules.DisplayName " + m_EffectiveRules.DisplayName, "incrementTotalBlocks");
+			//log("m_EffectiveRules.MaxBlocks " + m_EffectiveRules.MaxBlocks, "incrementTotalBlocks");
+
+			if (m_BlockCount > m_EffectiveRules.MaxBlocks) {
+
+				// let applied classifiers through this limit
+				if (classified) {
+					return VIOLATION_TYPE.NONE;
+				}
+
+				return VIOLATION_TYPE.TOTAL_BLOCKS;
+			}
+
+			return VIOLATION_TYPE.NONE;
+		}
+
+		/// <summary>
+		/// Increments the BlockType counts for a given new block
+		/// Returns the violated limits if any
+		/// </summary>
+		private List<BlockType> updateBlockTypeCountsWith(IMySlimBlock block) {
+			List<BlockType> violated_types = new List<BlockType>();
+
+			BlockType[] types = s_Settings.BlockTypes;
+			for (int typeID = 0; typeID < types.Length; typeID++) {
+				BlockType type = types[typeID];
+
+				if (type.appliesToBlock(block)) {
+					//log("incrementing type count " + m_BlockTypeCounts[typeID], "updateBlockCountsWith");
+					m_BlockTypeCounts[typeID] = m_BlockTypeCounts[typeID] + 1;
+					int count = m_BlockTypeCounts[typeID];
+					log(type.DisplayName + " count now: " + count, "updateBlockCountsWith");
+
+					if (count > m_EffectiveRules.BlockTypeLimits[typeID])
+						violated_types.Add(type);
+				}
+			}
+
+			return violated_types;
 		}
 
 		/// <summary>
@@ -342,54 +565,51 @@ namespace GardenConquest.Blocks {
 		/// <param name="c">Class to check</param>
 		/// <returns>True if the class is allowed</returns>
 		private bool checkClassAllowed(HullClass.CLASS c) {
+			log("checking if fleet can support more of " + c, "checkClassAllowed");
 			reevaluateOwnership();
-			GridOwner.OWNER_TYPE ownerType = m_Owner.getOwnerType();
+			//GridOwner.OWNER_TYPE ownerType = m_Owner.getOwnerType();
+			//log("ownerType " + ownerType, "checkClassAllowed");
 
-			// If there is no owner at all we can't allow the class because there's no way to track
-			if (ownerType == GridOwner.OWNER_TYPE.UNOWNED)
-				return false;
+			// If there is no owner at all we won't allow
+			//if (ownerType == GridOwner.OWNER_TYPE.UNOWNED)
+			//	return false;
 
-			// Players without a faction are permitted to have a certain number of unlicensed grids
-			// only
+			//log("loading rules", "checkClassAllowed");
+			//HullRuleSet classRules = s_Settings.HullRules[(int)c];
+			FactionFleet fleet = m_Owner.getFleet();
+			uint count = fleet.countClass(c);
+			uint limit = fleet.maxClass(c);
+
+
+			// get the limit based on owner type
+			//log("getting limit", "checkClassAllowed");
+			/*
+			int limit = 0;
+			string ownerName = "";
 			if (ownerType == GridOwner.OWNER_TYPE.PLAYER) {
-				if (c != HullClass.CLASS.UNLICENSED)
-					return false;
-
-				int limit = ConquestSettings.getInstance().SoloPlayerLimit;
-				FactionFleet fleet = m_Owner.getFleet();
-
-				log("Private player fleet unlicensed count: (" + fleet.countClass(c)
-					+ "/" + limit + ")", "checkClassAllowed");
-
-				if (fleet.countClass(c) >= limit) {
-					if(eventOnClassProhibited != null)
-						eventOnClassProhibited(this, c);
-					return false;
-				} else {
-					return true;
-				}
-			} else if (ownerType == GridOwner.OWNER_TYPE.FACTION) {
-				int limit = ConquestSettings.getInstance().FactionLimits[(int)c];
-				FactionFleet fleet = m_Owner.getFleet();
-
-				log("Faction hull limit: (" + fleet.countClass(c) + "/" + limit + ")",
-					"checkClassAllowed");
-
-				// If limit < 0, this class is unrestricted
-				if (limit < 0)
-					return true;
-
-				if (fleet.countClass(c) >= limit) {
-					if(eventOnClassProhibited != null)
-						eventOnClassProhibited(this, c);
-					return false;
-				}
-
-				return true;
+				limit = classRules.MaxPerSoloPlayer;
+				ownerName = "Player Fleet";
 			}
+			else if (ownerType == GridOwner.OWNER_TYPE.FACTION) {
+				limit = classRules.MaxPerFaction;
+				ownerName = "Faction Fleet";
+			}
+			log(ownerName + " " + classRules.DisplayName + " count: (" + count
+				+ "/" + limit + ")", "checkClassAllowed");
+			 * */
 
-			return false;
+
+			// negative limits mean unlimited
+			if (limit < 0) return true;
+
+			// do we have too many already?
+			if (count >= limit) return false;
+
+			return true;
 		}
+
+		#endregion
+		#region SE Hooks - Block Removed
 
 		/// <summary>
 		/// Called when a block is removed.  Decrements counts and checks for declassification.
@@ -397,34 +617,51 @@ namespace GardenConquest.Blocks {
 		/// <param name="removed"></param>
 		private void blockRemoved(IMySlimBlock removed) {
 			m_BlockCount--;
-			log("Block removed from grid '" + m_Grid.DisplayName + "'. Count now: " + m_BlockCount, "blockRemoved");
-			// Check if the removed block was the class beacon
-			if (removed.FatBlock != null) {
-				// Class beacon
-				if (
-					removed.FatBlock is InGame.IMyBeacon &&
-					removed.FatBlock.BlockDefinition.SubtypeName.Contains("HullClassifier")
-				) {
-					removeClass();
-				}
-					// Turret weapons
-				else if (
-					removed.FatBlock is InGame.IMyLargeGatlingTurret ||
-					removed.FatBlock is InGame.IMyLargeInteriorTurret ||
-					removed.FatBlock is InGame.IMyLargeMissileTurret
-				) {
-					m_TurretCount--;
-				}
-					// Fixed weapons
-				else if (
-					removed.FatBlock is InGame.IMySmallMissileLauncher ||
-					removed.FatBlock is InGame.IMySmallMissileLauncherReload ||
-					removed.FatBlock is InGame.IMySmallGatlingGun
-				) {
-					m_FixedCount--;
+			log(removed.ToString() + " removed from grid '" + m_Grid.DisplayName + 
+				"'. Count now: " + m_BlockCount, "blockRemoved");
+
+			updateClassificationWithout(removed);
+			updateBlockTypeCountsWithout(removed);
+			m_CheckCleanupNextUpdate = true;
+		}
+
+		/// <summary>
+		/// Removes the classifier and reserved class if block is a Classifier
+		/// </summary>
+		private void updateClassificationWithout(IMySlimBlock block) {
+			// If it's not a classifier, we don't care
+			if (!HullClassifier.isClassifierBlock(block))
+				return;
+
+			// if we were using this to classify the gird
+			if (m_Classifier != null) {
+				log("we have a classifier, is it this block?", "updateClassificationWithout");
+				if (m_Classifier.SlimBlock.Equals(block)) {
+					log("it's the same! disabling it", "updateClassificationWithout");
+					unsetClassifier();
+				} else {
+					log("not the same", "updateClassificationWithout");
 				}
 			}
 		}
+
+		/// <summary>
+		/// Decrements the BlockType counts for a given removed block
+		/// </summary>
+		private void updateBlockTypeCountsWithout(IMySlimBlock block) {
+			BlockType[] types = s_Settings.BlockTypes;
+			for (int i = 0; i < types.Length; i++) {
+				BlockType type = types[i];
+				if (type.appliesToBlock(block)) {
+					m_BlockTypeCounts[i]--;
+					log(type.DisplayName + " count now: " + m_BlockTypeCounts[i], "updateBlockCountsWithout");
+					return;
+				}
+			}
+		}
+
+		#endregion
+		#region SE Hooks - Block Owner Changed
 
 		/// <summary>
 		/// Called when ownership on the grid changes.
@@ -434,9 +671,12 @@ namespace GardenConquest.Blocks {
 		/// </remarks>
 		/// <param name="changed"></param>
 		private void blockOwnerChanged(IMyCubeGrid changed) {
-			log("Ownership changed", "blockOwnerChanged");
+			log("", "blockOwnerChanged", Logger.severity.TRACE);
 			reevaluateOwnership();
 		}
+
+		#endregion
+		#region Utility - RemoveBlock
 
 		/// <summary>
 		/// Forces a block to be removed, usually in the case of a rule violation.
@@ -446,7 +686,7 @@ namespace GardenConquest.Blocks {
 			// spawn materials in place so they're not lost
 
 			// TODO: determine best inventory target
-			IMyInventory inventory = null;
+			//IMyInventory inventory = null;
 
 			// WAITING: once Keen accepts this PR
 			// https://github.com/KeenSoftwareHouse/SpaceEngineers/pull/52
@@ -456,182 +696,567 @@ namespace GardenConquest.Blocks {
 			//b.MoveItemsFromConstructionStockpile(inventory);
 			//b.SpawnConstructionStockpile();
 
-			m_Grid.RemoveBlock(b);
+			m_Grid.RemoveBlock(b, true);
 		}
 
-		/// <summary>
-		/// Reserve the class for this grid.  The block rule will not be applied until the
-		/// beacon is complete"
-		/// </summary>
-		/// <param name="added"></param>
-		/// <returns>False if the class cannot be reserved</returns>
-		private bool reserveClass(IMySlimBlock added) {
-			// Two classifiers not allowed
+		private void removeAllBlocks() {
+			log("trying...", "removeAllBlocks");
+			try {
+				List<IMySlimBlock> allBlocks = new List<IMySlimBlock>();
+				m_Grid.GetBlocks(allBlocks);
+				foreach (IMySlimBlock block in allBlocks) {
+					removeBlock(block);
+				}
+			}
+			catch (Exception e) {
+				log("Exception " + e, "removeAllBlocks", Logger.severity.ERROR);
+			}
+			log("finished", "removeAllBlocks");
+		}
+		#endregion
+		#region Class
+
+		private void setReservedToDefault() {
+			m_ReservedClass = DEFAULT_CLASS;
+			m_ReservedRules = s_Settings.HullRules[(int)DEFAULT_CLASS];
+		}
+
+		private void setEffectiveToDefault() {
+			m_EffectiveClass = DEFAULT_CLASS;
+			m_EffectiveRules = s_Settings.HullRules[(int)DEFAULT_CLASS];
+		}
+
+		#endregion
+		#region Classifier
+
+		private void attachClassifier(HullClassifier classifier) {
+			m_Classifier = classifier;
+			m_Classifier.FatBlock.IsWorkingChanged += classifierWorkingChanged;
+		}
+
+		private void detatchClassifier() {
+			log("start", "detatchClassifier", Logger.severity.TRACE);
 			if (m_Classifier != null) {
-				log("Grid already has a classifier.  Removing this new one.", "reserveClass");
-				return false;
-			} else {
-				m_Classifier = added.FatBlock as InGame.IMyBeacon;
-				(m_Classifier as IMyCubeBlock).IsWorkingChanged += classifierWorkingChanged;
+				log("m_Classifier != null, detaching", "detatchClassifier", Logger.severity.TRACE);
+				m_Classifier.FatBlock.IsWorkingChanged -= classifierWorkingChanged;
+				m_Classifier = null;
+				log("m_Classifier == null " + (m_Classifier = null), "detatchClassifier", Logger.severity.TRACE);
+			}
+			log("end", "detatchClassifier", Logger.severity.TRACE);
+		}
 
-				HullClass.CLASS c = HullClass.hullClassFromString(
-					added.FatBlock.BlockDefinition.SubtypeName);
-				if (checkClassAllowed(c)) {
-					// If the grid can be this class, set only the reserved class
-					// The actual class will be set when the thing powers on
-					m_ReservedClass = c;
-					m_Owner.setClassification(m_ReservedClass);
+		private void setBestClassifier() {
+			if (m_Classifier != null) {
+				log("m_Classifier is still set! Aborting.",
+					"setBestClassifie", Logger.severity.ERROR);
+				return;
+			}
 
-					log("Hull class reserved as " +
-						HullClass.ClassStrings[(int)m_ReservedClass], "reserveClass");
+			// find the best classifier on grid
+			HullClassifier bestClassifier = null;
+			HullClassifier classifier;
+			List<IMySlimBlock> allBlocks = new List<IMySlimBlock>();
+			m_Grid.GetBlocks(allBlocks);
+			foreach (IMySlimBlock block in allBlocks) {
+				if (HullClassifier.isClassifierBlock(block)) {
+					classifier = new HullClassifier(block);
+					if (bestClassifier == null || classifier.Class > bestClassifier.Class) {
+						bestClassifier = classifier;
+					}
+				}
+			}
 
-					// Do not cancel the dereliction timer yet, only do that when powered on
-					return true;
+			// use it
+			if (bestClassifier != null) {
+				setClassifier(bestClassifier);
+			}
+		}
+
+		private void removeExtraClassifiers(int removeCount = 100) {
+			// Supposedly we've only added the best classifier up to now,
+			// so all we need to check for is unused classifiers
+
+			if (m_Classifier == null) {
+				log("m_Classifier is not set! Aborting.",
+					"removeExtraClassifiers", Logger.severity.ERROR);
+				return;
+			}
+
+			List<IMySlimBlock> allBlocks = new List<IMySlimBlock>();
+			m_Grid.GetBlocks(allBlocks);
+			foreach (IMySlimBlock block in allBlocks) {
+				if (removeCount > 0) {
+					if (HullClassifier.isClassifierBlock(block) &&
+						!block.Equals(Classifier.SlimBlock)) {
+							removeBlock(block);
+							removeCount--;
+					}
 				} else {
-					log("Class reservation as " + HullClass.ClassStrings[(int)c] +
-						" not permitted.", "reserveClass");
-					return false;
+					return;
 				}
 			}
 		}
 
-		/// <summary>
-		/// Promotes the grid's actual class to its reserved class so the rule is applied
-		/// </summary>
-		private void promoteClass() {
-			m_ActualClass = m_ReservedClass;
+		private void setClassifier(HullClassifier classifier){
+			if (m_Classifier != null) {
+				log(" existing classifier is still set, skipping",
+					"unsetClassifier", Logger.severity.ERROR);
+				return;
+			 }
 
-			log("Actual class promoted to " + m_ActualClass, "promoteClass");
+			attachClassifier(classifier);
+			m_ReservedClass = m_Classifier.Class;
+			m_ReservedRules = s_Settings.HullRules[(int)m_ReservedClass];
+			log("Hull class reserved as " + m_ReservedRules.DisplayName, "setClassifier");
+			m_CheckCleanupNextUpdate = true;
+		}
 
-			// Cancel dereliction timer if we have one
-			// But only if the grid is within this new class's limits
-			if (checkRules() == VIOLATION_TYPE.NONE) {
-				if (m_DerelictTimer != null)
-					// Only cancel the timer if there is an owner
-					if(m_Owner.getOwnerType() != GridOwner.OWNER_TYPE.UNOWNED)
-						cancelDerelictionTimer();
-			} else {
-				log("This grid is still in violation of its new class.  Timer NOT stopped",
-					"promoteClass");
+		private void unsetClassifier() {
+			if (m_Classifier == null) {
+				log("m_Classifier is null",
+					"unsetClassifier", Logger.severity.WARNING);
+				return;
 			}
+
+			detatchClassifier();
+			setReservedToDefault();
+			demoteClass();
 		}
 
 		/// <summary>
-		/// Sets the actual class back to unclassified and starts the dereliction timer
+		/// Promotes the grid's effective class to its reserved class
+		/// </summary>
+		private void promoteClass() {
+			log("Promoting Effective class to " + m_ReservedClass, "promoteClass");
+			m_EffectiveClass = m_ReservedClass;
+			m_EffectiveRules = s_Settings.HullRules[(int)m_EffectiveClass];
+			m_Owner.setClassification(m_EffectiveClass);
+			m_CheckCleanupNextUpdate = true;
+		}
+
+		/// <summary>
+		/// Sets the effective class back to the default
 		/// A beacon must be working to have its rules applied
 		/// </summary>
 		private void demoteClass() {
-			m_ActualClass = HullClass.CLASS.UNCLASSIFIED;
-
-			log("Actual class returned to " + m_ActualClass, "demoteClass");
-
-			// Start dereliction timer
-			startDerelictionTimer();
+			log("Returning Effective class to " + DEFAULT_CLASS, "demoteClass");
+			setEffectiveToDefault();
+			m_Owner.setClassification(m_EffectiveClass);
+			m_CheckCleanupNextUpdate = true;
 		}
 
-		/// <summary>
-		/// Removes the class reservation, the grid goes back to unclassified
-		/// </summary>
-		private void removeClass() {
-			m_ReservedClass = HullClass.CLASS.UNCLASSIFIED;
-			m_ActualClass = HullClass.CLASS.UNCLASSIFIED;
-
-			m_Owner.setClassification(m_ReservedClass);
-
-			(m_Classifier as IMyCubeBlock).IsWorkingChanged -= classifierWorkingChanged;
-			m_Classifier = null;
-
-			log("Hull classification removed", "removeClass");
-
-			// Start dereliction timer
-			startDerelictionTimer();
-		}
+		#endregion
+		#region Ownership & Fleet
 
 		/// <summary>
 		/// Figures out which faction owns this grid, if any
 		/// </summary>
 		/// <returns>Whether or not the owning faction changed.</returns>
 		public bool reevaluateOwnership() {
-			bool changed = m_Owner.reevaluateOwnership();
+			log("", "reevaluateOwnership", Logger.severity.TRACE);
+			/*
+			log("Entity attributes:", "reevaluateOwnership");
+			log("m_Grid.EntityId " + m_Grid.EntityId, "reevaluateOwnership");
+			log("m_Grid.Name " + m_Grid.Name, "reevaluateOwnership");
+			log("m_Grid.DisplayName " + m_Grid.DisplayName, "reevaluateOwnership");
+			log("m_Grid.GetFriendlyName " + m_Grid.GetFriendlyName(), "reevaluateOwnership");
+
+			log("CubeGrid attributes:", "reevaluateOwnership");
+			log("m_Grid.IsStatic " + m_Grid.IsStatic, "reevaluateOwnership");
+			log("m_Grid.GridSize " + m_Grid.GridSize, "reevaluateOwnership");
+			log("BigOwners.Count " + String.Join(" ,", m_Grid.BigOwners.Count), "reevaluateOwnership");
+			log("BigOwners " + String.Join(" ,", m_Grid.BigOwners), "reevaluateOwnership");
+			*/
+			//log("getting bigOwners", "reevaluateOwnership");
+			//List<long> bigOwners = BigOwners;
+			//log("got them, " + String.Join("","bigOwners") + " check for bigowners called any more",
+			//    "reevaluateOwnership");
+			bool changed = m_Owner.reevaluateOwnership(BigOwners);
 
 			if (changed) {
-				// Grids which just lost ownership should have a dereliction timer started even if 
-				// they have a classifier
-				//
-				// Grids which just got ownership which have a classifier should have their 
-				// timers stopped
-				if (m_Owner.getOwnerType() == GridOwner.OWNER_TYPE.UNOWNED) {
-					startDerelictionTimer();
-				} else {
-					// Stop if there is a classifier
-					if (m_ActualClass != HullClass.CLASS.UNCLASSIFIED)
-						cancelDerelictionTimer();
-				}
+				m_CheckCleanupNextUpdate = true;
+				log("owner changed", "reevaluateOwnership");
+			}
+			else {
+				log("no change", "reevaluateOwnership");
 			}
 
 			return changed;
 		}
 
+		public void markSupported(long fleetOwnerID) {
+			// we may want this later if we need to lookup a fleet ?
+			//m_FleetOwnerID = fleetOwnerID;
+			m_Supported = true;
+		}
+
+		public void markUnsupported(long fleetOwnerID) {
+			//m_FleetOwnerID = fleetOwnerID;
+			m_Supported = false;
+		}
+
+		#endregion
+		#region Cleanup
+
 		/// <summary>
-		/// Starts the timer and alerts the player that their grid will become a derelict
-		/// after x time
+		/// Checks if the grid complies with the rules.
+		/// Returns all violated rules
 		/// </summary>
-		private void startDerelictionTimer() {
-			// Don't start a second timer
-			if (m_DerelictTimer != null)
+		private List<VIOLATION> currentViolations() {
+			List<VIOLATION> violations = new List<VIOLATION>();
+			//log("starting", "checkRules");
+
+			if (m_EffectiveRules == null) {
+				log("m_EffectiveRules not set!", "currentViolations");
+				return violations;
+			}
+
+			// class count violations are handled by the fleet
+			if (!m_Supported) {
+				violations.Add(new VIOLATION(){
+					Type = VIOLATION_TYPE.TOO_MANY_OF_CLASS,
+					Name = "Total of this Class",
+					Count = (int)Owner.getFleet().countClass(m_EffectiveClass),
+					Limit = (int)Owner.getFleet().maxClass(m_EffectiveClass),
+				});
+			}
+
+			// total block violations
+			//log("checking block count", "checkRules");
+			if (m_BlockCount > m_EffectiveRules.MaxBlocks)
+				violations.Add(new VIOLATION() {
+					Type = VIOLATION_TYPE.TOTAL_BLOCKS,
+					Name = "Total Blocks",
+					Count = m_BlockCount,
+					Limit = m_EffectiveRules.MaxBlocks,
+					//Diff = m_BlockCount - m_EffectiveRules.MaxBlocks,
+				});
+
+			//log("checking block type counts", "checkRules");
+			// block type violations
+			BlockType[] types = s_Settings.BlockTypes;
+			int[] limits = m_EffectiveRules.BlockTypeLimits;
+			int[] counts = m_BlockTypeCounts;
+			for (int typeID = 0; typeID < types.Length; typeID++) {
+				BlockType type = types[typeID];
+				int count = counts[typeID];
+				int limit = limits[typeID];
+
+				if (count > limit) {
+					violations.Add(new VIOLATION() {
+						Type = VIOLATION_TYPE.BLOCK_TYPE,
+						BlockType = type,
+						Name = type.DisplayName,
+						Count = count,
+						Limit = limit,
+						//Diff = count - limit,
+					});
+				}
+			}
+
+			log("finished", "currentViolations");
+			return violations;
+		}
+
+		private void updateViolations() {
+			m_CurrentViolations = currentViolations();
+		}
+
+		/// <summary>
+		/// When the timer expires this does a cleanup pass on the grid
+		/// Removes a portion of its offending blocks and restarts the timer if
+		/// violations remain
+		/// </summary>
+		private void doCleanupPhase() {
+			log("start", "doCleanupPhase");
+
+			if (m_CleanupTimer == null) {
+				log("m_CleanupTimer not set!",
+					"doCleanupPhase", Logger.severity.ERROR);
 				return;
-			m_DerelictTimer = new DerelictTimer(m_Grid);
-			if (m_DerelictTimer.start()) {
-				if(eventOnDerelictStart != null)
-					eventOnDerelictStart(m_Grid);
+			}
+			if (m_CurrentViolations == null) {
+				log("m_EffectiveRules not set!",
+					"doCleanupPhase", Logger.severity.ERROR);
+				return;
+
+			}
+
+			// = decompose existing violation data from list
+			// we have to go through these in a set order
+			// todo - maybe we should store these as separate data-points on the object?
+			//   the violations list format is mainly useful for passing to the notification, maybe should do there instead
+			//   could still have a helper-property to gather them all together into a list
+			//VIOLATION totalViolation;
+			int totalToRemove = 0;
+			//VIOLATION tooManyClassifiersViolation;
+			int classifierCountToRemove = 0;
+			//VIOLATION tooManyOfClassViolation;
+			bool removeClass = false;
+			//VIOLATION shouldBeStaticViolation;
+			bool shouldBeStatic = false;
+
+			//log("BlockType[] types = s_Settings.BlockTypes;", "doCleanupPhase", Logger.severity.TRACE);
+			BlockType[] types = s_Settings.BlockTypes;
+			List<VIOLATION> typeViolations = new List<VIOLATION>();
+			//log("build array of num to remove by Type", "doCleanupPhase", Logger.severity.TRACE);
+			//log("typeViolations == null ?" + (typeViolations == null), "doCleanupPhase", Logger.severity.TRACE);
+			//log("typeViolations.Count " + typeViolations.Count, "doCleanupPhase", Logger.severity.TRACE);
+			log("typeRemoveCounts", "doCleanupPhase", Logger.severity.TRACE);
+			int[] typeRemoveCounts = new int[types.Length];
+			//log("foreach (VIOLATION v in typeViolations", "doCleanupPhase", Logger.severity.TRACE);
+
+			log("all violations: ", "doCleanupPhase", Logger.severity.TRACE);
+			foreach (VIOLATION v in m_CurrentViolations) {
+				log("    " + v.Name + " " + v.Type + " " + v.Count + "/" + v.Limit,
+					"doCleanupPhase", Logger.severity.TRACE);
+
+				switch (v.Type) {
+					case VIOLATION_TYPE.BLOCK_TYPE:
+						log("BLOCK_TYPE", "doCleanupPhase", Logger.severity.TRACE);
+						int typeID = s_Settings.blockTypeID(v.BlockType);
+						typeRemoveCounts[typeID] = phasedRemoveCount(v);
+						log("typeRemoveCounts[typeID] " + typeRemoveCounts[typeID], "doCleanupPhase", Logger.severity.TRACE);
+						break;
+					case VIOLATION_TYPE.DOUBLE_CLASSIFICATION:
+						//tooManyClassifiersViolation = v;
+						log("DOUBLE_CLASSIFICATION ", "doCleanupPhase", Logger.severity.TRACE);
+						classifierCountToRemove = phasedRemoveCount(v);
+						log("classifierCountToRemove " + classifierCountToRemove, "doCleanupPhase", Logger.severity.TRACE);
+						break;
+					case VIOLATION_TYPE.SHOULD_BE_STATIC:
+						log("SHOULD_BE_STATIC", "doCleanupPhase", Logger.severity.TRACE);
+						shouldBeStatic = phasedRemoveCount(v) == 1;
+						log("shouldBeStatic " + shouldBeStatic, "doCleanupPhase", Logger.severity.TRACE);
+						break;
+					case VIOLATION_TYPE.TOO_MANY_OF_CLASS:
+						log("TOO_MANY_OF_CLASS", "doCleanupPhase", Logger.severity.TRACE);
+						removeClass = phasedRemoveCount(v) == 1;
+						log("removeSetClassifier " + removeClass, "doCleanupPhase", Logger.severity.TRACE);
+						break;
+					case VIOLATION_TYPE.TOTAL_BLOCKS:
+						log("TOTAL_BLOCKS", "doCleanupPhase", Logger.severity.TRACE);
+						totalToRemove = phasedRemoveCount(v);
+						log("totalToRemove " + totalToRemove, "doCleanupPhase", Logger.severity.TRACE);
+						break;
+				}
+			}
+
+
+			// unsupported classifier
+			if (removeClass) {
+				log("class is unsupported, decrement it to any other existing classifiers or remove entirely",
+					"doCleanupPhase", Logger.severity.TRACE);
+				// if it's unclassified, it wouldn't have one. We just need to delete instead
+				if (m_ReservedClass == DEFAULT_CLASS) {
+					// if this class isn't allowed, we must remove it
+					log("class is " + m_ReservedClass +", remove it", "doCleanupPhase", Logger.severity.TRACE);
+					//m_DeleteNextUpdate = true;
+					// pretend block limit is 0 and use that cleanup
+					// having a Unsupported Unclassified grid is equivalent to having one with zero allowed blocks
+					totalToRemove = phasedRemoveCount(new VIOLATION {
+						Type = VIOLATION_TYPE.TOTAL_BLOCKS,
+						Count = m_BlockCount,
+						Limit = 0
+					});
+				} else {
+					log("class is set, try to use a lower classifier", "doCleanupPhase", Logger.severity.TRACE);
+					IMySlimBlock classifierBlock = m_Classifier.SlimBlock;
+					unsetClassifier();
+					removeBlock(classifierBlock);
+					setBestClassifier();
+				}
+
+			// too many classifiers, only done if we didn't do the above b/c it affects the cached limit
+			} else if (classifierCountToRemove > 0) {
+				log("too many classifiers, remove " + classifierCountToRemove, "doCleanupPhase", Logger.severity.TRACE);
+				removeExtraClassifiers(classifierCountToRemove);
+			}
+
+			// should be static
+			if (shouldBeStatic) {
+				// todo
+				// there doesn't seem to be a way to make it static, not even via info control,
+				// is this not possible? In that case, we'll have to remove the classifier.
+				//m_Grid.
+			}
+
+			// type violations
+			log("go through all blocks and remove type violations", "doCleanupPhase", Logger.severity.TRACE);
+			List<IMySlimBlock> allBlocks = new List<IMySlimBlock>();
+			m_Grid.GetBlocks(allBlocks);
+			int numToRemove;
+			foreach (IMySlimBlock block in allBlocks) {
+				for (int typeID = 0; typeID < types.Length; typeID++) {
+					numToRemove = typeRemoveCounts[typeID];
+					if (numToRemove > 0) {
+						BlockType type = types[typeID];
+						if (type.appliesToBlock(block)) {
+							removeBlock(block);
+							typeRemoveCounts[typeID]--;
+							totalToRemove--;
+						}
+					}
+				}
+			}
+
+			// if we still have too many blocks, remove what's left
+			// todo - remove blocks on the extremities of the grid first to avoid
+			// breaking it into multiple grids, target things that take CPU but aren't
+			// valuable first
+			// note: special treatment for the last block, we need to close the grid
+			log("need to remove " + totalToRemove + " remaining blocks", "doCleanupPhase", Logger.severity.TRACE);
+			if (totalToRemove > 0) {
+				log("totalToRemove > 0", "doCleanupPhase", Logger.severity.TRACE);
+				m_Grid.GetBlocks(allBlocks);
+				int blocksRemaining = allBlocks.Count;
+
+				if (blocksRemaining > 1) {
+					foreach (IMySlimBlock block in allBlocks) {
+						if (totalToRemove > 0 && blocksRemaining > 1) {
+							removeBlock(block);
+							totalToRemove--;
+							blocksRemaining--;
+						}
+						else {
+							break;
+						}
+					}
+				}
+
+				if (totalToRemove > 0) {
+					log("marking grid for deletion", "doCleanupPhase", Logger.severity.TRACE);
+					m_DeleteNextUpdate = true;
+				}
+			}
+
+			elapseCleanupTimer();
+			m_CheckCleanupNextUpdate = true;
+			log("done", "doCleanupPhase", Logger.severity.TRACE);
+		}
+
+		private int phasedRemoveCount(VIOLATION v) {
+			VIOLATION_TYPE type = v.Type;
+			if (type == VIOLATION_TYPE.BLOCK_TYPE ||
+				type == VIOLATION_TYPE.TOTAL_BLOCKS ||
+				type == VIOLATION_TYPE.DOUBLE_CLASSIFICATION) {
+				return (int)Math.Ceiling((float)(v.Count - v.Limit) * CLEANUP_RATE);
+
+			} else if (type == VIOLATION_TYPE.TOO_MANY_OF_CLASS) {
+				m_TooManyOfClassTicks++;
+				if (m_TooManyOfClassTicks > CLEANUP_CLASS_TICKS) {
+					m_TooManyOfClassTicks = 0;
+					return 1;
+				}
+				return 0;
+			} else if (type == VIOLATION_TYPE.SHOULD_BE_STATIC) {
+				m_ShouldBeStaticTicks++;
+				if (m_ShouldBeStaticTicks > CLEANUP_STATIC_TICKS) {
+					m_ShouldBeStaticTicks = 0;
+					return 1;
+				}
+				return 0;
+			}
+
+			return 0;
+		}
+
+		/// <summary>
+		/// </summary>
+		private void notifyViolations() {
+			log("start", "notifyViolations");
+
+			if (m_CurrentViolations.Count > 0) {
+				DateTime now = DateTime.Now;
+				if (now > m_CleanupNotifyAfter) {
+					log("sending notification", "notifyViolations");
+					notifyCleanupViolation(m_CurrentViolations);
+					m_CleanupNotifyAfter = now.AddSeconds(CLEANUP_NOTIFY_WAIT);
+				}
+			}
+		}
+
+		#endregion
+		#region Timers
+
+		/// <summary>
+		/// Ensure Cleanup is running if we're violating rules
+		/// Ensure it's stopped if we're not
+		/// </summary>
+		private void updateCleanupTimers(bool notifyStarted = true) {
+			log("start", "updateCleanup");
+
+			if (m_CurrentViolations.Count > 0) {
+				if (m_CleanupTimer == null) {
+					log("starting timer", "updateCleanup");
+					startCleanupTimer(notifyStarted);
+				}
+			}
+			else {
+				if (m_CleanupTimer != null) {
+					log("no violations, cancelling timer", "updateCleanup");
+					cancelCleanupTimer();
+				}
+			}
+		}
+
+		/// <summary>
+		/// Starts the timer and alerts the player
+		/// </summary>
+		private void startCleanupTimer(bool notify = true) {
+			log("", "startCleanupTimer");
+			// Don't start a second timer
+			if (m_CleanupTimer != null) {
+				log("already running", "startCleanupTimer");
+				return;
+			}
+
+			m_CleanupTimer = new DerelictTimer(m_Grid);
+			log("new timer", "startCleanupTimer");
+			if (m_CleanupTimer.start() && notify) {
+				log("started", "startCleanupTimer");
+				notifyCleanupTimerStart(m_CleanupTimer.SecondsRemaining);
 			}
 		}
 
 		/// <summary>
 		/// If the rules are met before the timer experies this cancels the timer
 		/// </summary>
-		private void cancelDerelictionTimer(bool notify = true) {
-			if (m_DerelictTimer != null) {
-				if (m_DerelictTimer.cancel())
-					if(eventOnDerelictEnd != null)
-						eventOnDerelictEnd(m_Grid, DerelictTimer.COMPLETION.CANCELLED);
-				m_DerelictTimer = null;
-			}
-		}
+		private void cancelCleanupTimer(bool notify = true) {
+			log("start", "cancelCleanupTimer", Logger.severity.TRACE);
+			if (m_CleanupTimer != null) {
+				log("not null, cancelling", "cancelCleanupTimer", Logger.severity.TRACE);
+				if (m_CleanupTimer.cancel()) {
+					log("successuflly cancelled", "cancelCleanupTimer", Logger.severity.TRACE);
 
-		/// <summary>
-		/// When the dereliction timer expires this turns the grid into a derelict.
-		/// Destroys functional blocks and stops the grid.
-		/// </summary>
-		private void executeDerelictionPhase() {
-			if (m_DerelictTimer == null)
-				return;
+					if (notify) {
+						notifyCleanupTimerEnd(DerelictTimer.COMPLETION.CANCELLED);
+						log("notify complete", "cancelCleanupTimer", Logger.severity.TRACE);
+					}
 
-			// TODO: actual phasing
-			// Logic for different phases goes here
-			if (m_DerelictTimer.CompletedPhase == DerelictTimer.DT_INFO.PHASE.INITIAL) {
-				log("Initial timer expired.  Grid turned into derelict.", "runDerelictionPhase");
-
-				// Get a list of all functional blocks
-				List<IMySlimBlock> funcBlocks = new List<IMySlimBlock>();
-				m_Grid.GetBlocks(funcBlocks,
-					x => x.FatBlock != null && x.FatBlock is IMyFunctionalBlock);
-				log(funcBlocks.Count + " blocks to remove", "runDerelictionPhase");
-
-				// Go through the list and destroy them
-				foreach (IMySlimBlock block in funcBlocks) {
-					// Use the grid pointer from the block itself, because if one of the
-					// previously removed blocks caused the grid to split, we can't use the
-					// stored grid to remove it
-					block.CubeGrid.RemoveBlock(block);
 				}
+				m_CleanupTimer = null;
 
-				// TODO: Once this is no longer the final phase this will need to be moved out
-				m_DerelictTimer = null;
-				if(eventOnDerelictEnd != null)
-					eventOnDerelictEnd(m_Grid, DerelictTimer.COMPLETION.ELAPSED);
+			}
+			log("done", "cancelCleanupTimer", Logger.severity.TRACE);
+		}
+
+		private void elapseCleanupTimer() {
+			m_CleanupTimer = null;
+			log("cleanup timer set to null", "doCleanupPhase");
+			log("notifyCleanupTimerEnd", "doCleanupPhase");
+			notifyCleanupTimerEnd(DerelictTimer.COMPLETION.ELAPSED);
+		}
+
+		private void detatchCleanupTimer() {
+			if (m_CleanupTimer != null) {
+				cancelCleanupTimer(false);
+				m_CleanupTimer = null;
 			}
 		}
+
+		#endregion
+		#region SE Hooks - Classifier Working
 
 		private void classifierWorkingChanged(IMyCubeBlock b) {
 			log("Working: " + b.IsWorking, "classifierWorkingChanged");
@@ -645,6 +1270,9 @@ namespace GardenConquest.Blocks {
 			}
 		}
 
+		#endregion
+		#region Utility - General
+
 		public override MyObjectBuilder_EntityBase GetObjectBuilder(bool copy = false) {
 			return Entity.GetObjectBuilder();
 		}
@@ -653,5 +1281,7 @@ namespace GardenConquest.Blocks {
 			if (m_Logger != null)
 				m_Logger.log(level, method, message);
 		}
+
+		#endregion
 	}
 }

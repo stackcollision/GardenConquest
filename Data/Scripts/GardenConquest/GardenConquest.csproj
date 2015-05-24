@@ -53,6 +53,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Blocks\HullClassifier.cs" />
     <Compile Include="Core\CommandProcessor.cs" />
     <Compile Include="Extensions\GridExtensions.cs" />
     <Compile Include="Messaging\BaseRequest.cs" />
@@ -65,6 +66,7 @@
     <Compile Include="Core\CoreComponent.cs" />
     <Compile Include="Core\Core_Base.cs" />
     <Compile Include="Core\Core_Client.cs" />
+    <Compile Include="Records\BlockType.cs" />
     <Compile Include="Records\DerelictTimer.cs" />
     <Compile Include="Records\FactionFleet.cs" />
     <Compile Include="Blocks\MergeBlock.cs" />
@@ -73,9 +75,9 @@
     <Compile Include="Core\Core_Server.cs" />
     <Compile Include="GridSorter.cs" />
     <Compile Include="Records\GridOwner.cs" />
+    <Compile Include="Records\HullRuleSet.cs" />
     <Compile Include="Records\HullClass.cs" />
     <Compile Include="Blocks\GridEnforcer.cs" />
-    <Compile Include="Records\HullRule.cs" />
     <Compile Include="Logger.cs" />
     <Compile Include="Core\ConquestSettings.cs" />
     <Compile Include="Messaging\ResponseProcessor.cs" />

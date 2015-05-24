@@ -23,6 +23,7 @@ namespace GardenConquest.Messaging {
 		/// Determines what the destination field actually means
 		/// </summary>
 		public enum DEST_TYPE {
+			NONE,
 			EVERYONE,
 			PLAYER,
 			FACTION
