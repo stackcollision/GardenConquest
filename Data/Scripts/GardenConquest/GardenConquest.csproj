@@ -65,13 +65,14 @@
     <Compile Include="Core\CoreComponent.cs" />
     <Compile Include="Core\Core_Base.cs" />
     <Compile Include="Core\Core_Client.cs" />
-    <Compile Include="Records\ActiveDerelictTimer.cs" />
+    <Compile Include="Records\DerelictTimer.cs" />
     <Compile Include="Records\FactionFleet.cs" />
     <Compile Include="Blocks\MergeBlock.cs" />
     <Compile Include="Messaging\RequestProcessor.cs" />
     <Compile Include="Records\ControlPoint.cs" />
     <Compile Include="Core\Core_Server.cs" />
     <Compile Include="GridSorter.cs" />
+    <Compile Include="Records\GridOwner.cs" />
     <Compile Include="Records\HullClass.cs" />
     <Compile Include="Blocks\GridEnforcer.cs" />
     <Compile Include="Records\HullRule.cs" />

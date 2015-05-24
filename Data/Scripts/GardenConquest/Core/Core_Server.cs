@@ -66,10 +66,6 @@ namespace GardenConquest.Core {
 				typeof(MyObjectBuilder_InventoryItem), "ShipLicense");
 			s_Sorter = new GridSorter();
 
-			log("Loading config");
-			if (!ConquestSettings.getInstance().loadSettings())
-				ConquestSettings.getInstance().loadDefaults();
-
 			// Start round timer
 			m_RoundTimer = new MyTimer(ConquestSettings.getInstance().Period * 1000, roundEnd);
 			m_RoundTimer.Start();
@@ -155,12 +151,12 @@ namespace GardenConquest.Core {
 			m_MailMan.send(noti);
 		}
 
-		public void eventDerelictStart(ActiveDerelictTimer dt) {
-			GridEnforcer ge = dt.Grid.Components.Get<MyGameLogicComponent>() as GridEnforcer;
+		public void eventDerelictStart(IMyCubeGrid grid) {
+			GridEnforcer ge = grid.Components.Get<MyGameLogicComponent>() as GridEnforcer;
 			if (ge == null || ge.Faction == null)
 				return;
 
-			string message = "Your faction's grid " + dt.Grid.DisplayName + " will become a " +
+			string message = "Your faction's grid " + grid.DisplayName + " will become a " +
 				"derelict in " + ConquestSettings.getInstance().DerelictCountdown / 60.0f +
 				" minutes";
 
@@ -175,22 +171,22 @@ namespace GardenConquest.Core {
 			m_MailMan.send(noti);
 		}
 
-		public void eventDerelictEnd(ActiveDerelictTimer dt, ActiveDerelictTimer.COMPLETION c) {
+		public void eventDerelictEnd(IMyCubeGrid grid, DerelictTimer.COMPLETION c) {
 			GridEnforcer ge =
-				dt.Grid.Components.Get<MyGameLogicComponent>() as GridEnforcer;
+				grid.Components.Get<MyGameLogicComponent>() as GridEnforcer;
 			if (ge == null || ge.Faction == null)
 				return;
 
 			string message = "";
 			MyFontEnum font = MyFontEnum.Red;
 
-			if (c == ActiveDerelictTimer.COMPLETION.CANCELLED) {
-				message = "Your faction's grid " + dt.Grid.DisplayName +
+			if (c == DerelictTimer.COMPLETION.CANCELLED) {
+				message = "Your faction's grid " + grid.DisplayName +
 					" is no longer " +
 					"in danger of becoming a derelict";
 				font = MyFontEnum.Green;
-			} else if (c == ActiveDerelictTimer.COMPLETION.ELAPSED) {
-				message = "Your faction's grid " + dt.Grid.DisplayName +
+			} else if (c == DerelictTimer.COMPLETION.ELAPSED) {
+				message = "Your faction's grid " + grid.DisplayName +
 					" has become a derelict";
 				font = MyFontEnum.Red;
 			}

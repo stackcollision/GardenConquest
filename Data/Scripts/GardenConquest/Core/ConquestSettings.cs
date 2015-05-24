@@ -58,13 +58,16 @@ namespace GardenConquest.Core {
 			m_Settings.ControlPoints = new List<ControlPoint>();
 			m_Settings.HullRules = new HullRule[Enum.GetValues(typeof(HullClass.CLASS)).Length];
 			m_Settings.FactionLimits = Enumerable.Repeat(-1, Enum.GetValues(typeof(HullClass.CLASS)).Length).ToArray();
+
+			if (!loadSettings())
+				loadDefaults();
 		}
 
 		/// <summary>
 		/// Loads settings from the configuration XML.
 		/// </summary>
 		/// <returns>False if no file exists</returns>
-		public bool loadSettings() {
+		private bool loadSettings() {
 			log("Attempting to load settings from file", "loadSettings");
 			if (MyAPIGateway.Utilities.FileExistsInLocalStorage(
 				Constants.ConfigFileName, typeof(SETTINGS))
@@ -85,7 +88,7 @@ namespace GardenConquest.Core {
 		/// Writes the current settings to a file.
 		/// Used to produce a config file when none exists
 		/// </summary>
-		public void writeSettings() {
+		private void writeSettings() {
 			log("Writing config file", "writeSettings");
 			TextWriter writer =
 				MyAPIGateway.Utilities.WriteFileInLocalStorage(
@@ -98,7 +101,7 @@ namespace GardenConquest.Core {
 		/// <summary>
 		/// Sets default settings to be create a new config file.
 		/// </summary>
-		public void loadDefaults() {
+		private void loadDefaults() {
 			log("Loading default settings", "loadDefaults");
 
 			ControlPoint cp = new ControlPoint();

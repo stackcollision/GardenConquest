@@ -81,7 +81,7 @@ namespace GardenConquest.Core {
 		/// This will be used to alert the faction
 		/// </summary>
 		/// <param name="dt"></param>
-		public void addNewDerelictTimer(ActiveDerelictTimer dt) {
+		public void addNewDerelictTimer(DerelictTimer.DT_INFO dt) {
 			m_SavedState.DerelictTimers.Add(dt);
 		}
 
@@ -91,13 +91,18 @@ namespace GardenConquest.Core {
 		/// Removes the timer from tracking.
 		/// </summary>
 		/// <param name="dt"></param>
-		public void removeDerelictTimer(ActiveDerelictTimer dt) {
-			m_SavedState.DerelictTimers.Remove(dt);
+		public void removeDerelictTimer(long gridId) {
+			foreach (DerelictTimer.DT_INFO dt in m_SavedState.DerelictTimers) {
+				if (dt.GridID == gridId) {
+					m_SavedState.DerelictTimers.Remove(dt);
+					break;
+				}
+			}
 		}
 
 
-		public ActiveDerelictTimer findActiveDerelictTimer(long gridId) {
-			foreach (ActiveDerelictTimer dt in m_SavedState.DerelictTimers) {
+		public DerelictTimer.DT_INFO findActiveDerelictTimer(long gridId) {
+			foreach (DerelictTimer.DT_INFO dt in m_SavedState.DerelictTimers) {
 				if (dt.GridID == gridId)
 					return dt;
 			}
@@ -127,9 +132,9 @@ namespace GardenConquest.Core {
 
 					// Once the state is loaded from the file there's some housekeeping to do
 					// Make a copy of the list to iterate so we can remove from the actual one
-					List<ActiveDerelictTimer> copy =
-						new List<ActiveDerelictTimer>(m_SavedState.DerelictTimers);
-					foreach (ActiveDerelictTimer timer in copy) {
+					List<DerelictTimer.DT_INFO> copy =
+						new List<DerelictTimer.DT_INFO>(m_SavedState.DerelictTimers);
+					foreach (DerelictTimer.DT_INFO timer in copy) {
 						// Need to keep track of when the server was started and how many
 						// millis were remaining at that time
 						// This is critical for saving again later
@@ -159,7 +164,7 @@ namespace GardenConquest.Core {
 
 				// Before we can actually do any writing we need to see where the timers currently stand
 				DateTime now = DateTime.UtcNow;
-				foreach (ActiveDerelictTimer timer in m_SavedState.DerelictTimers) {
+				foreach (DerelictTimer.DT_INFO timer in m_SavedState.DerelictTimers) {
 					// If this results in a negative time remaining, it means the timer expired but
 					// hasn't been removed from the dictionary yet.  We'll leave it alone and let it go
 					// to the file, but when we try to load it later it'll get dropped

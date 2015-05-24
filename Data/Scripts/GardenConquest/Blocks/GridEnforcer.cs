@@ -61,8 +61,7 @@ namespace GardenConquest.Blocks {
 		private bool m_BeyondFirst100 = false;
 		private bool m_Merging = false;
 
-		private ActiveDerelictTimer m_DerelictTimer = null;
-		private bool m_IsDerelict = false;
+		private DerelictTimer m_DerelictTimer = null;
 
 		private Logger m_Logger = null;
 
@@ -82,15 +81,15 @@ namespace GardenConquest.Blocks {
 		}
 
 		// OnDerelictStart
-		private static Action<ActiveDerelictTimer> eventOnDerelictStart;
-		public static event Action<ActiveDerelictTimer> OnDerelictStart {
+		private static Action<IMyCubeGrid> eventOnDerelictStart;
+		public static event Action<IMyCubeGrid> OnDerelictStart {
 			add { eventOnDerelictStart += value; }
 			remove { eventOnDerelictStart -= value; }
 		}
 
 		// OnDerelictEnd
-		private static Action<ActiveDerelictTimer, ActiveDerelictTimer.COMPLETION> eventOnDerelictEnd;
-		public static event Action<ActiveDerelictTimer, ActiveDerelictTimer.COMPLETION> OnDerelictEnd {
+		private static Action<IMyCubeGrid, DerelictTimer.COMPLETION> eventOnDerelictEnd;
+		public static event Action<IMyCubeGrid, DerelictTimer.COMPLETION> OnDerelictEnd {
 			add { eventOnDerelictEnd += value; }
 			remove { eventOnDerelictEnd -= value; }
 		}
@@ -215,14 +214,7 @@ namespace GardenConquest.Blocks {
 					// Once the server has loaded all block for this grid, check if we are
 					// classified.  If not, warn the owner about the timer
 					if (m_ActualClass == HullClass.CLASS.UNCLASSIFIED) {
-						// Since the game is just starting, we need to check if we're supposed
-						// to resume this timer or start a brand new one
-						ActiveDerelictTimer dt = StateTracker.getInstance().findActiveDerelictTimer(
-							m_Grid.EntityId);
-						if (dt == null)
-							startDerelictionTimer();
-						else
-							resumeDerelictionTimer(dt);
+						startDerelictionTimer();
 					}
 				}
 
@@ -233,10 +225,9 @@ namespace GardenConquest.Blocks {
 					m_Merging = false;
 				}
 
-				if (m_IsDerelict) {
-					m_IsDerelict = false;
-					makeDerelict();
-				}
+				if (m_DerelictTimer != null && m_DerelictTimer.TimerExpired)
+					executeDerelictionPhase();
+
 			} catch (Exception e) {
 				log("Exception occured: " + e, "UpdateBeforeSimulation100");
 			}
@@ -303,7 +294,8 @@ namespace GardenConquest.Blocks {
 			// Check if we are violating class rules
 			VIOLATION_TYPE check = checkRules();
 			if (check != VIOLATION_TYPE.NONE) {
-				eventOnViolation(this, check);
+				if(eventOnViolation != null)
+					eventOnViolation(this, check);
 				removeBlock(added);
 			}
 		}
@@ -350,6 +342,7 @@ namespace GardenConquest.Blocks {
 		/// <param name="c">Class to check</param>
 		/// <returns>True if the class is allowed</returns>
 		private bool checkClassAllowed(HullClass.CLASS c) {
+			reevaluateOwnership();
 			GridOwner.OWNER_TYPE ownerType = m_Owner.getOwnerType();
 
 			// If there is no owner at all we can't allow the class because there's no way to track
@@ -369,7 +362,8 @@ namespace GardenConquest.Blocks {
 					+ "/" + limit + ")", "checkClassAllowed");
 
 				if (fleet.countClass(c) >= limit) {
-					eventOnClassProhibited(this, c);
+					if(eventOnClassProhibited != null)
+						eventOnClassProhibited(this, c);
 					return false;
 				} else {
 					return true;
@@ -386,7 +380,8 @@ namespace GardenConquest.Blocks {
 					return true;
 
 				if (fleet.countClass(c) >= limit) {
-					eventOnClassProhibited(this, c);
+					if(eventOnClassProhibited != null)
+						eventOnClassProhibited(this, c);
 					return false;
 				}
 
@@ -512,7 +507,9 @@ namespace GardenConquest.Blocks {
 			// But only if the grid is within this new class's limits
 			if (checkRules() == VIOLATION_TYPE.NONE) {
 				if (m_DerelictTimer != null)
-					cancelDerelictionTimer();
+					// Only cancel the timer if there is an owner
+					if(m_Owner.getOwnerType() != GridOwner.OWNER_TYPE.UNOWNED)
+						cancelDerelictionTimer();
 			} else {
 				log("This grid is still in violation of its new class.  Timer NOT stopped",
 					"promoteClass");
@@ -557,10 +554,20 @@ namespace GardenConquest.Blocks {
 		public bool reevaluateOwnership() {
 			bool changed = m_Owner.reevaluateOwnership();
 
-			// TODO: Grids without owners should have a dereliction timer started
-			// even if they have a classifier
-			// Likewise, grids which now have ownership which also have a classifier
-			// should have their dereliction timer stopped
+			if (changed) {
+				// Grids which just lost ownership should have a dereliction timer started even if 
+				// they have a classifier
+				//
+				// Grids which just got ownership which have a classifier should have their 
+				// timers stopped
+				if (m_Owner.getOwnerType() == GridOwner.OWNER_TYPE.UNOWNED) {
+					startDerelictionTimer();
+				} else {
+					// Stop if there is a classifier
+					if (m_ActualClass != HullClass.CLASS.UNCLASSIFIED)
+						cancelDerelictionTimer();
+				}
+			}
 
 			return changed;
 		}
@@ -573,53 +580,11 @@ namespace GardenConquest.Blocks {
 			// Don't start a second timer
 			if (m_DerelictTimer != null)
 				return;
-
-			int seconds = ConquestSettings.getInstance().DerelictCountdown;
-			if (seconds < 0) {
-				log("Dereliction timer disabled.  No timer started.", "startDerelictionTimer");
-				return;
+			m_DerelictTimer = new DerelictTimer(m_Grid);
+			if (m_DerelictTimer.start()) {
+				if(eventOnDerelictStart != null)
+					eventOnDerelictStart(m_Grid);
 			}
-
-			// Create timer record
-			m_DerelictTimer = new ActiveDerelictTimer();
-			m_DerelictTimer.Grid = m_Grid;
-			m_DerelictTimer.GridID = m_Grid.EntityId;
-			m_DerelictTimer.Phase = ActiveDerelictTimer.PHASE.INITIAL;
-			m_DerelictTimer.MillisRemaining = seconds * 1000;
-			m_DerelictTimer.Timer = new MyTimer(m_DerelictTimer.MillisRemaining,
-				derelictionTimerExpired);
-			m_DerelictTimer.Timer.Start();
-
-			m_DerelictTimer.StartingMillisRemaining = m_DerelictTimer.MillisRemaining;
-			m_DerelictTimer.StartTime = DateTime.UtcNow;
-
-			// Add to state
-			StateTracker.getInstance().addNewDerelictTimer(m_DerelictTimer);
-			eventOnDerelictStart(m_DerelictTimer);
-
-			log("Dereliction timer started", "startDerelictionTimer");
-		}
-
-		/// <summary>
-		/// Picks up where a saved-state timer left off
-		/// </summary>
-		/// <param name="dt">Timer to resume</param>
-		private void resumeDerelictionTimer(ActiveDerelictTimer dt) {
-			if (dt == null)
-				return;
-			if (ConquestSettings.getInstance().DerelictCountdown < 0) {
-				log("Dereliction timer disabled.  No timer resumed.", "resumeDerelictionTimer");
-				return;
-			}
-
-			m_DerelictTimer = dt;
-			m_DerelictTimer.Grid = m_Grid;
-			m_DerelictTimer.Timer = new MyTimer(m_DerelictTimer.MillisRemaining,
-				derelictionTimerExpired);
-			m_DerelictTimer.Timer.Start();
-
-			log("Dereliction timer resumed with " + m_DerelictTimer.MillisRemaining,
-				"resumeDerelictionTimer");
 		}
 
 		/// <summary>
@@ -627,54 +592,44 @@ namespace GardenConquest.Blocks {
 		/// </summary>
 		private void cancelDerelictionTimer(bool notify = true) {
 			if (m_DerelictTimer != null) {
-				StateTracker.getInstance().removeDerelictTimer(m_DerelictTimer);
-				if (notify)
-					eventOnDerelictEnd(m_DerelictTimer, ActiveDerelictTimer.COMPLETION.CANCELLED);
-
-				m_DerelictTimer.Timer.Stop();
-				m_DerelictTimer.Timer = null;
+				if (m_DerelictTimer.cancel())
+					if(eventOnDerelictEnd != null)
+						eventOnDerelictEnd(m_Grid, DerelictTimer.COMPLETION.CANCELLED);
 				m_DerelictTimer = null;
-
-				log("Dereliction timer cancelled", "cancelDerelictionTimer");
 			}
-		}
-
-		private void derelictionTimerExpired() {
-			// How did we get here without a timer?
-			if (m_DerelictTimer == null)
-				return;
-
-			m_IsDerelict = true;
-
-			StateTracker.getInstance().removeDerelictTimer(m_DerelictTimer);
-			eventOnDerelictEnd(m_DerelictTimer, ActiveDerelictTimer.COMPLETION.ELAPSED);
-
-			// Get rid of the timer
-			m_DerelictTimer.Timer.Stop();
-			m_DerelictTimer.Timer = null;
-			m_DerelictTimer = null;
 		}
 
 		/// <summary>
 		/// When the dereliction timer expires this turns the grid into a derelict.
 		/// Destroys functional blocks and stops the grid.
 		/// </summary>
-		private void makeDerelict() {
-			log("Timer expired.  Grid turned into a derelict.", "makeDerelict");
+		private void executeDerelictionPhase() {
+			if (m_DerelictTimer == null)
+				return;
 
-			// Get a list of all functional blocks
-			List<IMySlimBlock> funcBlocks = new List<IMySlimBlock>();
-			m_Grid.GetBlocks(funcBlocks,
-				x => x.FatBlock != null && x.FatBlock is IMyFunctionalBlock);
-			log(funcBlocks.Count + " blocks to remove", "makeDerelict");
+			// TODO: actual phasing
+			// Logic for different phases goes here
+			if (m_DerelictTimer.CompletedPhase == DerelictTimer.DT_INFO.PHASE.INITIAL) {
+				log("Initial timer expired.  Grid turned into derelict.", "runDerelictionPhase");
 
-			// Go through the list and destroy them
-			// TODO: Do this in phases with damage instead of just poofing them
-			foreach (IMySlimBlock block in funcBlocks) {
-				// Use the grid pointer from the block itself, because if one of the
-				// previously removed blocks caused the grid to split, we can't use the
-				// stored grid to remove it
-				block.CubeGrid.RemoveBlock(block);
+				// Get a list of all functional blocks
+				List<IMySlimBlock> funcBlocks = new List<IMySlimBlock>();
+				m_Grid.GetBlocks(funcBlocks,
+					x => x.FatBlock != null && x.FatBlock is IMyFunctionalBlock);
+				log(funcBlocks.Count + " blocks to remove", "runDerelictionPhase");
+
+				// Go through the list and destroy them
+				foreach (IMySlimBlock block in funcBlocks) {
+					// Use the grid pointer from the block itself, because if one of the
+					// previously removed blocks caused the grid to split, we can't use the
+					// stored grid to remove it
+					block.CubeGrid.RemoveBlock(block);
+				}
+
+				// TODO: Once this is no longer the final phase this will need to be moved out
+				m_DerelictTimer = null;
+				if(eventOnDerelictEnd != null)
+					eventOnDerelictEnd(m_Grid, DerelictTimer.COMPLETION.ELAPSED);
 			}
 		}
 

@@ -15,10 +15,10 @@ namespace GardenConquest.Core {
 	[XmlType("SavedState")]
 	public class SavedState {
 
-		public List<ActiveDerelictTimer> DerelictTimers;
+		public List<DerelictTimer.DT_INFO> DerelictTimers;
 
 		public SavedState() {
-			DerelictTimers = new List<ActiveDerelictTimer>();
+			DerelictTimers = new List<DerelictTimer.DT_INFO>();
 		}
 
 	}

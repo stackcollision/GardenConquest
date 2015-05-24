@@ -150,7 +150,8 @@ namespace GardenConquest.Records {
 		/// <param name="newFac"></param>
 		/// <param name="newPlayer"></param>
 		private void effectOwnershipChanged(OWNER_TYPE newType, IMyFaction newFac, long newPlayer) {
-			log("Ownership has changed: " + newType + " " + newFac + " " + newPlayer, "effectOwnershipChanged");
+			long newFacId = newFac == null ? 0 : newFac.FactionId;
+			log("Ownership has changed: " + newType + " " + newFacId + " " + newPlayer, "effectOwnershipChanged");
 
 			// Remove the grid from the previous fleet, if there was one
 			FactionFleet oldFleet = getFleet();

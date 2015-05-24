@@ -14,6 +14,7 @@ namespace GardenConquest.Messaging {
 
 		public CPGPSRequest()
 			: base(BaseRequest.TYPE.CPGPS) {
+			// Empty
 		}
 	}
 }
