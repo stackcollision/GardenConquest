@@ -49,6 +49,7 @@ namespace GardenConquest.Core {
 		private static BuilderDefs.SerializableDefinitionId? s_TokenDef = null;
 		private static IComparer<FACGRID> s_Sorter = null;
 		private static ConquestSettings s_Settings;
+		private static bool s_DelayedSettingWrite = false;
 
 		#endregion
 		#region Inherited Methods
@@ -70,6 +71,7 @@ namespace GardenConquest.Core {
 			s_Sorter = new GridSorter();
 
 			s_Settings = ConquestSettings.getInstance();
+			s_DelayedSettingWrite = s_Settings.WriteFailed;
 			// Start round timer
 			m_RoundTimer = new MyTimer(s_Settings.CPPeriod * 1000, roundEnd);
 			m_RoundTimer.Start();
@@ -128,6 +130,15 @@ namespace GardenConquest.Core {
 					m_RoundEnded = false;
 				}
 			//}
+				if (s_DelayedSettingWrite) {
+					log("Settings Write was delayed, trying again", "updateBeforeSimulation");
+					s_Settings.writeSettings();
+					if (!s_Settings.WriteFailed) {
+						s_DelayedSettingWrite = false;
+						log("Setting Write Success", "updateBeforeSimulation");
+					}
+						
+				}
 		}
 
 		#endregion

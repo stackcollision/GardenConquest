@@ -67,6 +67,7 @@ namespace GardenConquest.Core {
 		public HullRuleSet[] HullRules {
 			get { return m_Settings.HullRules; }
 		}
+		public bool WriteFailed { get; private set; }
 
 		#endregion
 		#region Lifecycle
@@ -111,31 +112,45 @@ namespace GardenConquest.Core {
 				log("Loading settings before MyAPIGateway is initialized. " +
 					"Using defaults instead. Error: " + e,
 					"loadSettings", Logger.severity.ERROR);
+
+				return false;
 			}
 
 			// Fill missing Settings with defaults
+			bool saveAfterLoad = false;
+
 			if (ControlPoints == null) {
 				log("No ControlPoints, using default", "loadSettings");
 				m_Settings.ControlPoints = defaultControlPoints();
+				saveAfterLoad = true;
 			}
 			if (CPPeriod == 0) {
 				log("No Period, using default", "loadSettings");
 				m_Settings.CPPeriod = DEFAULT_CP_PERIOD;
+				saveAfterLoad = true;
 			}
 			if (CleanupPeriod == 0) {
 				log("No DerelictCountdown, using default", "loadSettings");
 				m_Settings.CleanupPeriod = DEFAULT_CLEANUP_PERIOD;
+				saveAfterLoad = true;
 			}
 			if (BlockTypes == null) {
 				log("No BlockTypes, using default", "loadSettings");
 				m_Settings.BlockTypes = defaultBlockTypes();
+				saveAfterLoad = true;
 			}
 			if (HullRules == null) {
 				log("No HullRules, using default", "loadSettings");
 				m_Settings.HullRules = defaultHullRules();
+				saveAfterLoad = true;
 			}
 
 			log("Settings loaded", "loadSettings");
+
+			if (saveAfterLoad) {
+				log("Saving some settings loaded from defaults", "loadSettings");
+				writeSettings();
+			}
 			return true;
 		}
 
@@ -143,14 +158,26 @@ namespace GardenConquest.Core {
 		/// Writes the current settings to a file.
 		/// Used to produce a config file when none exists
 		/// </summary>
-		private void writeSettings() {
+		public void writeSettings() {
 			log("Writing config file", "writeSettings");
-			TextWriter writer =
-				MyAPIGateway.Utilities.WriteFileInLocalStorage(
-				Constants.ConfigFileName, typeof(SETTINGS));
-			writer.Write(MyAPIGateway.Utilities.SerializeToXML<SETTINGS>(m_Settings));
-			writer.Flush();
-			log("Config written", "writeSettings");
+			try {
+				TextWriter writer =
+					MyAPIGateway.Utilities.WriteFileInLocalStorage(
+					Constants.ConfigFileName, typeof(SETTINGS));
+
+				writer.Write(MyAPIGateway.Utilities.SerializeToXML<SETTINGS>(m_Settings));
+				writer.Flush();
+				log("Config written", "writeSettings");
+
+				WriteFailed = false;
+			}
+			catch (Exception e) {
+				log("Writing settings before MyAPIGateway is initialized, " +
+					"They won't be saved :( Error : " + e,
+					"loadSettings", Logger.severity.ERROR);
+
+				WriteFailed = true;
+			}
 		}
 
 		/// <summary>
