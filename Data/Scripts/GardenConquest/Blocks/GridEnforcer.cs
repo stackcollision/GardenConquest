@@ -93,9 +93,10 @@ namespace GardenConquest.Blocks {
 		private bool m_BeyondFirst100 = false;
 		private bool m_Merging = false;
 		private bool m_CheckCleanupNextUpdate;
+		private bool m_CheckOwnerNextUpdate;
 		private bool m_NotifyViolationsNextUpdate;
 		private bool m_DeleteNextUpdate;
-		private bool m_FinishDeleteNextUpdate;
+		//private bool m_FinishDeleteNextUpdate;
 		private bool m_MarkedForClose;
 
 		// Utility
@@ -213,14 +214,13 @@ namespace GardenConquest.Blocks {
 
 			m_BlockCount = 0;
 			m_BlockTypeCounts = new int[s_Settings.BlockTypes.Length];
-			log("new m_Owner" + m_IsServer, "Init");
 			m_Owner = new GridOwner(this);
 
 			setReservedToDefault();
 			setEffectiveToDefault();
-			log("setClassification" + m_IsServer, "Init");
+			//log("setClassification" + m_IsServer, "Init");
 			m_Owner.setClassification(m_EffectiveClass);
-			log("end setClassification" + m_IsServer, "Init");
+			//log("end setClassification" + m_IsServer, "Init");
 
 			m_Grid.OnBlockAdded += blockAdded;
 			m_Grid.OnBlockRemoved += blockRemoved;
@@ -238,6 +238,7 @@ namespace GardenConquest.Blocks {
 		/// </summary>
 		private void unServerize() {
 			detatchGrid();
+			detatchOwner();
 			detatchClassifier();
 			detatchCleanupTimer();
 			m_Owner = null;
@@ -318,6 +319,7 @@ namespace GardenConquest.Blocks {
 					updateViolations();
 					updateCleanupTimers(false);
 
+					m_CheckOwnerNextUpdate = false;  // update violations takes care of this
 					m_NotifyViolationsNextUpdate = true;
 				} 
 
@@ -325,6 +327,12 @@ namespace GardenConquest.Blocks {
 					m_NotifyViolationsNextUpdate = false;
 
 					notifyViolations();
+				}
+
+				if (m_CheckOwnerNextUpdate) {
+					m_CheckOwnerNextUpdate = false;
+
+					reevaluateOwnership();
 				}
 
 
@@ -426,8 +434,9 @@ namespace GardenConquest.Blocks {
 			}
 
 		Allowed:
-			log("allowed, Count now: " + m_BlockCount, "blockAdded");
+			log("allowed, Total Count now: " + m_BlockCount, "blockAdded");
 			//m_NotifyViolationsNextUpdate = false;
+			m_CheckOwnerNextUpdate = true;
 			return;
 
 		Denied:
@@ -464,7 +473,7 @@ namespace GardenConquest.Blocks {
 					if (classID > m_ReservedClass) {
 						log("this one's better than what we have", "updateClassificationWith");
 						if (m_Classifier != null) {
-							//log("removing existing classifier", "updateClassificationWith");
+							log("removing existing classifier", "updateClassificationWith");
 							demoteClass();
 							detatchClassifier();
 						}
@@ -492,7 +501,7 @@ namespace GardenConquest.Blocks {
 				}
 
 			Reserve:
-				log("Applying classifier", "updateClassificationWith", Logger.severity.ERROR);
+				log("Applying classifier", "updateClassificationWith");
 				setClassifier(classifier);
 
 				// let block enforcement know to let this thing through
@@ -566,46 +575,9 @@ namespace GardenConquest.Blocks {
 		/// <returns>True if the class is allowed</returns>
 		private bool checkClassAllowed(HullClass.CLASS c) {
 			log("checking if fleet can support more of " + c, "checkClassAllowed");
+			// update ownership/fleet now to get the player the most up-to-date info
 			reevaluateOwnership();
-			//GridOwner.OWNER_TYPE ownerType = m_Owner.getOwnerType();
-			//log("ownerType " + ownerType, "checkClassAllowed");
-
-			// If there is no owner at all we won't allow
-			//if (ownerType == GridOwner.OWNER_TYPE.UNOWNED)
-			//	return false;
-
-			//log("loading rules", "checkClassAllowed");
-			//HullRuleSet classRules = s_Settings.HullRules[(int)c];
-			FactionFleet fleet = m_Owner.getFleet();
-			uint count = fleet.countClass(c);
-			uint limit = fleet.maxClass(c);
-
-
-			// get the limit based on owner type
-			//log("getting limit", "checkClassAllowed");
-			/*
-			int limit = 0;
-			string ownerName = "";
-			if (ownerType == GridOwner.OWNER_TYPE.PLAYER) {
-				limit = classRules.MaxPerSoloPlayer;
-				ownerName = "Player Fleet";
-			}
-			else if (ownerType == GridOwner.OWNER_TYPE.FACTION) {
-				limit = classRules.MaxPerFaction;
-				ownerName = "Faction Fleet";
-			}
-			log(ownerName + " " + classRules.DisplayName + " count: (" + count
-				+ "/" + limit + ")", "checkClassAllowed");
-			 * */
-
-
-			// negative limits mean unlimited
-			if (limit < 0) return true;
-
-			// do we have too many already?
-			if (count >= limit) return false;
-
-			return true;
+			return m_Owner.Fleet.canSupportAnother(c);
 		}
 
 		#endregion
@@ -618,7 +590,7 @@ namespace GardenConquest.Blocks {
 		private void blockRemoved(IMySlimBlock removed) {
 			m_BlockCount--;
 			log(removed.ToString() + " removed from grid '" + m_Grid.DisplayName + 
-				"'. Count now: " + m_BlockCount, "blockRemoved");
+				"'. Total Count now: " + m_BlockCount, "blockRemoved");
 
 			updateClassificationWithout(removed);
 			updateBlockTypeCountsWithout(removed);
@@ -664,7 +636,8 @@ namespace GardenConquest.Blocks {
 		#region SE Hooks - Block Owner Changed
 
 		/// <summary>
-		/// Called when ownership on the grid changes.
+		/// Called when someone adds or removes any FatBlock 
+		/// or if the ownership on a Fatblock changes
 		/// </summary>
 		/// <remarks>
 		/// Testing indicates this is only called once per grid, even if you change 50 blocks at once
@@ -672,7 +645,7 @@ namespace GardenConquest.Blocks {
 		/// <param name="changed"></param>
 		private void blockOwnerChanged(IMyCubeGrid changed) {
 			log("", "blockOwnerChanged", Logger.severity.TRACE);
-			reevaluateOwnership();
+			m_CheckOwnerNextUpdate = true;
 		}
 
 		#endregion
@@ -849,28 +822,15 @@ namespace GardenConquest.Blocks {
 		#region Ownership & Fleet
 
 		/// <summary>
-		/// Figures out which faction owns this grid, if any
+		/// Figures out who owns this grid and updates their fleet 
+		/// There's no way for us to hook into Player faction changes,
+		/// so we call this before anything important runs that relies
+		/// on fleet data, and after someone adds/removes a block.
 		/// </summary>
-		/// <returns>Whether or not the owning faction changed.</returns>
+		/// <returns>Whether or not the ownership changed.</returns>
 		public bool reevaluateOwnership() {
-			log("", "reevaluateOwnership", Logger.severity.TRACE);
-			/*
-			log("Entity attributes:", "reevaluateOwnership");
-			log("m_Grid.EntityId " + m_Grid.EntityId, "reevaluateOwnership");
-			log("m_Grid.Name " + m_Grid.Name, "reevaluateOwnership");
-			log("m_Grid.DisplayName " + m_Grid.DisplayName, "reevaluateOwnership");
-			log("m_Grid.GetFriendlyName " + m_Grid.GetFriendlyName(), "reevaluateOwnership");
+			//log("", "reevaluateOwnership", Logger.severity.TRACE);
 
-			log("CubeGrid attributes:", "reevaluateOwnership");
-			log("m_Grid.IsStatic " + m_Grid.IsStatic, "reevaluateOwnership");
-			log("m_Grid.GridSize " + m_Grid.GridSize, "reevaluateOwnership");
-			log("BigOwners.Count " + String.Join(" ,", m_Grid.BigOwners.Count), "reevaluateOwnership");
-			log("BigOwners " + String.Join(" ,", m_Grid.BigOwners), "reevaluateOwnership");
-			*/
-			//log("getting bigOwners", "reevaluateOwnership");
-			//List<long> bigOwners = BigOwners;
-			//log("got them, " + String.Join("","bigOwners") + " check for bigowners called any more",
-			//    "reevaluateOwnership");
 			bool changed = m_Owner.reevaluateOwnership(BigOwners);
 
 			if (changed) {
@@ -878,10 +838,18 @@ namespace GardenConquest.Blocks {
 				log("owner changed", "reevaluateOwnership");
 			}
 			else {
-				log("no change", "reevaluateOwnership");
+				//log("no change", "reevaluateOwnership");
 			}
 
 			return changed;
+		}
+
+		private void detatchOwner() {
+			if (m_Owner != null) {
+				log("detatching owner", "detatchOwner");
+				m_Owner.Close();
+				m_Owner = null;
+			}
 		}
 
 		public void markSupported(long fleetOwnerID) {
@@ -916,8 +884,8 @@ namespace GardenConquest.Blocks {
 				violations.Add(new VIOLATION(){
 					Type = VIOLATION_TYPE.TOO_MANY_OF_CLASS,
 					Name = "Total of this Class",
-					Count = (int)Owner.getFleet().countClass(m_EffectiveClass),
-					Limit = (int)Owner.getFleet().maxClass(m_EffectiveClass),
+					Count = (int)Owner.Fleet.countClass(m_EffectiveClass),
+					Limit = (int)Owner.Fleet.maxClass(m_EffectiveClass),
 				});
 			}
 
@@ -959,6 +927,7 @@ namespace GardenConquest.Blocks {
 		}
 
 		private void updateViolations() {
+			reevaluateOwnership();
 			m_CurrentViolations = currentViolations();
 		}
 
@@ -1164,7 +1133,7 @@ namespace GardenConquest.Blocks {
 		/// <summary>
 		/// </summary>
 		private void notifyViolations() {
-			log("start", "notifyViolations");
+			//log("start", "notifyViolations");
 
 			if (m_CurrentViolations.Count > 0) {
 				DateTime now = DateTime.Now;

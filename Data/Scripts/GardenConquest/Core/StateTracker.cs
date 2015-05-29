@@ -77,6 +77,33 @@ namespace GardenConquest.Core {
 			}
 		}
 
+		public void removeFleetIfEmpty(long fleetId, GridOwner.OWNER_TYPE ownerType) {
+			switch (ownerType) {
+				case GridOwner.OWNER_TYPE.FACTION:
+					if (m_Fleets.ContainsKey(fleetId)) {
+						if (m_Fleets[fleetId].TotalCount == 0) {
+							m_Fleets[fleetId] = null;
+						}
+					}
+					return;
+				case GridOwner.OWNER_TYPE.PLAYER:
+					if (!m_PlayerFleets.ContainsKey(fleetId)) {
+						if (m_PlayerFleets[fleetId].TotalCount == 0) {
+							m_PlayerFleets[fleetId] = null;
+						}
+					}
+					return;
+				case GridOwner.OWNER_TYPE.UNOWNED:
+				default:
+					if (!m_PlayerFleets.ContainsKey(fleetId)) {
+						if (m_PlayerFleets[fleetId].TotalCount == 0) {
+							m_PlayerFleets[fleetId] = null;
+						}
+					}
+					return;
+			}
+		}
+
 		#region Timers
 
 		/// <summary>

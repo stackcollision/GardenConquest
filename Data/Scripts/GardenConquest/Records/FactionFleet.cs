@@ -17,6 +17,7 @@ namespace GardenConquest.Records {
 		private long m_FactionId;
 		private uint[] m_Counts = null;
 		private uint[] m_Maximums = null;
+		private uint m_TotalCount;
 		private GridOwner.OWNER_TYPE m_OwnerType = GridOwner.OWNER_TYPE.UNOWNED;
 
 		[XmlIgnore]
@@ -24,9 +25,10 @@ namespace GardenConquest.Records {
 		[XmlIgnore]
 		private Dictionary<long, GridEnforcer>[] m_UnsupportedGrids;
 
-
 		private HullRuleSet[] s_Rules;
 		private static Logger s_Logger = null;
+
+		public uint TotalCount { get { return m_TotalCount; } }
 
 		public FactionFleet(long facId, GridOwner.OWNER_TYPE ownerType) {
 			//if (s_Settings == null) {
@@ -44,6 +46,8 @@ namespace GardenConquest.Records {
 			m_OwnerType = ownerType;
 
 			// = init count holders
+			m_TotalCount = 0;
+
 			int classCount = Enum.GetValues(typeof(HullClass.CLASS)).Length;
 			m_Counts = new uint[classCount];
 
@@ -86,6 +90,7 @@ namespace GardenConquest.Records {
 
 			updateSupportAdded(ge);
 			m_Counts[classID] += 1;
+			m_TotalCount++;
 			log("m_Counts[classID] is " + m_Counts[classID], "add", Logger.severity.TRACE);
 
 			debugPrint("add");
@@ -97,11 +102,12 @@ namespace GardenConquest.Records {
 		/// <param name="c">Class to decrement</param>
 		public void remove(HullClass.CLASS c, GridEnforcer ge) {
 			int classID = (int)c;
-			if (m_Counts[classID] > 0)
+			if (m_Counts[classID] > 0) {
 				m_Counts[classID] -= 1;
-			else {
-				// This happens by default when we're creating a new fleets ? 
-				log("Class " + classID + " is already 0", "removeClass", Logger.severity.ERROR);
+				m_TotalCount--;
+			} else {
+				log("Error: Decrementing class " + classID + " count, but already 0",
+					"removeClass", Logger.severity.ERROR);
 			}
 
 			updateSupportRemoved(classID, ge);
@@ -121,18 +127,23 @@ namespace GardenConquest.Records {
 			return m_Maximums[(int)c];
 		}
 
+		public bool canSupportAnother(HullClass.CLASS c) {
+			return (countClass(c) < maxClass(c)) || (maxClass(c) < 0);
+		}
+
 		/// <summary>
 		/// Determines whether this fleet is allowed to support this class
 		/// Alerts the grid and updates tracking
 		/// Returns true if it was supported
 		/// </summary>
 		private bool updateSupportAdded(GridEnforcer ge) {
-			uint c = (uint)ge.Class;
+			HullClass.CLASS hc = ge.Class;
+			uint c = (uint)hc;
 			long eID = ge.Entity.EntityId;
 			log("adding " + eID + " as " + c, "updateSupportAdded");
 
 			// if we have enough room, support it
-			if (m_Counts[c] < m_Maximums[c]) {
+			if (canSupportAnother(hc)) {
 				log("we have enough room, supporting", "updateSupportAdded");
 				m_SupportedGrids[c][eID] = ge;
 				ge.markSupported(m_FactionId);
@@ -146,6 +157,8 @@ namespace GardenConquest.Records {
 				// it is!
 				if (ge.BlockCount > supported.BlockCount) {
 					log("it's larger than one of our supporting, supporting", "updateSupportAdded");
+
+					// remove support from the old supported one
 					m_SupportedGrids[c].Remove(supportedID);
 					m_UnsupportedGrids[c][supportedID] = supported;
 					supported.markUnsupported(m_FactionId);
@@ -274,32 +287,79 @@ namespace GardenConquest.Records {
 			for (int i = 0; i < m_Counts.Length; i++) {
 				if (m_Counts[i] > 0) {
 					log("  Class " + (HullClass.CLASS)i + " - " + m_Counts[i] + " / " + m_Maximums[i], callingFunc);
-
-					try {
 						if (m_SupportedGrids[i].Count > 0) {
 							log("  Supported: ", callingFunc);
 
-							foreach (KeyValuePair<long, GridEnforcer> entry in m_SupportedGrids[i]) {
-								if (entry.Value == null)
-									log("    " + entry.Key + " - null", callingFunc);
-								else
-									log("    " + entry.Key + " - " + entry.Value.Grid.DisplayName, callingFunc);
+							if (m_SupportedGrids[i] == null) {
+								log("  Supported grid entry for " + (HullClass.CLASS)i + " was null!",
+									callingFunc, Logger.severity.ERROR);
 							}
+							else {
+								foreach (KeyValuePair<long, GridEnforcer> entry in m_SupportedGrids[i]) {
+									try {
+
+										if (entry.Key == null) {
+											log("  Key was null ",
+											callingFunc, Logger.severity.ERROR);
+											break;
+										}
+
+										if (entry.Value == null) {
+											log("  Value was null for " + entry.Key,
+											callingFunc, Logger.severity.ERROR);
+											break;
+										}
+
+										if (entry.Value.Grid == null) {
+											log("  Grid was null for " + entry.Key,
+											callingFunc, Logger.severity.ERROR);
+											break;
+										}
+
+										log("    " + entry.Key + " - " + entry.Value.Grid.DisplayName, callingFunc);
+
+
+									}
+									catch (Exception e) {
+										log("Error: " + e, "debugPrint", Logger.severity.ERROR);
+									}
+								}
+
+							}
+
+
 						}
+
 						if (m_UnsupportedGrids[i].Count > 0) {
 							log("  Unsupported: ", callingFunc);
 							foreach (KeyValuePair<long, GridEnforcer> entry in m_UnsupportedGrids[i]) {
-								if (entry.Value == null)
-									log("    " + entry.Key + " - null", callingFunc);
-								else
+								try {
+
+									if (entry.Key == null) {
+										log("  Key was null ",
+										callingFunc, Logger.severity.ERROR);
+										break;
+									}
+
+									if (entry.Value == null) {
+										log("  Value was null for " + entry.Key,
+										callingFunc, Logger.severity.ERROR);
+										break;
+									}
+
+									if (entry.Value.Grid == null) {
+										log("  Grid was null for " + entry.Key,
+										callingFunc, Logger.severity.ERROR);
+										break;
+									}
+
 									log("    " + entry.Key + " - " + entry.Value.Grid.DisplayName, callingFunc);
+
+								} catch (Exception e) {
+									log("Error: " + e, "debugPrint", Logger.severity.ERROR);
+								}
 							}
 						}
-
-					}
-					catch (Exception e) {
-						log("Error: " + e, "debugPrint", Logger.severity.ERROR);
-					}
 
 				}
 			}

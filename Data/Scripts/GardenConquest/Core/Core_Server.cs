@@ -148,7 +148,7 @@ namespace GardenConquest.Core {
 			else if (v == GridEnforcer.VIOLATION_TYPE.DOUBLE_CLASSIFICATION)
 				message = "Only one Hull Classifier allowed";
 			else if (v == GridEnforcer.VIOLATION_TYPE.TOO_MANY_OF_CLASS) {
-				GridOwner.OWNER_TYPE owner_type = ge.Owner.getOwnerType();
+				GridOwner.OWNER_TYPE owner_type = ge.Owner.OwnerType;
 				if (owner_type == GridOwner.OWNER_TYPE.UNOWNED) {
 					message = "Unowned grids can't be classified";
 				}
@@ -176,16 +176,16 @@ namespace GardenConquest.Core {
 				return;
 
 			GridOwner owner = ge.Owner;
-			GridOwner.OWNER_TYPE owner_type = owner.getOwnerType();
-			IMyFaction gridFaction = ge.Owner.getFaction();
+			GridOwner.OWNER_TYPE owner_type = owner.OwnerType;
+			long gridFactionID = ge.Owner.FactionID;
 
 			BaseResponse.DEST_TYPE destType = BaseResponse.DEST_TYPE.NONE;
 			List<long> Destinations = new List<long>();
 			string message = "";
 
-			if (owner_type == GridOwner.OWNER_TYPE.FACTION && gridFaction != null) {
+			if (owner_type == GridOwner.OWNER_TYPE.FACTION) {
 				destType = BaseResponse.DEST_TYPE.FACTION;
-				Destinations.Add(gridFaction.FactionId);
+				Destinations.Add(gridFactionID);
 				message += "Your faction's ";
 			} else if (owner_type == GridOwner.OWNER_TYPE.PLAYER) {
 				destType = BaseResponse.DEST_TYPE.PLAYER;
@@ -235,18 +235,18 @@ namespace GardenConquest.Core {
 
 			GridOwner owner = ge.Owner;
 			log("owner", "eventCleanupTimerStart", Logger.severity.TRACE);
-			GridOwner.OWNER_TYPE owner_type = owner.getOwnerType();
+			GridOwner.OWNER_TYPE owner_type = owner.OwnerType;
 			log("owner_type", "eventCleanupTimerStart", Logger.severity.TRACE);
-			IMyFaction gridFaction = ge.Owner.getFaction();
+			long gridFactionID = ge.Owner.FactionID;
 			log("gridFaction", "eventCleanupTimerStart", Logger.severity.TRACE);
 
 			BaseResponse.DEST_TYPE destType = BaseResponse.DEST_TYPE.NONE;
 			List<long> Destinations = new List<long>();
 			string message = "";
 
-			if (owner_type == GridOwner.OWNER_TYPE.FACTION && gridFaction != null) {
+			if (owner_type == GridOwner.OWNER_TYPE.FACTION) {
 				destType = BaseResponse.DEST_TYPE.FACTION;
-				Destinations.Add(gridFaction.FactionId);
+				Destinations.Add(gridFactionID);
 				message += "Your faction's ";
 			}
 			else if (owner_type == GridOwner.OWNER_TYPE.PLAYER) {
@@ -293,18 +293,18 @@ namespace GardenConquest.Core {
 			log("grid exists, getting owner", "eventCleanupTimerEnd", Logger.severity.TRACE);
 			GridOwner owner = ge.Owner;
 			log("grid exists, getting owner type", "eventCleanupTimerEnd", Logger.severity.TRACE);
-			GridOwner.OWNER_TYPE owner_type = owner.getOwnerType();
+			GridOwner.OWNER_TYPE owner_type = owner.OwnerType;
 			log("grid exists, getting faction", "eventCleanupTimerEnd", Logger.severity.TRACE);
-			IMyFaction gridFaction = ge.Owner.getFaction();
+			long gridFactionID = ge.Owner.FactionID;
 
 			log("determining destinations", "eventCleanupTimerEnd", Logger.severity.TRACE);
 			BaseResponse.DEST_TYPE destType = BaseResponse.DEST_TYPE.NONE;
 			List<long> Destinations = new List<long>();
 			string message = "";
 
-			if (owner_type == GridOwner.OWNER_TYPE.FACTION && gridFaction != null) {
+			if (owner_type == GridOwner.OWNER_TYPE.FACTION) {
 				destType = BaseResponse.DEST_TYPE.FACTION;
-				Destinations.Add(gridFaction.FactionId);
+				Destinations.Add(gridFactionID);
 				message += "Your faction's ";
 			}
 			else if (owner_type == GridOwner.OWNER_TYPE.PLAYER) {
@@ -593,14 +593,16 @@ namespace GardenConquest.Core {
 				}
 
 				// Owner
-				if (ge.Owner.getOwnerType() == GridOwner.OWNER_TYPE.UNOWNED) {
+				ge.reevaluateOwnership();
+
+				if (ge.Owner.OwnerType == GridOwner.OWNER_TYPE.UNOWNED) {
 					log("Grid " + grid.EntityId + " is unowned, skipping",
 						"groupFactionGrids");
 					continue;
 				}
 
 				// Fleet
-				long fleetID = ge.Owner.getFleetId();
+				long fleetID = ge.Owner.FleetID;
 				if (ge.SupportedByFleet) {
 					log("Grid " + grid.DisplayName + " belongs to fleet " + fleetID,
 						"groupFactionGrids");
