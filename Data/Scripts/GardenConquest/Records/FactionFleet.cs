@@ -297,64 +297,20 @@ namespace GardenConquest.Records {
 							else {
 								foreach (KeyValuePair<long, GridEnforcer> entry in m_SupportedGrids[i]) {
 									try {
-
-										if (entry.Key == null) {
-											log("  Key was null ",
-											callingFunc, Logger.severity.ERROR);
-											break;
-										}
-
-										if (entry.Value == null) {
-											log("  Value was null for " + entry.Key,
-											callingFunc, Logger.severity.ERROR);
-											break;
-										}
-
-										if (entry.Value.Grid == null) {
-											log("  Grid was null for " + entry.Key,
-											callingFunc, Logger.severity.ERROR);
-											break;
-										}
-
 										log("    " + entry.Key + " - " + entry.Value.Grid.DisplayName, callingFunc);
-
-
 									}
 									catch (Exception e) {
 										log("Error: " + e, "debugPrint", Logger.severity.ERROR);
 									}
 								}
-
 							}
-
-
 						}
 
 						if (m_UnsupportedGrids[i].Count > 0) {
 							log("  Unsupported: ", callingFunc);
 							foreach (KeyValuePair<long, GridEnforcer> entry in m_UnsupportedGrids[i]) {
 								try {
-
-									if (entry.Key == null) {
-										log("  Key was null ",
-										callingFunc, Logger.severity.ERROR);
-										break;
-									}
-
-									if (entry.Value == null) {
-										log("  Value was null for " + entry.Key,
-										callingFunc, Logger.severity.ERROR);
-										break;
-									}
-
-									if (entry.Value.Grid == null) {
-										log("  Grid was null for " + entry.Key,
-										callingFunc, Logger.severity.ERROR);
-										break;
-									}
-
 									log("    " + entry.Key + " - " + entry.Value.Grid.DisplayName, callingFunc);
-
 								} catch (Exception e) {
 									log("Error: " + e, "debugPrint", Logger.severity.ERROR);
 								}
@@ -363,6 +319,106 @@ namespace GardenConquest.Records {
 
 				}
 			}
+		}
+
+		public String classesToString() {
+			String result = "";
+			GridEnforcer ge;
+
+			for (int i = 0; i < m_Counts.Length; i++) {
+				if (m_Counts[i] > 0) {
+					result += (HullClass.CLASS)i + ": " + m_Counts[i] + " / " + m_Maximums[i] + "\n";
+					if (m_SupportedGrids[i].Count > 0) {
+						foreach (KeyValuePair<long, GridEnforcer> entry in m_SupportedGrids[i]) {
+							ge = entry.Value;
+							result += "  * " + ge.Grid.DisplayName + " - " + ge.BlockCount + " blocks\n";
+						}
+					}
+					if (m_UnsupportedGrids[i].Count > 0) {
+						result += "\n  Unsupported:\n";
+						foreach (KeyValuePair<long, GridEnforcer> entry in m_UnsupportedGrids[i]) {
+							ge = entry.Value;
+							result += "     * " + ge.Grid.DisplayName + " - " + ge.BlockCount + " blocks\n";
+						}
+					}
+					result += "\n";
+				}
+			}
+			return result;
+		}
+
+		public String violationsToString() {
+			log("", "violationsToString");
+			String results = "";
+			String classResults = "";
+			String supportedResults = "";
+			String unsupportedResults = "";
+			GridEnforcer ge;
+			List<GridEnforcer.VIOLATION> violations;
+
+			for (int i = 0; i < m_Counts.Length; i++) {
+				if (m_Counts[i] > 0) {
+					classResults = "";
+
+					// supported
+					if (m_SupportedGrids[i].Count > 0) {
+						supportedResults = "";
+
+						foreach (KeyValuePair<long, GridEnforcer> entry in m_SupportedGrids[i]) {
+							ge = entry.Value;
+							violations = ge.Violations;
+
+							if (violations.Count > 0) {
+								supportedResults += "  * " + ge.Grid.DisplayName + " - Cleanup in " +
+									Utility.prettySeconds(ge.TimeUntilCleanup) + " for violating:\n";
+
+								//log("supportedResults +=" + supportedResults, "violationsToString");
+								foreach (GridEnforcer.VIOLATION v in violations) {
+									supportedResults += "        " + v.Name + ": " + v.Count + "/" + v.Limit + "\n";
+									//log("supportedResults +=" + supportedResults, "violationsToString");
+								}
+
+							}
+						}
+
+						if (supportedResults != "") {
+							//log("classResults +=" + supportedResults, "violationsToString");
+							classResults += supportedResults;
+						}
+					}
+
+					// unsupported
+					if (m_UnsupportedGrids[i].Count > 0) {
+						unsupportedResults = "";
+
+						foreach (KeyValuePair<long, GridEnforcer> entry in m_UnsupportedGrids[i]) {
+							ge = entry.Value;
+							violations = ge.Violations;
+
+							if (violations.Count > 0) {
+								unsupportedResults += "  * " + ge.Grid.DisplayName + " - Cleanup in " +
+									Utility.prettySeconds(ge.TimeUntilCleanup) + " for violating:\n";
+									//log("unsupportedResults +=" + unsupportedResults, "violationsToString");
+								foreach (GridEnforcer.VIOLATION v in violations) {
+									unsupportedResults += "        " + v.Name + ": " + v.Count + "/" + v.Limit + "\n";
+									//log("unsupportedResults +=" + unsupportedResults, "violationsToString");
+								}
+							}
+						}
+
+						if (unsupportedResults != "") {
+							//log("classResults +=" + unsupportedResults, "violationsToString");
+							classResults += "Unsupported:\n" + unsupportedResults;
+						}
+					}
+
+					if (classResults != "") {
+						results += (HullClass.CLASS)i + ": " + m_Counts[i] + " / " + m_Maximums[i] + "\n" + classResults;
+					}
+				}
+			}
+
+			return results;
 		}
 
 		private void log(String message, String method = null, Logger.severity level = Logger.severity.DEBUG) {

@@ -12,6 +12,8 @@ using VRage.Library.Utils;
 using Interfaces = Sandbox.ModAPI.Interfaces;
 using InGame = Sandbox.ModAPI.Ingame;
 
+using GardenConquest.Messaging;
+
 namespace GardenConquest.Core {
 
 	/// <summary>
@@ -88,10 +90,13 @@ namespace GardenConquest.Core {
 		private static string s_FleetText1 =
 			"Your faction currently controls the follow ships:\n\n";
 
-		public CommandProcessor() {
+		private ResponseProcessor m_MailMan;
+
+		public CommandProcessor(ResponseProcessor mailMan) {
 			if (s_Logger == null)
 				s_Logger = new Logger("Conquest Core", "Command Processor");
 			log("Started", "CommandProcessor");
+			m_MailMan = mailMan;
 		}
 
 		public void initialize() {
@@ -108,18 +113,19 @@ namespace GardenConquest.Core {
 				if (messageText[0] != '/')
 					return;
 
-				log("Checking command", "handleChatCommand");
-
 				string[] cmd =
 					messageText.Split(new string[] { " " }, StringSplitOptions.RemoveEmptyEntries);
+
+				log("Handling commands " + String.Join(" , ", cmd), "handleChatCommand");
 				if (cmd[0].ToLower() != "/gc")
 					return;
 
 				sendToOthers = false;
 				int numCommands = cmd.Length - 1;
-
+				log("numCommands " + numCommands, "handleChatCommand");
 				if (numCommands > 0) {
 					switch (cmd[1].ToLower()) {
+						case "about":
 						case "help":
 							if (numCommands == 1)
 								Utility.showDialog("Help", s_HelpText, "Close");
@@ -144,18 +150,26 @@ namespace GardenConquest.Core {
 							break;
 
 						case "fleet":
-							if (numCommands == 1)
-								Utility.showDialog("Fleet", s_FleetText(), "Close");
-							else if (numCommands == 3)
-							{
-								switch (cmd[2].ToLower())
-								{
-									case "remove":
-										// use the callback to remove on confirmation
-										//Utility.showDialog("Fleet - remove", s_FleetRemove(cmd[3]), "Close");
+							if (numCommands == 1) {
+								m_MailMan.requestFleet();
+							} else {
+								switch (cmd[2].ToLower()) {
+									case "disown":
+										String entityID = "";
+										if (numCommands > 2)
+											entityID = cmd[3];
+										//m_MailMan.requestDisown(cmd[3]);
 										break;
 								}
 							}
+							break;
+
+						case "violations":
+							m_MailMan.requestViolations();
+							break;
+
+						case "admin":
+							// admin fleet listing
 							break;
 					}
 				}

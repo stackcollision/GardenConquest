@@ -115,6 +115,7 @@ namespace GardenConquest.Blocks {
 		}}
 		public IMyCubeGrid Grid { get { return m_Grid; } }
 		public HullClassifier Classifier { get { return m_Classifier; } }
+		public List<VIOLATION> Violations { get { return m_CurrentViolations; } }
 		public int BlockCount { get { return m_BlockCount; } }
 		public int TimeUntilCleanup { get {
 			if (m_CleanupTimer == null) return -1;
@@ -320,10 +321,10 @@ namespace GardenConquest.Blocks {
 					m_CheckCleanupNextUpdate = false;
 
 					updateViolations();
-					updateCleanupTimers(false);
+					updateCleanupTimers();
 
 					m_CheckOwnerNextUpdate = false;  // update violations takes care of this
-					m_NotifyViolationsNextUpdate = true;
+					//m_NotifyViolationsNextUpdate = true;
 				} 
 
 				if (m_NotifyViolationsNextUpdate) {
@@ -440,6 +441,7 @@ namespace GardenConquest.Blocks {
 			log("allowed, Total Count now: " + m_BlockCount, "blockAdded");
 			//m_NotifyViolationsNextUpdate = false;
 			m_CheckOwnerNextUpdate = true;
+			m_CheckCleanupNextUpdate = true; // temporarily doing this on block add too, let's see if it's ok
 			return;
 
 		Denied:

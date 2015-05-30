@@ -25,6 +25,44 @@ namespace GardenConquest.Records {
 			FACTION
 		}
 
+		public struct OWNER {
+			public OWNER_TYPE OwnerType { get; set; }
+			public long PlayerID { get; set; }
+			public long FactionID { get; set; }
+			public long FleetID { get {
+				switch (OwnerType) {
+					case OWNER_TYPE.FACTION:
+						return FactionID;
+					case OWNER_TYPE.PLAYER:
+						return PlayerID;
+					case OWNER_TYPE.UNOWNED:
+					default:
+						return StateTracker.UNOWNED_FLEET_ID;
+				}
+			}}
+		}
+
+		public static OWNER ownerFromPlayerID(long playerID) {
+			OWNER_TYPE type = OWNER_TYPE.UNOWNED;
+			IMyFaction faction = MyAPIGateway.Session.Factions.TryGetPlayerFaction(playerID);
+			long factionID = 0;
+
+			// Is the player solo?
+			if (faction == null) {
+				type = OWNER_TYPE.PLAYER;
+			}
+			else {
+				type = OWNER_TYPE.FACTION;
+				factionID = faction.FactionId;
+			}
+
+			return new OWNER {
+				OwnerType = type,
+				PlayerID = playerID,
+				FactionID = factionID,
+			};
+		}
+
 		#region Fields
 
 		private GridEnforcer m_Enforcer;
@@ -68,14 +106,14 @@ namespace GardenConquest.Records {
 			m_Fleet.add(m_Class, ge);
 		}
 
-        public void Close() {
-            log("", "Close");
-            m_Fleet.remove(m_Class, m_Enforcer);
-            StateTracker.getInstance().removeFleetIfEmpty(m_FleetID, m_OwnerType);
-            m_Fleet = null;
-            m_Enforcer = null;
-            m_Logger = null;
-        }
+		public void Close() {
+			log("", "Close");
+			m_Fleet.remove(m_Class, m_Enforcer);
+			StateTracker.getInstance().removeFleetIfEmpty(m_FleetID, m_OwnerType);
+			m_Fleet = null;
+			m_Enforcer = null;
+			m_Logger = null;
+		}
 
 		#endregion
 
@@ -147,6 +185,7 @@ namespace GardenConquest.Records {
 		public FactionFleet getFleet() {
 			return StateTracker.getInstance().getFleet(m_FleetID, OwnerType);
 		}
+
 
 		/// <summary>
 		/// Stores the new ownership data and changes the StateTracker fleets for the previous

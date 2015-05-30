@@ -28,10 +28,10 @@ namespace GardenConquest.Core {
 			if (s_Logger == null)
 				s_Logger = new Logger("Conquest Core", "Client");
 
-			m_CmdProc = new CommandProcessor();
-			m_CmdProc.initialize();
-
 			m_MailMan = new ResponseProcessor();
+
+			m_CmdProc = new CommandProcessor(m_MailMan);
+			m_CmdProc.initialize();
 
 			// Request a fresh set of GPS coordinates for the CPs
 			m_NeedCPGPS = !m_MailMan.requestCPGPS();

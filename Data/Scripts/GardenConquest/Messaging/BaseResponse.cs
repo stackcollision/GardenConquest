@@ -16,7 +16,8 @@ namespace GardenConquest.Messaging {
 	public abstract class BaseResponse {
 		public enum TYPE {
 			NOTIFICATION,
-			CPGPS
+			CPGPS,
+			DIALOG
 		}
 
 		/// <summary>
@@ -65,6 +66,10 @@ namespace GardenConquest.Messaging {
 			switch (t) {
 				case TYPE.NOTIFICATION:
 					msg = new NotificationResponse();
+					break;
+
+				case TYPE.DIALOG:
+					msg = new DialogResponse();
 					break;
 
 				case TYPE.CPGPS:

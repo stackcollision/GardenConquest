@@ -86,10 +86,10 @@ namespace GardenConquest.Core {
 			
 			// If the server is a player (non-dedicated) they also need to receive notifications
 			if (!MyAPIGateway.Utilities.IsDedicated) {
-				m_CmdProc = new CommandProcessor();
-				m_CmdProc.initialize();
 				m_LocalReceiver = new ResponseProcessor(false);
 				m_MailMan.localReceiver += m_LocalReceiver.incomming;
+				m_CmdProc = new CommandProcessor(m_LocalReceiver);
+				m_CmdProc.initialize();
 				m_LocalReceiver.requestCPGPS();
 			}
 
@@ -225,7 +225,7 @@ namespace GardenConquest.Core {
 
 			if (secondsUntilCleanup > 0)
 				message += "and will have some offending blocks removed in " +
-					prettySeconds(secondsUntilCleanup);
+					Utility.prettySeconds(secondsUntilCleanup);
 
 			// send
 			log("Sending message", "eventDerelictStart");
@@ -281,7 +281,7 @@ namespace GardenConquest.Core {
 			// build notification
 			message += "grid " + ge.Grid.DisplayName +
 				" will have some of its offending blocks removed in " +
-				prettySeconds(secondsRemaining);
+				Utility.prettySeconds(secondsRemaining);
 
 			log("msg built, building noti", "eventDerelictStart");
 			NotificationResponse noti = new NotificationResponse() {
@@ -512,21 +512,7 @@ namespace GardenConquest.Core {
 		#endregion
 		#region Class Helpers
 
-		private String prettySeconds(int seconds) {
-			int days = (int)Math.Floor((float)(seconds / 86400));
-			if (days > 0)
-				return days + " days";
 
-			int hours = (int)Math.Floor((float)(seconds / 3600));
-			if (hours > 0)
-				return hours + " hours";
-
-			int minutes = (int)Math.Floor((float)(seconds / 60));
-			if (minutes > 0)
-				return minutes + " minutes";
-
-			return seconds + " seconds";
-		}
 
 		/// <summary>
 		/// Returns a list of players near a grid.  Used to send messages
@@ -549,13 +535,9 @@ namespace GardenConquest.Core {
 			List<long> nearbyPlayerIds = new List<long>();
 			foreach (IMyPlayer p in allPlayers)
 			{
-				//log("checking if player is nearby: " + player.SteamUserId + " | " + p.GetPosition());
 				pDistFromGrid = VRageMath.Vector3.Distance(p.GetPosition(), gridPos);
-				//log("pDistFromGrid is " + pDistFromGrid);
-				if (pDistFromGrid < maxDistFromGrid)
-				{
-					//log("player is close enough to be considered ");
-					nearbyPlayerIds.Add((long)p.SteamUserId);
+				if (pDistFromGrid < maxDistFromGrid) {
+					nearbyPlayerIds.Add((long)p.PlayerID);
 				}
 			}
 
