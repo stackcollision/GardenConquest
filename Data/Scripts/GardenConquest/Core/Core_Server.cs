@@ -297,18 +297,18 @@ namespace GardenConquest.Core {
 		}
 
 		public void eventCleanupTimerEnd(GridEnforcer ge, DerelictTimer.COMPLETION c) {
-			log("start", "eventCleanupTimerEnd", Logger.severity.TRACE);
+			//log("start", "eventCleanupTimerEnd", Logger.severity.TRACE);
 			if (ge == null)
 				return;
 
-			log("grid exists, getting owner", "eventCleanupTimerEnd", Logger.severity.TRACE);
+			//log("grid exists, getting owner", "eventCleanupTimerEnd", Logger.severity.TRACE);
 			GridOwner owner = ge.Owner;
-			log("grid exists, getting owner type", "eventCleanupTimerEnd", Logger.severity.TRACE);
+			//log("grid exists, getting owner type", "eventCleanupTimerEnd", Logger.severity.TRACE);
 			GridOwner.OWNER_TYPE owner_type = owner.OwnerType;
-			log("grid exists, getting faction", "eventCleanupTimerEnd", Logger.severity.TRACE);
+			//log("grid exists, getting faction", "eventCleanupTimerEnd", Logger.severity.TRACE);
 			long gridFactionID = ge.Owner.FactionID;
 
-			log("determining destinations", "eventCleanupTimerEnd", Logger.severity.TRACE);
+			//log("determining destinations", "eventCleanupTimerEnd", Logger.severity.TRACE);
 			BaseResponse.DEST_TYPE destType = BaseResponse.DEST_TYPE.NONE;
 			List<long> Destinations = new List<long>();
 			string message = "";

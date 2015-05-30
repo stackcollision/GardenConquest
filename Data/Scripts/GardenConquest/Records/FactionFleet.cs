@@ -83,15 +83,15 @@ namespace GardenConquest.Records {
 		/// </summary>
 		/// <param name="c">Class to increment</param>
 		public void add(HullClass.CLASS c, GridEnforcer ge) {
-			log("adding ge of class" + ge.Class, "add", Logger.severity.TRACE);
+			log("adding class " + ge.Class, "add", Logger.severity.TRACE);
 
 			int classID = (int)ge.Class;
-			log("m_Counts[classID] is " + m_Counts[classID], "add", Logger.severity.TRACE);
+			//log("m_Counts[classID] is " + m_Counts[classID], "add", Logger.severity.TRACE);
 
 			updateSupportAdded(ge);
 			m_Counts[classID] += 1;
 			m_TotalCount++;
-			log("m_Counts[classID] is " + m_Counts[classID], "add", Logger.severity.TRACE);
+			//log("m_Counts[classID] is " + m_Counts[classID], "add", Logger.severity.TRACE);
 
 			debugPrint("add");
 		}
@@ -140,7 +140,7 @@ namespace GardenConquest.Records {
 			HullClass.CLASS hc = ge.Class;
 			uint c = (uint)hc;
 			long eID = ge.Entity.EntityId;
-			log("adding " + eID + " as " + c, "updateSupportAdded");
+			//log("adding " + eID + " as " + c, "updateSupportAdded");
 
 			// if we have enough room, support it
 			if (canSupportAnother(hc)) {
@@ -184,11 +184,11 @@ namespace GardenConquest.Records {
 		/// Removes support from a grid given the class it was stored with
 		/// </summary>
 		private void updateSupportRemoved(int classID, GridEnforcer ge) {
-			log("start", "updateSupportRemoved", Logger.severity.TRACE);
+			//log("start", "updateSupportRemoved", Logger.severity.TRACE);
 
 			uint c = (uint)classID;
 			long eID = ge.Entity.EntityId;
-			log("checking where to remove it from", "updateSupportRemoved", Logger.severity.TRACE);
+			//log("checking where to remove it from", "updateSupportRemoved", Logger.severity.TRACE);
 			if (m_SupportedGrids[c].ContainsKey(eID)) {
 				m_SupportedGrids[c].Remove(eID);
 				log("supportedGrids.count " + m_SupportedGrids[c].Count, 

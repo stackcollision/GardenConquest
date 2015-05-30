@@ -75,6 +75,7 @@ namespace GardenConquest.Blocks {
 		// But if that block is incomplete/offline/damaged then the rules are
 		// still applied as if it was UNCLASSIFIED
 		private HullClassifier m_Classifier;
+		private Dictionary<long, HullClassifier> m_ExtraClassifiers;
 		private HullClass.CLASS m_ReservedClass;
 		private HullClass.CLASS m_EffectiveClass;
 		private HullRuleSet m_ReservedRules;
@@ -215,6 +216,7 @@ namespace GardenConquest.Blocks {
 			m_BlockCount = 0;
 			m_BlockTypeCounts = new int[s_Settings.BlockTypes.Length];
 			m_Owner = new GridOwner(this);
+			m_ExtraClassifiers = new Dictionary<long, HullClassifier>();
 
 			setReservedToDefault();
 			setEffectiveToDefault();
@@ -240,6 +242,7 @@ namespace GardenConquest.Blocks {
 			detatchGrid();
 			detatchOwner();
 			detatchClassifier();
+			m_ExtraClassifiers = null;
 			detatchCleanupTimer();
 			m_Owner = null;
 			m_Logger = null;
@@ -470,17 +473,25 @@ namespace GardenConquest.Blocks {
 				// so determine which classifier to use. The others will be cleaned up later
 				if ((!m_BeyondFirst100 || m_Merging)) {
 					log("init/merge, must add it", "updateClassificationWith");
+
 					if (classID > m_ReservedClass) {
 						log("this one's better than what we have", "updateClassificationWith");
+
 						if (m_Classifier != null) {
 							log("removing existing classifier", "updateClassificationWith");
 							demoteClass();
+							m_ExtraClassifiers.Add(m_Classifier.FatBlock.EntityId, m_Classifier);
 							detatchClassifier();
 						}
+
 						goto Reserve;
+
+					} else {
+						log("extra classifier", "updateClassificationWith");
+						m_ExtraClassifiers.Add(classifier.FatBlock.EntityId, classifier);
+						applied = false;
+						return VIOLATION_TYPE.NONE;
 					}
-					applied = false;
-					return VIOLATION_TYPE.NONE;
 				}
 
 				// Two classifiers not allowed
@@ -601,20 +612,44 @@ namespace GardenConquest.Blocks {
 		/// Removes the classifier and reserved class if block is a Classifier
 		/// </summary>
 		private void updateClassificationWithout(IMySlimBlock block) {
-			// If it's not a classifier, we don't care
+			// Not a classifier?
 			if (!HullClassifier.isClassifierBlock(block))
 				return;
 
-			// if we were using this to classify the gird
-			if (m_Classifier != null) {
-				log("we have a classifier, is it this block?", "updateClassificationWithout");
-				if (m_Classifier.SlimBlock.Equals(block)) {
-					log("it's the same! disabling it", "updateClassificationWithout");
-					unsetClassifier();
-				} else {
-					log("not the same", "updateClassificationWithout");
+			log("removing classifier", "updateClassificationWithout");
+
+			// Not in use?
+			if (m_Classifier == null || !m_Classifier.SlimBlock.Equals(block)) {
+				log("wasn't in use", "updateClassificationWithout");
+				m_ExtraClassifiers.Remove(m_Classifier.SlimBlock.FatBlock.EntityId);
+				return;
+			}
+
+			log("in use, unsetting", "updateClassificationWithout");
+			//demoteClass(); // would have happened before
+			unsetClassifier();
+
+			log("looking for existing alternatives", "updateClassificationWithout");
+			long bestClassifierID = 0;
+			HullClass.CLASS hc = HullClass.CLASS.UNCLASSIFIED;
+			HullClass.CLASS bestClassAvailable = HullClass.CLASS.UNCLASSIFIED;
+			foreach (KeyValuePair<long, HullClassifier> entry in m_ExtraClassifiers) {
+				hc = entry.Value.Class;
+				if (hc > bestClassAvailable) {
+					bestClassifierID = entry.Key;
+					bestClassAvailable = hc;
 				}
 			}
+
+			if (bestClassAvailable > HullClass.CLASS.UNCLASSIFIED) {
+				log("found a usable existing classifier", "updateClassificationWithout");
+				setClassifier(m_ExtraClassifiers[bestClassifierID]);
+				m_ExtraClassifiers.Remove(bestClassifierID);
+				// existing classifiers might already be Working
+				classifierWorkingChanged(m_Classifier.FatBlock);
+			}
+
+			m_CheckCleanupNextUpdate = true;
 		}
 
 		/// <summary>
@@ -708,14 +743,17 @@ namespace GardenConquest.Blocks {
 		}
 
 		private void detatchClassifier() {
-			log("start", "detatchClassifier", Logger.severity.TRACE);
+			//log("start", "detatchClassifier", Logger.severity.TRACE);
 			if (m_Classifier != null) {
-				log("m_Classifier != null, detaching", "detatchClassifier", Logger.severity.TRACE);
+				log("detaching", "detatchClassifier");
 				m_Classifier.FatBlock.IsWorkingChanged -= classifierWorkingChanged;
 				m_Classifier = null;
-				log("m_Classifier == null " + (m_Classifier = null), "detatchClassifier", Logger.severity.TRACE);
+				//log("m_Classifier == null " + (m_Classifier = null), "detatchClassifier", Logger.severity.TRACE);
 			}
-			log("end", "detatchClassifier", Logger.severity.TRACE);
+			else {
+				log("failed to detatch, wasn't stored", "detatchClassifier", Logger.severity.ERROR);
+			}
+			//log("end", "detatchClassifier", Logger.severity.TRACE);
 		}
 
 		private void setBestClassifier() {
