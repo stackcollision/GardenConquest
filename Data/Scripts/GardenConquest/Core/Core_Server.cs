@@ -35,6 +35,7 @@ namespace GardenConquest.Core {
 		#region Class Members
 
 		private bool m_Initialized = false;
+		private CommandProcessor m_CmdProc = null;
 		private MyTimer m_RoundTimer = null;
 		private MyTimer m_SaveTimer = null;
 		private RequestProcessor m_MailMan = null;
@@ -43,9 +44,12 @@ namespace GardenConquest.Core {
 		private bool m_RoundEnded = false;
 		//private Object m_SyncObject = new Object();
 
+		private static readonly int INGAME_PLACEMENT_MAX_DISTANCE = 60;
 		private static MyObjectBuilder_Component s_TokenBuilder = null;
 		private static BuilderDefs.SerializableDefinitionId? s_TokenDef = null;
 		private static IComparer<FACGRID> s_Sorter = null;
+		private static ConquestSettings s_Settings;
+		private static bool s_DelayedSettingWrite = false;
 
 		#endregion
 		#region Inherited Methods
@@ -66,8 +70,10 @@ namespace GardenConquest.Core {
 				typeof(MyObjectBuilder_InventoryItem), "ShipLicense");
 			s_Sorter = new GridSorter();
 
+			s_Settings = ConquestSettings.getInstance();
+			s_DelayedSettingWrite = s_Settings.WriteFailed;
 			// Start round timer
-			m_RoundTimer = new MyTimer(ConquestSettings.getInstance().Period * 1000, roundEnd);
+			m_RoundTimer = new MyTimer(s_Settings.CPPeriod * 1000, roundEnd);
 			m_RoundTimer.Start();
 			log("Round timer started");
 
@@ -82,14 +88,16 @@ namespace GardenConquest.Core {
 			if (!MyAPIGateway.Utilities.IsDedicated) {
 				m_LocalReceiver = new ResponseProcessor(false);
 				m_MailMan.localReceiver += m_LocalReceiver.incomming;
+				m_CmdProc = new CommandProcessor(m_LocalReceiver);
+				m_CmdProc.initialize();
 				m_LocalReceiver.requestCPGPS();
 			}
 
 			// Subscribe events
-			GridEnforcer.OnViolation += eventGridViolation;
-			GridEnforcer.OnDerelictStart += eventDerelictStart;
-			GridEnforcer.OnDerelictEnd += eventDerelictEnd;
-			GridEnforcer.OnClassProhibited += eventClassProhibited;
+			GridEnforcer.OnPlacementViolation += eventPlacementViolation;
+			GridEnforcer.OnCleanupViolation += eventCleanupViolation;
+			GridEnforcer.OnCleanupTimerStart += eventCleanupTimerStart;
+			GridEnforcer.OnCleanupTimerEnd += eventCleanupTimerEnd;
 
 			m_Initialized = true;
 		}
@@ -97,10 +105,10 @@ namespace GardenConquest.Core {
 		public override void unloadData() {
 			log("Unloading", "unloadData");
 
-			GridEnforcer.OnViolation -= eventGridViolation;
-			GridEnforcer.OnDerelictStart -= eventDerelictStart;
-			GridEnforcer.OnDerelictEnd -= eventDerelictEnd;
-			GridEnforcer.OnClassProhibited -= eventClassProhibited;
+			GridEnforcer.OnPlacementViolation -= eventPlacementViolation;
+			GridEnforcer.OnCleanupViolation -= eventCleanupViolation;
+			GridEnforcer.OnCleanupTimerStart -= eventCleanupTimerStart;
+			GridEnforcer.OnCleanupTimerEnd -= eventCleanupTimerEnd;
 
 			if (m_LocalReceiver != null) {
 				m_MailMan.localReceiver -= m_LocalReceiver.incomming;
@@ -109,6 +117,8 @@ namespace GardenConquest.Core {
 			}
 
 			m_MailMan.unload();
+
+			if (!MyAPIGateway.Utilities.IsDedicated) m_CmdProc.shutdown();
 
 			s_Logger = null;
 		}
@@ -120,12 +130,21 @@ namespace GardenConquest.Core {
 					m_RoundEnded = false;
 				}
 			//}
+				if (s_DelayedSettingWrite) {
+					log("Settings Write was delayed, trying again", "updateBeforeSimulation");
+					s_Settings.writeSettings();
+					if (!s_Settings.WriteFailed) {
+						s_DelayedSettingWrite = false;
+						log("Setting Write Success", "updateBeforeSimulation");
+					}
+						
+				}
 		}
 
 		#endregion
 		#region Event Handlers
 
-		public void eventGridViolation(GridEnforcer ge, GridEnforcer.VIOLATION_TYPE v) {
+		public void eventPlacementViolation(GridEnforcer ge, GridEnforcer.VIOLATION_TYPE v) {
 			log("hit", "eventGridViolation");
 
 			// Check for players within the vicinity of the grid, since there's no
@@ -133,17 +152,29 @@ namespace GardenConquest.Core {
 			List<long> players = getPlayersNearGrid(ge.Grid);
 			
 			string message = "";
-			if (v == GridEnforcer.VIOLATION_TYPE.BLOCK)
-				message = "Block limit reached";
-			else if (v == GridEnforcer.VIOLATION_TYPE.TURRET)
-				message = "Turret limit reached";
-			else
-				message = "Fixed weapon limit reached";
+			if (v == GridEnforcer.VIOLATION_TYPE.TOTAL_BLOCKS)
+				message = "No more blocks allowed for this Class";
+			else if (v == GridEnforcer.VIOLATION_TYPE.BLOCK_TYPE)
+				message = "No more blocks of this type allowed for this Class";
+			else if (v == GridEnforcer.VIOLATION_TYPE.DOUBLE_CLASSIFICATION)
+				message = "Only one Hull Classifier allowed";
+			else if (v == GridEnforcer.VIOLATION_TYPE.TOO_MANY_OF_CLASS) {
+				GridOwner.OWNER_TYPE owner_type = ge.Owner.OwnerType;
+				if (owner_type == GridOwner.OWNER_TYPE.UNOWNED) {
+					message = "Unowned grids can't be classified";
+				}
+				else if (owner_type == GridOwner.OWNER_TYPE.PLAYER) {
+					message = "No more ships of this class allowed in this player's fleet. " +
+						"Try joining a faction.";
+				} else if (owner_type == GridOwner.OWNER_TYPE.FACTION) {
+					message = "No more ships of this class allowed in this faction's fleet. ";
+				}
+			}
 
-			log("Sending message", "eventDerelictStart");
+			log("Sending message", "eventPlacementViolation");
 			NotificationResponse noti = new NotificationResponse() {
 				NotificationText = message,
-				Time = 4000,
+				Time = 5000,
 				Font = MyFontEnum.Red,
 				Destination = players,
 				DestType = BaseResponse.DEST_TYPE.PLAYER
@@ -151,70 +182,177 @@ namespace GardenConquest.Core {
 			m_MailMan.send(noti);
 		}
 
-		public void eventDerelictStart(IMyCubeGrid grid) {
-			GridEnforcer ge = grid.Components.Get<MyGameLogicComponent>() as GridEnforcer;
-			if (ge == null || ge.Faction == null)
+		public void eventCleanupViolation(GridEnforcer ge, List<GridEnforcer.VIOLATION> violations) {
+			if (ge == null)
 				return;
 
-			string message = "Your faction's grid " + grid.DisplayName + " will become a " +
-				"derelict in " + ConquestSettings.getInstance().DerelictCountdown / 60.0f +
-				" minutes";
+			GridOwner owner = ge.Owner;
+			GridOwner.OWNER_TYPE owner_type = owner.OwnerType;
+			long gridFactionID = ge.Owner.FactionID;
 
+			BaseResponse.DEST_TYPE destType = BaseResponse.DEST_TYPE.NONE;
+			List<long> Destinations = new List<long>();
+			string message = "";
+
+			if (owner_type == GridOwner.OWNER_TYPE.FACTION) {
+				destType = BaseResponse.DEST_TYPE.FACTION;
+				Destinations.Add(gridFactionID);
+				message += "Your faction's ";
+			} else if (owner_type == GridOwner.OWNER_TYPE.PLAYER) {
+				destType = BaseResponse.DEST_TYPE.PLAYER;
+				Destinations.Add(ge.Owner.PlayerID);
+				message += "Your ";
+			} else {
+				List<long> nearbyPlayers = getPlayersNearGrid(ge.Grid);
+				if (nearbyPlayers.Count > 0) {
+					destType = BaseResponse.DEST_TYPE.PLAYER;
+					Destinations = nearbyPlayers;
+					message += "Nearby unowned ";
+				} else {
+					return;
+				}
+			}
+
+
+			// build notification
+			message += "grid " + ge.Grid.DisplayName + " is violating:"; //: \n";
+
+			foreach (GridEnforcer.VIOLATION violation in violations)
+				message += violation.Name + ": " + violation.Count + "/" + 
+					violation.Limit + "  ";
+
+			int secondsUntilCleanup = ge.TimeUntilCleanup;
+
+			if (secondsUntilCleanup > 0)
+				message += "and will have some offending blocks removed in " +
+					Utility.prettySeconds(secondsUntilCleanup);
+
+			// send
 			log("Sending message", "eventDerelictStart");
 			NotificationResponse noti = new NotificationResponse() {
 				NotificationText = message,
-				Time = 10000,
+				Time = 6000,
 				Font = MyFontEnum.Red,
-				Destination = new List<long>() { ge.Faction.FactionId },
-				DestType = BaseResponse.DEST_TYPE.FACTION
+				Destination = Destinations,
+				DestType = destType
 			};
 			m_MailMan.send(noti);
 		}
 
-		public void eventDerelictEnd(IMyCubeGrid grid, DerelictTimer.COMPLETION c) {
-			GridEnforcer ge =
-				grid.Components.Get<MyGameLogicComponent>() as GridEnforcer;
-			if (ge == null || ge.Faction == null)
+		public void eventCleanupTimerStart(GridEnforcer ge, int secondsRemaining) {
+			log("start", "eventCleanupTimerStart", Logger.severity.TRACE);
+			if (ge == null)
 				return;
 
-			string message = "";
-			MyFontEnum font = MyFontEnum.Red;
+			GridOwner owner = ge.Owner;
+			log("owner", "eventCleanupTimerStart", Logger.severity.TRACE);
+			GridOwner.OWNER_TYPE owner_type = owner.OwnerType;
+			log("owner_type", "eventCleanupTimerStart", Logger.severity.TRACE);
+			long gridFactionID = ge.Owner.FactionID;
+			log("gridFaction", "eventCleanupTimerStart", Logger.severity.TRACE);
 
+			BaseResponse.DEST_TYPE destType = BaseResponse.DEST_TYPE.NONE;
+			List<long> Destinations = new List<long>();
+			string message = "";
+
+			if (owner_type == GridOwner.OWNER_TYPE.FACTION) {
+				destType = BaseResponse.DEST_TYPE.FACTION;
+				Destinations.Add(gridFactionID);
+				message += "Your faction's ";
+			}
+			else if (owner_type == GridOwner.OWNER_TYPE.PLAYER) {
+				destType = BaseResponse.DEST_TYPE.PLAYER;
+				Destinations.Add(ge.Owner.PlayerID);
+				message += "Your ";
+			}
+			else {
+				List<long> nearbyPlayers = getPlayersNearGrid(ge.Grid);
+				if (nearbyPlayers.Count > 0) {
+					destType = BaseResponse.DEST_TYPE.PLAYER;
+					Destinations = nearbyPlayers;
+					message += "Nearby ";
+				}
+				else {
+					return;
+				}
+			}
+			log("msg details built", "eventCleanupTimerStart", Logger.severity.TRACE);
+
+			// build notification
+			message += "grid " + ge.Grid.DisplayName +
+				" will have some of its offending blocks removed in " +
+				Utility.prettySeconds(secondsRemaining);
+
+			log("msg built, building noti", "eventDerelictStart");
+			NotificationResponse noti = new NotificationResponse() {
+				NotificationText = message,
+				Time = 6000,
+				Font = MyFontEnum.Red,
+				Destination = Destinations,
+				DestType = destType
+			};
+			log("notification built, sending message", "eventDerelictStart");
+			m_MailMan.send(noti);
+			log("Msg sent", "eventDerelictStart");
+		}
+
+		public void eventCleanupTimerEnd(GridEnforcer ge, DerelictTimer.COMPLETION c) {
+			//log("start", "eventCleanupTimerEnd", Logger.severity.TRACE);
+			if (ge == null)
+				return;
+
+			//log("grid exists, getting owner", "eventCleanupTimerEnd", Logger.severity.TRACE);
+			GridOwner owner = ge.Owner;
+			//log("grid exists, getting owner type", "eventCleanupTimerEnd", Logger.severity.TRACE);
+			GridOwner.OWNER_TYPE owner_type = owner.OwnerType;
+			//log("grid exists, getting faction", "eventCleanupTimerEnd", Logger.severity.TRACE);
+			long gridFactionID = ge.Owner.FactionID;
+
+			//log("determining destinations", "eventCleanupTimerEnd", Logger.severity.TRACE);
+			BaseResponse.DEST_TYPE destType = BaseResponse.DEST_TYPE.NONE;
+			List<long> Destinations = new List<long>();
+			string message = "";
+
+			if (owner_type == GridOwner.OWNER_TYPE.FACTION) {
+				destType = BaseResponse.DEST_TYPE.FACTION;
+				Destinations.Add(gridFactionID);
+				message += "Your faction's ";
+			}
+			else if (owner_type == GridOwner.OWNER_TYPE.PLAYER) {
+				destType = BaseResponse.DEST_TYPE.PLAYER;
+				Destinations.Add(ge.Owner.PlayerID);
+				message += "Your ";
+			}
+			else {
+				List<long> nearbyPlayers = getPlayersNearGrid(ge.Grid);
+				if (nearbyPlayers.Count > 0) {
+					destType = BaseResponse.DEST_TYPE.PLAYER;
+					Destinations = nearbyPlayers;
+					message += "Nearby ";
+				}
+				else {
+					return;
+				}
+			}
+
+			log("building message", "eventCleanupTimerEnd", Logger.severity.TRACE);
+			MyFontEnum font = MyFontEnum.Red;
 			if (c == DerelictTimer.COMPLETION.CANCELLED) {
-				message = "Your faction's grid " + grid.DisplayName +
-					" is no longer " +
-					"in danger of becoming a derelict";
+				message += "grid " + ge.Grid.DisplayName + " is now within limits.";
 				font = MyFontEnum.Green;
 			} else if (c == DerelictTimer.COMPLETION.ELAPSED) {
-				message = "Your faction's grid " + grid.DisplayName +
-					" has become a derelict";
+				message += "grid " + ge.Grid.DisplayName +
+					" had some of its offending blocks removed.";
 				font = MyFontEnum.Red;
 			}
 
 			log("Sending message", "eventDerelictEnd");
 			NotificationResponse noti = new NotificationResponse() {
 				NotificationText = message,
-				Time = 10000,
+				Time = 6000,
 				Font = font,
-				Destination = new List<long>() { ge.Faction.FactionId },
-				DestType = BaseResponse.DEST_TYPE.FACTION
-			};
-			m_MailMan.send(noti);
-		}
-
-		public void eventClassProhibited(GridEnforcer ge, HullClass.CLASS c) {
-			List<long> players = getPlayersNearGrid(ge.Grid);
-
-			string message = "No more ships of class " + HullClass.ClassStrings[(int)c] +
-				" permitted for this faction.";
-
-			log("Sending message", "eventClassProhibited");
-			NotificationResponse noti = new NotificationResponse() {
-				NotificationText = message,
-				Time = 10000,
-				Font = MyFontEnum.Red,
-				Destination = players,
-				DestType = BaseResponse.DEST_TYPE.PLAYER
+				Destination = Destinations,
+				DestType = destType
 			};
 			m_MailMan.send(noti);
 		}
@@ -249,7 +387,7 @@ namespace GardenConquest.Core {
 
 				// Check each CP in turn
 				Dictionary<long, int> totalTokens = new Dictionary<long, int>();
-				foreach (ControlPoint cp in ConquestSettings.getInstance().ControlPoints) {
+				foreach (ControlPoint cp in s_Settings.ControlPoints) {
 					log("Processing control point " + cp.Name, "roundEnd");
 
 					// Get a list of all grids within this CPs sphere of influence
@@ -277,7 +415,8 @@ namespace GardenConquest.Core {
 					foreach (KeyValuePair<long, List<FACGRID>> entry in allFactionGrids) {
 						int weightedTotal = 0;
 						foreach (FACGRID fg in entry.Value) {
-							weightedTotal += HullClass.captureMultiplier[(int)fg.hullClass];
+							weightedTotal +=
+								s_Settings.HullRules[(int)fg.hullClass].CaptureMultiplier;
 						}
 
 						if (weightedTotal >= greatestTotal) {
@@ -373,6 +512,8 @@ namespace GardenConquest.Core {
 		#endregion
 		#region Class Helpers
 
+
+
 		/// <summary>
 		/// Returns a list of players near a grid.  Used to send messages
 		/// </summary>
@@ -383,8 +524,9 @@ namespace GardenConquest.Core {
 
 			Vector3 gridPos = grid.GetPosition();
 			VRageMath.Vector3 gridSize = grid.LocalAABB.Size;
-			float maxDistFromGrid =
-				Math.Max(gridSize.X, Math.Max(gridSize.Y, gridSize.Z)) * 2;
+			float gridMaxLength = 
+				Math.Max(gridSize.X, Math.Max(gridSize.Y, gridSize.Z));
+			int maxDistFromGrid = (int)gridMaxLength + INGAME_PLACEMENT_MAX_DISTANCE;
 
 			List<IMyPlayer> allPlayers = new List<IMyPlayer>();
 			MyAPIGateway.Players.GetPlayers(allPlayers);
@@ -393,12 +535,9 @@ namespace GardenConquest.Core {
 			List<long> nearbyPlayerIds = new List<long>();
 			foreach (IMyPlayer p in allPlayers)
 			{
-				//log("checking if player is nearby: " + player.SteamUserId + " | " + p.GetPosition());
 				pDistFromGrid = VRageMath.Vector3.Distance(p.GetPosition(), gridPos);
-				if (pDistFromGrid < maxDistFromGrid)
-				{
-					//log("player is close enough to be considered ");
-					nearbyPlayerIds.Add((long)p.SteamUserId);
+				if (pDistFromGrid < maxDistFromGrid) {
+					nearbyPlayerIds.Add((long)p.PlayerID);
 				}
 			}
 
@@ -429,7 +568,7 @@ namespace GardenConquest.Core {
 		}
 
 		/// <summary>
-		/// Separates a list of grids by their faction.  Also discards invalid grids.
+		/// Separates a list of grids by their fleet.  Also discards invalid grids.
 		/// </summary>
 		/// <param name="grids">Grids to aggregate</param>
 		/// <param name="cpPos">The position of the CP</param>
@@ -438,61 +577,71 @@ namespace GardenConquest.Core {
 			Dictionary<long, List<FACGRID>> result = new Dictionary<long, List<FACGRID>>();
 
 			foreach (IMyCubeGrid grid in grids) {
+				// GridEnforcer
 				GridEnforcer ge = grid.Components.Get<MyGameLogicComponent>() as GridEnforcer;
-				if (ge == null)
+				if (ge == null) {
+					log("No grid enforcer on grid " + grid.EntityId,
+						"groupFactionGrids", Logger.severity.ERROR);
 					continue;
-
-				IMyFaction fac = ge.Faction;
-
-				// Player must be in a faction to get tokens
-				// If there is no faction, the player may have joined a faction after creating
-				// the last block on this grid.  Force a re-evaluation
-				if (fac == null) {
-					ge.reevaluateOwnership();
-					fac = ge.Faction;
-
-					// If faction is still null, continue
-					if (fac == null)
-						continue;
 				}
 
+				// Owner
+				ge.reevaluateOwnership();
+
+				if (ge.Owner.OwnerType == GridOwner.OWNER_TYPE.UNOWNED) {
+					log("Grid " + grid.EntityId + " is unowned, skipping",
+						"groupFactionGrids");
+					continue;
+				}
+
+				// Fleet
+				long fleetID = ge.Owner.FleetID;
+				if (ge.SupportedByFleet) {
+					log("Grid " + grid.DisplayName + " belongs to fleet " + fleetID,
+						"groupFactionGrids");
+				} else {
+					log("Grid " + grid.DisplayName + " is unsupported by its fleet " + fleetID +
+					", skipping.", "groupFactionGrids");
+					continue;
+				}
+
+				// Hull Classifier conditions for the grid to count:
+				// 1. Must have a hull classifier
+				HullClassifier classifier = ge.Classifier;
+				if (classifier == null) {
+					log("Grid has no classifier, skipping", "groupFactionGrids");
+					continue;
+				}
+
+				// 2. HC must be working
+				InGame.IMyBeacon beacon = classifier.FatBlock as InGame.IMyBeacon;
+				if (beacon == null || !beacon.IsWorking) {
+					log("Classifier beacon not working, skipping", "groupFactionGrids");
+					continue;
+				}
+
+				// 3. HC must have a beacon radius greater than the distance to the grid
+				if (beacon.Radius < VRageMath.Vector3.Distance(cpPos, grid.GetPosition())) {
+					log("Classifier range too small, skipping", "groupFactionGrids");
+					continue;
+				}
+
+				// The grid can be counted
 				List<IMySlimBlock> blocks = new List<IMySlimBlock>();
 				grid.GetBlocks(blocks);
 
-				// Conditions which must be met for the grid to count towards faction total:
-				// 1. Must have a powered hull classifier
-				// 2. HC beacon radius must be greater than the distance to the grid
-				bool hasHC = false;
-				bool radiusOK = false;
-
-				InGame.IMyBeacon beacon = ge.Classifier as InGame.IMyBeacon;
-				if (beacon == null)
-					continue;
-
-				hasHC = beacon != null && beacon.IsWorking;
-
-				radiusOK = beacon.Radius >= VRageMath.Vector3.Distance(
-					cpPos, grid.GetPosition());
-
-				// If the grid doesn't pass the above conditions, skip it
-				log("Grid " + grid.EntityId + ": " + hasHC + " " 
-					+ radiusOK, "groupFactionGrids");
-				if (!(hasHC && radiusOK))
-					continue;
-
-				// The grid can be counted
 				FACGRID fg = new FACGRID();
 				fg.grid = grid;
 				fg.blockCount = blocks.Count;
 				fg.gtype = Utility.getGridType(grid);
-				fg.hullClass = ge.ActualClass;
+				fg.hullClass = ge.Class;
 
 				List<FACGRID> gridsOfCurrent = null;
-				if (result.ContainsKey(fac.FactionId)) {
-					gridsOfCurrent = result[fac.FactionId];
+				if (result.ContainsKey(fleetID)) {
+					gridsOfCurrent = result[fleetID];
 				} else {
 					gridsOfCurrent = new List<FACGRID>();
-					result.Add(fac.FactionId, gridsOfCurrent);
+					result.Add(fleetID, gridsOfCurrent);
 				}
 				gridsOfCurrent.Add(fg);
 			}

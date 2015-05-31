@@ -60,6 +60,12 @@ namespace GardenConquest.Messaging {
 					case BaseRequest.TYPE.CPGPS:
 						processCPGPSRequest(msg as CPGPSRequest);
 						break;
+					case BaseRequest.TYPE.FLEET:
+						processFleetRequest(msg as FleetRequest);
+						break;
+					case BaseRequest.TYPE.VIOLATIONS:
+						processViolationsRequest(msg as ViolationsRequest);
+						break;
 				}
 			} catch (Exception e) {
 				log("Exception occured: " + e, "incomming");
@@ -74,15 +80,20 @@ namespace GardenConquest.Messaging {
 			MyAPIGateway.Multiplayer.SendMessageToOthers(Constants.GCMessageId, buffer);
 			log("Sent packet of " + buffer.Length + " bytes", "send");
 
-			onSend(buffer);
+			try {
+				onSend(buffer);
+			}
+			catch (Exception e) {
+				log("Error in onSend(buffer) " + e, "send", Logger.severity.ERROR);
+			}
 		}
 
 		private void processCPGPSRequest(CPGPSRequest req) {
+			log("", "processCPGPSRequest");
 			CPGPSResponse resp = new CPGPSResponse();
 
 			resp.DestType = BaseResponse.DEST_TYPE.PLAYER;
 			resp.Destination = new List<long>() { req.ReturnAddress };
-
 			foreach(ControlPoint cp in ConquestSettings.getInstance().ControlPoints) {
 				resp.CPs.Add(new CPGPSResponse.CPGPS() {
 					x = (long)cp.Position.X,
@@ -91,6 +102,72 @@ namespace GardenConquest.Messaging {
 					name = cp.Name
 				});
 			}
+
+			send(resp);
+		}
+
+		private void processFleetRequest(FleetRequest req) {
+			// Get an Owner object from the player ID of the request
+			GridOwner.OWNER owner = GridOwner.ownerFromPlayerID(req.ReturnAddress);
+
+			// Retrieve that owner's fleet
+			FactionFleet fleet = GardenConquest.Core.StateTracker.
+				getInstance().getFleet(owner.FleetID, owner.OwnerType);
+
+			// Get the fleet's juicy description
+			String body = fleet.classesToString();
+
+			// build the title
+			String title = "";
+			switch (owner.OwnerType) {
+				case GridOwner.OWNER_TYPE.FACTION:
+					title = "Your Faction's Fleet:";
+					break;
+				case GridOwner.OWNER_TYPE.PLAYER:
+					title = "Your Fleet";
+					break;
+			}
+
+			// send the response
+			DialogResponse resp = new DialogResponse() {
+				Body = body,
+				Title = title,
+				Destination = new List<long>() { req.ReturnAddress },
+				DestType = BaseResponse.DEST_TYPE.PLAYER
+			};
+
+			send(resp);
+		}
+
+		private void processViolationsRequest(ViolationsRequest req) {
+			// Get an Owner object from the player ID of the request
+			GridOwner.OWNER owner = GridOwner.ownerFromPlayerID(req.ReturnAddress);
+
+			// Retrieve that owner's fleet
+			FactionFleet fleet = GardenConquest.Core.StateTracker.
+				getInstance().getFleet(owner.FleetID, owner.OwnerType);
+
+			// Get the fleet's juicy description
+			String body = fleet.violationsToString();
+
+			// build the title
+			String title = "";
+			switch (owner.OwnerType) {
+				case GridOwner.OWNER_TYPE.FACTION:
+					title = "Your Faction's Fleet's Violations";
+					break;
+				case GridOwner.OWNER_TYPE.PLAYER:
+					title = "Your Fleet Violations";
+					break;
+			}
+
+			// send the response
+			DialogResponse resp = new DialogResponse() {
+				Body = body,
+				Title = title,
+				Destination = new List<long>() { req.ReturnAddress },
+				DestType = BaseResponse.DEST_TYPE.PLAYER
+			};
 
 			send(resp);
 		}

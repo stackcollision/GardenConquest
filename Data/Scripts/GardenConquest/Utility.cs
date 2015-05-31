@@ -17,6 +17,9 @@ namespace GardenConquest {
 			SMALLSHIP = 2
 		}
 
+		private static bool s_WaitingForGateway = true;
+		private static bool s_ServerIsOffline;
+
 		/// <summary>
 		/// 
 		/// </summary>
@@ -58,8 +61,36 @@ namespace GardenConquest {
 				return MyAPIGateway.Multiplayer.IsServer;
 		}
 
+		public static bool isOffline() {
+			if (s_WaitingForGateway) {
+				try {
+					s_ServerIsOffline = (MyAPIGateway.Session.OnlineMode == MyOnlineModeEnum.OFFLINE);
+					s_WaitingForGateway = false;
+				}
+				catch { }
+			}
+
+			return s_ServerIsOffline;
+		}
+
 		public static void showDialog(string topic, string body, string button) {
-			MyAPIGateway.Utilities.ShowMissionScreen("Garden Conquest", null, topic, body, null, button);
+			MyAPIGateway.Utilities.ShowMissionScreen("Garden Conquest", "", topic, body, null, button);
+		}
+
+		public static String prettySeconds(int seconds) {
+			int days = (int)Math.Floor((float)(seconds / 86400));
+			if (days > 0)
+				return days + " days";
+
+			int hours = (int)Math.Floor((float)(seconds / 3600));
+			if (hours > 0)
+				return hours + " hours";
+
+			int minutes = (int)Math.Floor((float)(seconds / 60));
+			if (minutes > 0)
+				return minutes + " minutes";
+
+			return seconds + " seconds";
 		}
 	}
 }

@@ -16,13 +16,15 @@ namespace GardenConquest.Messaging {
 	public abstract class BaseResponse {
 		public enum TYPE {
 			NOTIFICATION,
-			CPGPS
+			CPGPS,
+			DIALOG
 		}
 
 		/// <summary>
 		/// Determines what the destination field actually means
 		/// </summary>
 		public enum DEST_TYPE {
+			NONE,
 			EVERYONE,
 			PLAYER,
 			FACTION
@@ -64,6 +66,10 @@ namespace GardenConquest.Messaging {
 			switch (t) {
 				case TYPE.NOTIFICATION:
 					msg = new NotificationResponse();
+					break;
+
+				case TYPE.DIALOG:
+					msg = new DialogResponse();
 					break;
 
 				case TYPE.CPGPS:

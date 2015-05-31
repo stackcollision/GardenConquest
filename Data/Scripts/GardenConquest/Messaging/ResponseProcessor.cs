@@ -38,6 +38,8 @@ namespace GardenConquest.Messaging {
 				MyAPIGateway.Multiplayer.UnregisterMessageHandler(Constants.GCMessageId, incomming);
 		}
 
+		#region Make Requests
+
 		public void send(BaseRequest msg) {
 			if (msg == null)
 				return;
@@ -48,6 +50,7 @@ namespace GardenConquest.Messaging {
 		}
 
 		public bool requestCPGPS() {
+			log("Sending GPS request", "requestCPGPS");
 			try {
 				CPGPSRequest req = new CPGPSRequest();
 				req.ReturnAddress = MyAPIGateway.Session.Player.PlayerID;
@@ -58,6 +61,37 @@ namespace GardenConquest.Messaging {
 				return false;
 			}
 		}
+
+		public bool requestFleet(String hullClassString = "") {
+			log("Sending Fleet request", "requestFleet");
+			try {
+				FleetRequest req = new FleetRequest();
+				req.ReturnAddress = MyAPIGateway.Session.Player.PlayerID;
+				send(req);
+				return true;
+			}
+			catch (Exception e) {
+				log("Exception occured: " + e, "requestFleet");
+				return false;
+			}
+		}
+
+		public bool requestViolations(String hullClassString = "") {
+			log("Sending Violations request", "requestViolations");
+			try {
+				ViolationsRequest req = new ViolationsRequest();
+				req.ReturnAddress = MyAPIGateway.Session.Player.PlayerID;
+				send(req);
+				return true;
+			}
+			catch (Exception e) {
+				log("Exception occured: " + e, "requestViolations");
+				return false;
+			}
+		}
+
+		#endregion
+		#region Process Responses
 
 		public void incomming(byte[] buffer) {
 			log("Got message of size " + buffer.Length, "incomming");
@@ -70,17 +104,23 @@ namespace GardenConquest.Messaging {
 				if (msg.DestType == BaseResponse.DEST_TYPE.FACTION) {
 					IMyFaction fac = MyAPIGateway.Session.Factions.TryGetPlayerFaction(
 						MyAPIGateway.Session.Player.PlayerID);
-					if (fac == null || !msg.Destination.Contains(fac.FactionId))
+					if (fac == null || !msg.Destination.Contains(fac.FactionId)) {
 						return; // Message not meant for us
+					}
 				} else if (msg.DestType == BaseResponse.DEST_TYPE.PLAYER) {
-					long localUserId = (long)MyAPIGateway.Session.Player.SteamUserId;
-					if (!msg.Destination.Contains(localUserId))
+					long localUserId = (long)MyAPIGateway.Session.Player.PlayerID;
+					if (!msg.Destination.Contains(localUserId)) {
 						return; // Message not meant for us
+					}
 				}
 
 				switch (msg.MsgType) {
 					case BaseResponse.TYPE.NOTIFICATION:
 						processNotificationResponse(msg as NotificationResponse);
+						break;
+
+					case BaseResponse.TYPE.DIALOG:
+						processDialogResponse(msg as DialogResponse);
 						break;
 
 					case BaseResponse.TYPE.CPGPS:
@@ -97,6 +137,11 @@ namespace GardenConquest.Messaging {
 			MyAPIGateway.Utilities.ShowNotification(noti.NotificationText, noti.Time, noti.Font);
 		}
 
+		private void processDialogResponse(DialogResponse resp) {
+			log("Hit", "processDialogResponse");
+			Utility.showDialog(resp.Title, resp.Body, "Close");
+		}
+
 		private void processCPGPSResponse(CPGPSResponse resp) {
 			log("Loading " + resp.CPs.Count + " GPS coordinates from server", "processCPGPSResponse");
 
@@ -106,6 +151,8 @@ namespace GardenConquest.Messaging {
 				MyAPIGateway.Session.GPS.AddLocalGps(gps);
 			}
 		}
+
+		#endregion
 
 		private void log(String message, String method = null, Logger.severity level = Logger.severity.DEBUG) {
 			if (s_Logger != null)

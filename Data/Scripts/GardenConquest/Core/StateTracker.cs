@@ -18,6 +18,7 @@ namespace GardenConquest.Core {
 	/// </summary>
 	public class StateTracker {
 
+		public static readonly int UNOWNED_FLEET_ID = 0;
 		public Dictionary<long, long> TokensLastRound { get; private set; }
 		private Dictionary<long, FactionFleet> m_Fleets = null;
 		private Dictionary<long, FactionFleet> m_PlayerFleets = null;
@@ -54,27 +55,56 @@ namespace GardenConquest.Core {
 		}
 
 		/// <summary>
-		/// Returns the fleet for the faction id.  If no fleet yet recorded creates a new one.
+		/// Returns the fleet for the fleet id.  If no fleet yet recorded creates a new one.
 		/// </summary>
 		/// <param name="factionId"></param>
 		/// <returns></returns>
-		public FactionFleet getFleet(long factionId) {
-			if (!m_Fleets.ContainsKey(factionId))
-				m_Fleets.Add(factionId, new FactionFleet(factionId));
-			return m_Fleets[factionId];
+		public FactionFleet getFleet(long fleetId, GridOwner.OWNER_TYPE ownerType) {
+			switch (ownerType) {
+				case GridOwner.OWNER_TYPE.FACTION:
+					if (!m_Fleets.ContainsKey(fleetId))
+						m_Fleets.Add(fleetId, new FactionFleet(fleetId, ownerType));
+					return m_Fleets[fleetId];
+				case GridOwner.OWNER_TYPE.PLAYER:
+					if (!m_PlayerFleets.ContainsKey(fleetId))
+						m_PlayerFleets.Add(fleetId, new FactionFleet(fleetId, ownerType));
+					return m_PlayerFleets[fleetId];
+				case GridOwner.OWNER_TYPE.UNOWNED:
+				default:
+					if (!m_PlayerFleets.ContainsKey(UNOWNED_FLEET_ID))
+						m_PlayerFleets.Add(UNOWNED_FLEET_ID, new FactionFleet(fleetId, ownerType));
+					return m_PlayerFleets[fleetId];
+			}
 		}
 
-		/// <summary>
-		/// Some players are not in factions and have special grid restrictions.  This gets the
-		/// fleet of a player who is not in a faction.
-		/// </summary>
-		/// <param name="playerId"></param>
-		/// <returns></returns>
-		public FactionFleet getPlayerFleet(long playerId) {
-			if (!m_PlayerFleets.ContainsKey(playerId))
-				m_PlayerFleets.Add(playerId, new FactionFleet(playerId));
-			return m_PlayerFleets[playerId];
+		public void removeFleetIfEmpty(long fleetId, GridOwner.OWNER_TYPE ownerType) {
+			switch (ownerType) {
+				case GridOwner.OWNER_TYPE.FACTION:
+					if (m_Fleets.ContainsKey(fleetId)) {
+						if (m_Fleets[fleetId].TotalCount == 0) {
+							m_Fleets[fleetId] = null;
+						}
+					}
+					return;
+				case GridOwner.OWNER_TYPE.PLAYER:
+					if (!m_PlayerFleets.ContainsKey(fleetId)) {
+						if (m_PlayerFleets[fleetId].TotalCount == 0) {
+							m_PlayerFleets[fleetId] = null;
+						}
+					}
+					return;
+				case GridOwner.OWNER_TYPE.UNOWNED:
+				default:
+					if (!m_PlayerFleets.ContainsKey(fleetId)) {
+						if (m_PlayerFleets[fleetId].TotalCount == 0) {
+							m_PlayerFleets[fleetId] = null;
+						}
+					}
+					return;
+			}
 		}
+
+		#region Timers
 
 		/// <summary>
 		/// Adds a new derelict timer to the queue.
@@ -109,6 +139,9 @@ namespace GardenConquest.Core {
 
 			return null;
 		}
+
+		#endregion
+		#region Load & Save
 
 		/// <summary>
 		/// Loads the last saved state from the file
@@ -183,6 +216,8 @@ namespace GardenConquest.Core {
 				log("Exception occured: " + e, "saveState");
 			}
 		}
+
+		#endregion
 
 		private void log(String message, String method = null, Logger.severity level = Logger.severity.DEBUG) {
 			if (s_Logger != null)

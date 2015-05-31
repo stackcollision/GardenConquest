@@ -21,6 +21,9 @@
         <string>Beacon/GCCruiserHullClassifier</string>
         <string>Beacon/GCHeavyCruiserHullClassifier</string>
         <string>Beacon/GCBattleshipHullClassifier</string>
+        <string>Beacon/GCOutpostHullClassifier</string>
+        <string>Beacon/GCInstallationHullClassifier</string>
+        <string>Beacon/GCFortressHullClassifier</string>
       </ItemIds>
     </Category>
   </CategoryClasses>

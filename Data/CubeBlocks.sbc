@@ -99,7 +99,7 @@
         <Component Subtype="LargeTube" Count="40" />
         <Component Subtype="Computer" Count="8" />
         <Component Subtype="RadioCommunication" Count="40" />
-        <Component Subtype="ShipLicense" Count="40" />
+        <Component Subtype="ShipLicense" Count="30" />
         <Component Subtype="Construction" Count="10" />
         <Component Subtype="SteelPlate" Count="40" />
       </Components>
@@ -138,7 +138,7 @@
         <Component Subtype="Construction" Count="1" />
         <Component Subtype="SmallTube" Count="1" />
         <Component Subtype="Computer" Count="1" />
-        <Component Subtype="ShipLicense" Count="15" />
+        <Component Subtype="ShipLicense" Count="20" />
         <Component Subtype="SteelPlate" Count="1" />
       </Components>
       <CriticalComponent Subtype="ShipLicense" Index="0" />
@@ -172,7 +172,7 @@
         <Component Subtype="SmallTube" Count="60" />
         <Component Subtype="LargeTube" Count="40" />
         <Component Subtype="Computer" Count="8" />
-        <Component Subtype="RadioCommunication" Count="40" />
+        <Component Subtype="RadioCommunication" Count="165" />
         <Component Subtype="ShipLicense" Count="540" />
         <Component Subtype="Construction" Count="10" />
         <Component Subtype="SteelPlate" Count="40" />
@@ -217,7 +217,7 @@
         <Component Subtype="Construction" Count="1" />
         <Component Subtype="SmallTube" Count="1" />
         <Component Subtype="Computer" Count="1" />
-        <Component Subtype="ShipLicense" Count="10" />
+        <Component Subtype="ShipLicense" Count="5" />
         <Component Subtype="SteelPlate" Count="1" />
       </Components>
       <CriticalComponent Subtype="ShipLicense" Index="0" />
@@ -249,7 +249,7 @@
         <Component Subtype="Construction" Count="1" />
         <Component Subtype="SmallTube" Count="1" />
         <Component Subtype="Computer" Count="1" />
-        <Component Subtype="ShipLicense" Count="20" />
+        <Component Subtype="ShipLicense" Count="15" />
         <Component Subtype="SteelPlate" Count="1" />
       </Components>
       <CriticalComponent Subtype="ShipLicense" Index="0" />
@@ -281,7 +281,7 @@
         <Component Subtype="Construction" Count="1" />
         <Component Subtype="SmallTube" Count="1" />
         <Component Subtype="Computer" Count="1" />
-        <Component Subtype="ShipLicense" Count="40" />
+        <Component Subtype="ShipLicense" Count="50" />
         <Component Subtype="SteelPlate" Count="1" />
       </Components>
       <CriticalComponent Subtype="ShipLicense" Index="0" />
@@ -320,7 +320,7 @@
         <Component Subtype="LargeTube" Count="40" />
         <Component Subtype="Computer" Count="8" />
         <Component Subtype="RadioCommunication" Count="40" />
-        <Component Subtype="ShipLicense" Count="60" />
+        <Component Subtype="ShipLicense" Count="80" />
         <Component Subtype="Construction" Count="10" />
         <Component Subtype="SteelPlate" Count="40" />
       </Components>
@@ -363,7 +363,7 @@
         <Component Subtype="LargeTube" Count="40" />
         <Component Subtype="Computer" Count="8" />
         <Component Subtype="RadioCommunication" Count="40" />
-        <Component Subtype="ShipLicense" Count="180" />
+        <Component Subtype="ShipLicense" Count="185" />
         <Component Subtype="Construction" Count="10" />
         <Component Subtype="SteelPlate" Count="40" />
       </Components>
@@ -406,7 +406,7 @@
         <Component Subtype="LargeTube" Count="40" />
         <Component Subtype="Computer" Count="8" />
         <Component Subtype="RadioCommunication" Count="40" />
-        <Component Subtype="ShipLicense" Count="540" />
+        <Component Subtype="ShipLicense" Count="355" />
         <Component Subtype="Construction" Count="10" />
         <Component Subtype="SteelPlate" Count="40" />
       </Components>
@@ -449,7 +449,7 @@
         <Component Subtype="LargeTube" Count="40" />
         <Component Subtype="Computer" Count="8" />
         <Component Subtype="RadioCommunication" Count="40" />
-        <Component Subtype="ShipLicense" Count="810" />
+        <Component Subtype="ShipLicense" Count="530" />
         <Component Subtype="Construction" Count="10" />
         <Component Subtype="SteelPlate" Count="40" />
       </Components>
@@ -492,7 +492,7 @@
         <Component Subtype="LargeTube" Count="40" />
         <Component Subtype="Computer" Count="8" />
         <Component Subtype="RadioCommunication" Count="40" />
-        <Component Subtype="ShipLicense" Count="1215" />
+        <Component Subtype="ShipLicense" Count="770" />
         <Component Subtype="Construction" Count="10" />
         <Component Subtype="SteelPlate" Count="40" />
       </Components>
@@ -535,7 +535,7 @@
         <Component Subtype="LargeTube" Count="40" />
         <Component Subtype="Computer" Count="8" />
         <Component Subtype="RadioCommunication" Count="40" />
-        <Component Subtype="ShipLicense" Count="1825" />
+        <Component Subtype="ShipLicense" Count="1105" />
         <Component Subtype="Construction" Count="10" />
         <Component Subtype="SteelPlate" Count="40" />
       </Components>
@@ -562,6 +562,135 @@
     <!-- End Capitals -->
 
     <!-- Begin Stations -->
+
+    <Definition>
+      <Id>
+        <TypeId>Beacon</TypeId>
+        <SubtypeId>GCOutpostHullClassifier</SubtypeId>
+      </Id>
+      <DisplayName>Outpost Hull Classifier</DisplayName>
+      <Icon>Textures\Icons\station-1-128.dds</Icon>
+      <CubeSize>Large</CubeSize>
+      <BlockTopology>TriangleMesh</BlockTopology>
+      <Size x="1" y="2" z="1" />
+      <ModelOffset x="0" y="0" z="0" />
+      <Model>Models\Cubes\Large\beacon.mwm</Model>
+      <Components>
+        <Component Subtype="SteelPlate" Count="40" />
+        <Component Subtype="Construction" Count="30" />
+        <Component Subtype="SmallTube" Count="60" />
+        <Component Subtype="LargeTube" Count="40" />
+        <Component Subtype="Computer" Count="8" />
+        <Component Subtype="RadioCommunication" Count="40" />
+        <Component Subtype="ShipLicense" Count="110" />
+        <Component Subtype="Construction" Count="10" />
+        <Component Subtype="SteelPlate" Count="40" />
+      </Components>
+      <CriticalComponent Subtype="ShipLicense" Index="0" />
+      <MountPoints>
+        <MountPoint Side="Bottom" StartX="0.1" StartY="0.1" EndX="0.9" EndY="0.9" />
+        <MountPoint Side="Top" StartX="0.1" StartY="0.1" EndX="0.9" EndY="0.9" />
+        <MountPoint Side="Left" StartX="0.175" StartY="0.1" EndX="0.825" EndY="0.9" />
+        <MountPoint Side="Right" StartX="0.175" StartY="0.1" EndX="0.825" EndY="0.9" />
+        <MountPoint Side="Front" StartX="0.175" StartY="0.1" EndX="0.825" EndY="0.9" />
+        <MountPoint Side="Back" StartX="0.175" StartY="0.1" EndX="0.825" EndY="0.9" />
+      </MountPoints>
+      <BuildProgressModels>
+        <Model BuildPercentUpperBound="0.33" File="Models\Cubes\Large\BeaconConstruction_1.mwm" />
+        <Model BuildPercentUpperBound="0.66" File="Models\Cubes\Large\BeaconConstruction_2.mwm" />
+        <Model BuildPercentUpperBound="1.00" File="Models\Cubes\Large\BeaconConstruction_3.mwm" />
+      </BuildProgressModels>
+      <BlockPairName>GardenConquest_OutpostHullClassifier</BlockPairName>
+      <EdgeType>Light</EdgeType>
+      <BuildTimeSeconds>50</BuildTimeSeconds>
+      <DamageEffectId>214</DamageEffectId>
+    </Definition>
+
+    <Definition>
+      <Id>
+        <TypeId>Beacon</TypeId>
+        <SubtypeId>GCInstallationHullClassifier</SubtypeId>
+      </Id>
+      <DisplayName>Installation Hull Classifier</DisplayName>
+      <Icon>Textures\Icons\station-2-128.dds</Icon>
+      <CubeSize>Large</CubeSize>
+      <BlockTopology>TriangleMesh</BlockTopology>
+      <Size x="1" y="2" z="1" />
+      <ModelOffset x="0" y="0" z="0" />
+      <Model>Models\Cubes\Large\beacon.mwm</Model>
+      <Components>
+        <Component Subtype="SteelPlate" Count="40" />
+        <Component Subtype="Construction" Count="30" />
+        <Component Subtype="SmallTube" Count="60" />
+        <Component Subtype="LargeTube" Count="40" />
+        <Component Subtype="Computer" Count="8" />
+        <Component Subtype="RadioCommunication" Count="40" />
+        <Component Subtype="ShipLicense" Count="370" />
+        <Component Subtype="Construction" Count="10" />
+        <Component Subtype="SteelPlate" Count="40" />
+      </Components>
+      <CriticalComponent Subtype="ShipLicense" Index="0" />
+      <MountPoints>
+        <MountPoint Side="Bottom" StartX="0.1" StartY="0.1" EndX="0.9" EndY="0.9" />
+        <MountPoint Side="Top" StartX="0.1" StartY="0.1" EndX="0.9" EndY="0.9" />
+        <MountPoint Side="Left" StartX="0.175" StartY="0.1" EndX="0.825" EndY="0.9" />
+        <MountPoint Side="Right" StartX="0.175" StartY="0.1" EndX="0.825" EndY="0.9" />
+        <MountPoint Side="Front" StartX="0.175" StartY="0.1" EndX="0.825" EndY="0.9" />
+        <MountPoint Side="Back" StartX="0.175" StartY="0.1" EndX="0.825" EndY="0.9" />
+      </MountPoints>
+      <BuildProgressModels>
+        <Model BuildPercentUpperBound="0.33" File="Models\Cubes\Large\BeaconConstruction_1.mwm" />
+        <Model BuildPercentUpperBound="0.66" File="Models\Cubes\Large\BeaconConstruction_2.mwm" />
+        <Model BuildPercentUpperBound="1.00" File="Models\Cubes\Large\BeaconConstruction_3.mwm" />
+      </BuildProgressModels>
+      <BlockPairName>GardenConquest_InstallationHullClassifier</BlockPairName>
+      <EdgeType>Light</EdgeType>
+      <BuildTimeSeconds>50</BuildTimeSeconds>
+      <DamageEffectId>214</DamageEffectId>
+    </Definition>
+
+    <Definition>
+      <Id>
+        <TypeId>Beacon</TypeId>
+        <SubtypeId>GCFortressHullClassifier</SubtypeId>
+      </Id>
+      <DisplayName>Fortress Hull Classifier</DisplayName>
+      <Icon>Textures\Icons\station-3-128.dds</Icon>
+      <CubeSize>Large</CubeSize>
+      <BlockTopology>TriangleMesh</BlockTopology>
+      <Size x="1" y="2" z="1" />
+      <ModelOffset x="0" y="0" z="0" />
+      <Model>Models\Cubes\Large\beacon.mwm</Model>
+      <Components>
+        <Component Subtype="SteelPlate" Count="40" />
+        <Component Subtype="Construction" Count="30" />
+        <Component Subtype="SmallTube" Count="60" />
+        <Component Subtype="LargeTube" Count="40" />
+        <Component Subtype="Computer" Count="8" />
+        <Component Subtype="RadioCommunication" Count="40" />
+        <Component Subtype="ShipLicense" Count="690" />
+        <Component Subtype="Construction" Count="10" />
+        <Component Subtype="SteelPlate" Count="40" />
+      </Components>
+      <CriticalComponent Subtype="ShipLicense" Index="0" />
+      <MountPoints>
+        <MountPoint Side="Bottom" StartX="0.1" StartY="0.1" EndX="0.9" EndY="0.9" />
+        <MountPoint Side="Top" StartX="0.1" StartY="0.1" EndX="0.9" EndY="0.9" />
+        <MountPoint Side="Left" StartX="0.175" StartY="0.1" EndX="0.825" EndY="0.9" />
+        <MountPoint Side="Right" StartX="0.175" StartY="0.1" EndX="0.825" EndY="0.9" />
+        <MountPoint Side="Front" StartX="0.175" StartY="0.1" EndX="0.825" EndY="0.9" />
+        <MountPoint Side="Back" StartX="0.175" StartY="0.1" EndX="0.825" EndY="0.9" />
+      </MountPoints>
+      <BuildProgressModels>
+        <Model BuildPercentUpperBound="0.33" File="Models\Cubes\Large\BeaconConstruction_1.mwm" />
+        <Model BuildPercentUpperBound="0.66" File="Models\Cubes\Large\BeaconConstruction_2.mwm" />
+        <Model BuildPercentUpperBound="1.00" File="Models\Cubes\Large\BeaconConstruction_3.mwm" />
+      </BuildProgressModels>
+      <BlockPairName>GardenConquest_FortressHullClassifier</BlockPairName>
+      <EdgeType>Light</EdgeType>
+      <BuildTimeSeconds>50</BuildTimeSeconds>
+      <DamageEffectId>214</DamageEffectId>
+    </Definition>
 
     <!-- End Stations -->
 
