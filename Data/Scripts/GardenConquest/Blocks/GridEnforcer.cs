@@ -570,9 +570,10 @@ namespace GardenConquest.Blocks {
 					//log("incrementing type count " + m_BlockTypeCounts[typeID], "updateBlockCountsWith");
 					m_BlockTypeCounts[typeID] = m_BlockTypeCounts[typeID] + 1;
 					int count = m_BlockTypeCounts[typeID];
+					int limit = m_EffectiveRules.BlockTypeLimits[typeID];
 					log(type.DisplayName + " count now: " + count, "updateBlockCountsWith");
 
-					if (count > m_EffectiveRules.BlockTypeLimits[typeID])
+					if (count > limit && limit >= 0)
 						violated_types.Add(type);
 				}
 			}
@@ -950,7 +951,7 @@ namespace GardenConquest.Blocks {
 				int count = counts[typeID];
 				int limit = limits[typeID];
 
-				if (count > limit) {
+				if (count > limit && limit >= 0) {
 					violations.Add(new VIOLATION() {
 						Type = VIOLATION_TYPE.BLOCK_TYPE,
 						BlockType = type,
