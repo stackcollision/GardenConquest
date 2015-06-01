@@ -33,7 +33,7 @@ namespace GardenConquest.Core {
 			public HullRuleSet[] HullRules { get; set; }
 		}
 
-		private static readonly int DEFAULT_CP_PERIOD = 900; // 15 minutes
+		private static readonly int DEFAULT_CP_PERIOD = 300; // 5 minutes
 		private static readonly int DEFAULT_CLEANUP_PERIOD = 1800; // 30 minutes
 		private static Logger s_Logger;
 		private static ConquestSettings s_Instance;
@@ -221,24 +221,91 @@ namespace GardenConquest.Core {
 		private List<ControlPoint> defaultControlPoints(){
 			return new List<ControlPoint> {
 				new ControlPoint() {
-					Name = "Center",
+					Name = "CP Sajuuk",
 					Position = new VRageMath.Vector3D(0, 0, 0),
 					Radius = 15000,
 					TokensPerPeriod = 5,
-				}
+				},
+				new ControlPoint() {
+					Name = "CP Higaraa",
+					Position = new VRageMath.Vector3D(100000, 0, 0),
+					Radius = 15000,
+					TokensPerPeriod = 2,
+				},
+				new ControlPoint() {
+					Name = "CP Kadesh",
+					Position = new VRageMath.Vector3D(-100000, 0, 0),
+					Radius = 15000,
+					TokensPerPeriod = 2,
+				},
 			};
 		}
 
 		private BlockType[] defaultBlockTypes() {
 			return new BlockType[] {
+				/*
 				new BlockType() {
-					DisplayName = "Turrets",
-					SubTypeStrings = new List<string>() { "turret" }
+					DisplayName = "Conveyor Blocks",
+					SubTypeStrings = new List<string>() { "Conveyor" }
+				},
+				new BlockType() {
+					DisplayName = "Gravity Generators",
+					SubTypeStrings = new List<string>() { "Gravity" }
+				},
+				 * */
+				new BlockType() {
+					DisplayName = "Industry",
+					SubTypeStrings = new List<string>() {
+						"Assembler",
+						"Refinery",
+						//"OxygenGenerator",
+						//"OxygenFarm",
+					}
+				},
+				/*
+				new BlockType() {
+					DisplayName = "Logic Blocks",
+					SubTypeStrings = new List<string>() {
+						"Programmable",
+						"Sensor",
+						"Timer"
+					}
+				},
+				 * */
+				new BlockType() {
+					DisplayName = "Projectors",
+					SubTypeStrings = new List<string>() { "Projector" }
+				},
+				new BlockType() {
+					DisplayName = "Spotlights",
+					SubTypeStrings = new List<string>() { "ReflectorLight"}
+				},
+				new BlockType() {
+					DisplayName = "Solar Panels",
+					SubTypeStrings = new List<string>() { "SolarPanel" }
 				},
 				new BlockType() {
 					DisplayName = "Static Weapons",
 					SubTypeStrings = new List<string>() { "MissileLauncher",
 						"GatlingGun" }
+				},
+				/*
+				new BlockType() {
+					DisplayName = "Thrusters",
+					SubTypeStrings = new List<string>() { "Thrust" }
+				},
+				 * */
+				new BlockType() {
+					DisplayName = "Tools",
+					SubTypeStrings = new List<string>() {
+						"Drill",
+						"Grinder",
+						"Welder"
+					}
+				},
+				new BlockType() {
+					DisplayName = "Turrets",
+					SubTypeStrings = new List<string>() { "turret" }
 				}
 			};
 		}
@@ -254,130 +321,323 @@ namespace GardenConquest.Core {
 				MaxPerSoloPlayer = 0,
 				CaptureMultiplier = 0,
 				MaxBlocks = 25,
-				BlockTypeLimits = new int[2] { 0, 0 }
+				BlockTypeLimits = new int[7] { 
+					//-1,  // Conveyors
+					//0,   // Gravity
+					0,     // Industrial
+					//0,   // Logic
+					0,     // Projector
+					0,     // Spotlight
+					0,     // Solar
+					0,     // Static W
+					//-1,  // Thrusters
+					0,     // Tools
+					0      // Turrets
+				}
 			};
 			results[(int)HullClass.CLASS.UNLICENSED] = new HullRuleSet() {
 				DisplayName = "Unlicensed",
-				MaxPerFaction = 2,
-				MaxPerSoloPlayer = 2,
+				MaxPerFaction = 3,
+				MaxPerSoloPlayer = 3,
 				CaptureMultiplier = 1,
-				MaxBlocks = 100,
-				BlockTypeLimits= new int[2] { 2, 2 }
+				MaxBlocks = 125,
+				BlockTypeLimits = new int[7] {
+					//10,  // Conveyors
+					//1,   // Gravity
+					3,     // Industrial
+					//0,   // Logic
+					0,     // Projector
+					1,     // Spotlight
+					0,     // Solar
+					2,     // Static W
+					//14,  // Thrusters
+					1,     // Tools
+					1      // Turrets
+				}
 			};
 			results[(int)HullClass.CLASS.WORKER] = new HullRuleSet() {
 				DisplayName = "Worker",
-				MaxPerFaction = 12,
+				MaxPerFaction = 8,
 				MaxPerSoloPlayer = 0,
 				CaptureMultiplier = 1,
-				MaxBlocks = 200,
-				BlockTypeLimits = new int[2] { 0, 0 }
+				MaxBlocks = 350,
+				BlockTypeLimits = new int[7] {
+					//30,  // Conveyors
+					//0,   // Gravity
+					0,     // Industrial
+					//2,   // Logic
+					1,     // Projector
+					1,     // Spotlight
+					0,     // Solar
+					0,     // Static W
+					//24,  // Thrusters
+					3,     // Tools
+					0      // Turrets
+				}
 			};
 			results[(int)HullClass.CLASS.FOUNDRY] = new HullRuleSet() {
 				DisplayName = "Foundry",
-				MaxPerFaction = 2,
+				MaxPerFaction = 1,
 				MaxPerSoloPlayer = 0,
-				CaptureMultiplier = 1,
+				CaptureMultiplier = 3,
 				MaxBlocks = 1000,
-				BlockTypeLimits = new int[2] { 0, 0 }
+				BlockTypeLimits = new int[7] {
+					//60,  // Conveyors
+					//1,   // Gravity
+					6,     // Industrial
+					//4,   // Logic
+					0,     // Projector
+					1,     // Spotlight
+					0,     // Solar
+					0,     // Static W
+					//12,  // Thrusters
+					0,     // Tools
+					2      // Turrets
+				}
 			};
 			results[(int)HullClass.CLASS.SCOUT] = new HullRuleSet() {
 				DisplayName = "Scout",
-				MaxPerFaction = 16,
+				MaxPerFaction = 5,
 				MaxPerSoloPlayer = 0,
 				CaptureMultiplier = 1,
-				MaxBlocks = 200,
-				BlockTypeLimits = new int[2] { 0, 2 }
+				MaxBlocks = 225,
+				BlockTypeLimits = new int[7] {
+					//20,  // Conveyors
+					//0,   // Gravity
+					0,     // Industrial
+					//2,   // Logic
+					0,     // Projector
+					0,     // Spotlight
+					0,     // Solar
+					2,     // Static W
+					//24,  // Thrusters
+					0,     // Tools
+					0      // Turrets
+				}
 			};
 			results[(int)HullClass.CLASS.FIGHTER] = new HullRuleSet() {
 				DisplayName = "Fighter",
-				MaxPerFaction = 32,
+				MaxPerFaction = 16,
 				MaxPerSoloPlayer = 0,
-				CaptureMultiplier = 1,
-				MaxBlocks = 525,
-				BlockTypeLimits = new int[2] { 0, 3 }
+				CaptureMultiplier = 2,
+				MaxBlocks = 550,
+				BlockTypeLimits = new int[7] {
+					//40,  // Conveyors
+					//0,   // Gravity
+					0,     // Industrial
+					//0,   // Logic
+					0,     // Projector
+					0,     // Spotlight
+					0,     // Solar
+					4,     // Static W
+					//24,  // Thrusters
+					0,     // Tools
+					0      // Turrets
+				}
 			};
 			results[(int)HullClass.CLASS.GUNSHIP] = new HullRuleSet() {
 				DisplayName = "Gunship",
-				MaxPerFaction = 8,
+				MaxPerFaction = 3,
 				MaxPerSoloPlayer = 0,
-				CaptureMultiplier = 2,
-				MaxBlocks = 1025,
-				BlockTypeLimits = new int[2] { 1, 4 }
+				CaptureMultiplier = 3,
+				MaxBlocks = 1300,
+				BlockTypeLimits = new int[7] {
+					//60,  // Conveyors
+					//0,   // Gravity
+					0,     // Industrial
+					//1,   // Logic
+					0,     // Projector
+					1,     // Spotlight
+					0,     // Solar
+					8,     // Static W
+					//30,  // Thrusters
+					0,     // Tools
+					1      // Turrets
+				}
 			};
 			results[(int)HullClass.CLASS.CORVETTE] = new HullRuleSet() {
 				DisplayName = "Corvette",
-				MaxPerFaction = 10,
+				MaxPerFaction = 6,
 				MaxPerSoloPlayer = 0,
-				CaptureMultiplier = 2,
+				CaptureMultiplier = 4,
 				MaxBlocks = 200,
-				BlockTypeLimits = new int[2] { 2, 2 }
+				BlockTypeLimits = new int[7] {
+					//10,  // Conveyors
+					//0,   // Gravity
+					0,     // Industrial
+					//0,   // Logic
+					0,     // Projector
+					0,     // Spotlight
+					0,     // Solar
+					2,     // Static W
+					//24,  // Thrusters
+					0,     // Tools
+					2      // Turrets
+				}
 			};
 			results[(int)HullClass.CLASS.FRIGATE] = new HullRuleSet() {
 				DisplayName = "Frigate",
-				MaxPerFaction = 5,
+				MaxPerFaction = 4,
 				MaxPerSoloPlayer = 0,
-				CaptureMultiplier = 3,
+				CaptureMultiplier = 6,
 				MaxBlocks = 600,
-				BlockTypeLimits = new int[2] { 4, 4 }
+				BlockTypeLimits = new int[7] {
+					//40,  // Conveyors
+					//1,   // Gravity
+					0,     // Industrial
+					//2,   // Logic
+					0,     // Projector
+					0,     // Spotlight
+					0,     // Solar
+					4,     // Static W
+					//30,  // Thrusters
+					0,     // Tools
+					3      // Turrets
+				}
 			};
 
 			results[(int)HullClass.CLASS.DESTROYER] = new HullRuleSet() {
 				DisplayName = "Destroyer",
-				MaxPerFaction = 3,
+				MaxPerFaction = 2,
 				MaxPerSoloPlayer = 0,
-				CaptureMultiplier = 4,
-				MaxBlocks = 1800,
-				BlockTypeLimits = new int[2] { 4, 4 }
+				CaptureMultiplier = 10,
+				MaxBlocks = 1800, 
+				BlockTypeLimits = new int[7] {
+					//60,  // Conveyors
+					//2,   // Gravity
+					0,     // Industrial
+					//4,   // Logic
+					0,     // Projector
+					0,     // Spotlight
+					0,     // Solar
+					6,     // Static W
+					//36,  // Thrusters
+					0,     // Tools
+					4      // Turrets
+				}
+
 			};
 			results[(int)HullClass.CLASS.CRUISER] = new HullRuleSet() {
 				DisplayName = "Cruiser",
-				MaxPerFaction = 2,
+				MaxPerFaction = 1,
 				MaxPerSoloPlayer = 0,
-				CaptureMultiplier = 5,
+				CaptureMultiplier = 15,
 				MaxBlocks = 2700,
-				BlockTypeLimits = new int[2] { 6, 6 }
+				BlockTypeLimits = new int[7] {
+					//80,  // Conveyors
+					//4,   // Gravity
+					0,     // Industrial
+					//6,   // Logic
+					0,     // Projector
+					1,     // Spotlight
+					0,     // Solar
+					8,     // Static W
+					//42,  // Thrusters
+					0,     // Tools
+					6      // Turrets
+				}
 			};
 			results[(int)HullClass.CLASS.HEAVYCRUISER] = new HullRuleSet() {
 				DisplayName = "Heavy Cruiser",
-				MaxPerFaction = 1,
+				MaxPerFaction = 0,
 				MaxPerSoloPlayer = 0,
-				CaptureMultiplier = 6,
-				MaxBlocks = 4050,
-				BlockTypeLimits = new int[2] { 8, 6 }
+				CaptureMultiplier = 20,
+				MaxBlocks = 4050, 
+				BlockTypeLimits = new int[7] {
+					//80,  // Conveyors
+					//4,   // Gravity
+					0,     // Industrial
+					//6,   // Logic
+					0,     // Projector
+					1,     // Spotlight
+					0,     // Solar
+					10,     // Static W
+					//42,  // Thrusters
+					0,     // Tools
+					8      // Turrets
+				}
 			};
 			results[(int)HullClass.CLASS.BATTLESHIP] = new HullRuleSet() {
 				DisplayName = "Battleship",
 				MaxPerFaction = 0,
 				MaxPerSoloPlayer = 0,
-				CaptureMultiplier = 7,
+				CaptureMultiplier = 30,
 				MaxBlocks = 6075,
-				BlockTypeLimits = new int[2] { 10, 6 }
+				BlockTypeLimits = new int[7] {
+					//80,  // Conveyors
+					//4,   // Gravity
+					0,     // Industrial
+					//6,   // Logic
+					0,     // Projector
+					1,     // Spotlight
+					0,     // Solar
+					12,     // Static W
+					//42,  // Thrusters
+					0,     // Tools
+					10      // Turrets
+				}
 			};
 			results[(int)HullClass.CLASS.OUTPOST] = new HullRuleSet() {
 				DisplayName = "Outpost",
-				MaxPerFaction = 5,
+				MaxPerFaction = 3,
 				MaxPerSoloPlayer = 0,
-				CaptureMultiplier = 2,
+				CaptureMultiplier = 4,
 				MaxBlocks = 600,
-				BlockTypeLimits = new int[2] { 2, 0 },
+                BlockTypeLimits = new int[7] {
+					//40,  // Conveyors
+					//1,   // Gravity
+					5,     // Industrial
+					//2,   // Logic
+					0,     // Projector
+					0,     // Spotlight
+					6,     // Solar
+					0,     // Static W
+					//2,  // Thrusters
+					0,     // Tools
+					2      // Turrets
+				},
 				ShouldBeStation = true
 			};
 			results[(int)HullClass.CLASS.INSTALLATION] = new HullRuleSet() {
 				DisplayName = "Installation",
 				MaxPerFaction = 2,
 				MaxPerSoloPlayer = 0,
-				CaptureMultiplier = 4,
+				CaptureMultiplier = 8,
 				MaxBlocks = 1800,
-				BlockTypeLimits = new int[2] { 4, 0 },
+				BlockTypeLimits = new int[7] {
+					//60,  // Conveyors
+					//2,   // Gravity
+					7,     // Industrial
+					//4,   // Logic
+					0,     // Projector
+					0,     // Spotlight
+					12,     // Solar
+					0,     // Static W
+					//2,  // Thrusters
+					2,     // Tools
+					4      // Turrets
+				},
 				ShouldBeStation = true
 			};
 			results[(int)HullClass.CLASS.FORTRESS] = new HullRuleSet() {
 				DisplayName = "Fortress",
 				MaxPerFaction = 1,
 				MaxPerSoloPlayer = 0,
-				CaptureMultiplier = 6,
+				CaptureMultiplier = 12,
 				MaxBlocks = 2700,
-				BlockTypeLimits = new int[2] { 6, 0 },
+				BlockTypeLimits = new int[7] {
+					//80,  // Conveyors
+					//3,   // Gravity
+					10,     // Industrial
+					//6,   // Logic
+					0,     // Projector
+					1,     // Spotlight
+					18,     // Solar
+					0,     // Static W
+					//2,  // Thrusters
+					4,     // Tools
+					6      // Turrets
+				},
 				ShouldBeStation = true
 			};
 

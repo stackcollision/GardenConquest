@@ -28,7 +28,7 @@ namespace GardenConquest
 	public class Logger : Sandbox.Common.MySessionComponentBase
 	{
 		private static System.IO.TextWriter logWriter = null;
-		public static severity maxLevelToLog = severity.WARNING;
+		public static severity maxLevelToLog = severity.ALL;
 		private StringBuilder stringCache = new StringBuilder();
 
 		private static int maxNumLines = 1000000;

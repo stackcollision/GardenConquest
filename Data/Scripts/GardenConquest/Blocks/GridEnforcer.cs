@@ -50,8 +50,8 @@ namespace GardenConquest.Blocks {
 			public int Limit { get; set; }
 		}
 
-		private static readonly int CLEANUP_CLASS_TICKS = 4; // So 2 hours with default 30 min ticks
-		private static readonly int CLEANUP_STATIC_TICKS = 2;
+		private static readonly int CLEANUP_CLASS_TICKS = 1; // So 30 min with default 30 min ticks
+		private static readonly int CLEANUP_STATIC_TICKS = 96; //2 days
 		private static readonly int CLEANUP_NOTIFY_WAIT = 5;
 		private static readonly float CLEANUP_RATE = .25f;
 		private static readonly HullClass.CLASS DEFAULT_CLASS = HullClass.CLASS.UNCLASSIFIED;

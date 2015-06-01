@@ -1,6 +1,7 @@
 Data/Scripts/GardenConquest/bin/*
 Data/Scripts/GardenConquest/obj/*
 Data/Scripts/GardenConquest/GardenConquest.v11.suo
+*.suo
 modinfo.sbmi
 GardenConquestTests/bin/
 GardenConquestTests/obj/
