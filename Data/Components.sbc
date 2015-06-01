@@ -13,8 +13,8 @@
         <Y>0.5</Y>
         <Z>0.4</Z>
       </Size>
-      <Mass>8</Mass>
-      <Volume>140</Volume>
+      <Mass>2</Mass>
+      <Volume>2</Volume>
       <Model>Models\Components\radio_communication_components_component.mwm</Model>
       <MaxIntegrity>1</MaxIntegrity>
       <DropProbability>0.1</DropProbability>
