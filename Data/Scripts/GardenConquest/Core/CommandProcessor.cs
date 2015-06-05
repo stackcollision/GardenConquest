@@ -36,7 +36,8 @@ namespace GardenConquest.Core {
 			"        cps            - Control Points\n" +
 			"        licenses    - Ship License components\n" +
 			"/gc fleet - Information on your faction's fleet \n" +
-			"/gc fleet remove \"Ship Name\"- Disown a ship";
+			//"/gc fleet remove \"Ship Name\"- Disown a ship";
+			"/gc violations - Your fleet's current rule violations, if any";
 
 		private static string s_HelpClassText =
 			"Classes:\n\n" +
