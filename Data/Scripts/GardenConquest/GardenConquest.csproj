@@ -45,6 +45,9 @@
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
+    <Reference Include="VRage.Game">
+      <HintPath>..\..\..\..\..\..\..\..\..\..\SteamLibrary\steamapps\common\SpaceEngineers\Bin\VRage.Game.dll</HintPath>
+    </Reference>
     <Reference Include="VRage.Library">
       <HintPath>..\..\..\..\..\..\..\..\..\..\SteamLibrary\steamapps\common\SpaceEngineers\Bin\VRage.Library.dll</HintPath>
     </Reference>

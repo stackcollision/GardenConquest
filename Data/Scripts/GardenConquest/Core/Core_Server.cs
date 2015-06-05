@@ -7,9 +7,9 @@ using System.Threading.Tasks;
 
 using Sandbox.Common;
 using Sandbox.Common.ObjectBuilders;
-using BuilderDefs = Sandbox.Common.ObjectBuilders.Definitions;
 using Sandbox.Definitions;
 using Sandbox.ModAPI;
+using VRage.ModAPI;
 using VRage.Library.Utils;
 using VRageMath;
 using Interfaces = Sandbox.ModAPI.Interfaces;
@@ -46,7 +46,7 @@ namespace GardenConquest.Core {
 
 		private static readonly int INGAME_PLACEMENT_MAX_DISTANCE = 60;
 		private static MyObjectBuilder_Component s_TokenBuilder = null;
-		private static BuilderDefs.SerializableDefinitionId? s_TokenDef = null;
+		private static VRage.ObjectBuilders.SerializableDefinitionId? s_TokenDef = null;
 		private static IComparer<FACGRID> s_Sorter = null;
 		private static ConquestSettings s_Settings;
 		private static bool s_DelayedSettingWrite = false;
@@ -66,7 +66,7 @@ namespace GardenConquest.Core {
 			log("Conquest core (Server) started");
 
 			s_TokenBuilder = new MyObjectBuilder_Component() { SubtypeName = "ShipLicense" };
-			s_TokenDef = new Sandbox.Common.ObjectBuilders.Definitions.SerializableDefinitionId(
+			s_TokenDef = new VRage.ObjectBuilders.SerializableDefinitionId(
 				typeof(MyObjectBuilder_InventoryItem), "ShipLicense");
 			s_Sorter = new GridSorter();
 

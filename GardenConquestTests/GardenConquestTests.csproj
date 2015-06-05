@@ -44,6 +44,9 @@
       <HintPath>..\..\..\..\..\..\..\..\SteamLibrary\steamapps\common\SpaceEngineers\Bin\Sandbox.Game.dll</HintPath>
     </Reference>
     <Reference Include="System" />
+    <Reference Include="VRage.Game">
+      <HintPath>..\..\..\..\..\..\..\..\SteamLibrary\steamapps\common\SpaceEngineers\Bin\VRage.Game.dll</HintPath>
+    </Reference>
     <Reference Include="VRage.Library, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\..\..\..\..\..\SteamLibrary\steamapps\common\SpaceEngineers\Bin\VRage.Library.dll</HintPath>

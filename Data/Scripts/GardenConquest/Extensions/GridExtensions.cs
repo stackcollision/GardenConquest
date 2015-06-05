@@ -6,7 +6,9 @@ using System.Threading.Tasks;
 
 using Sandbox.Common;
 using Sandbox.Common.ObjectBuilders;
-using BuilderDefs = Sandbox.Common.ObjectBuilders.Definitions;
+using VRage.ModAPI;
+using VRage.ObjectBuilders;
+using VRage.Components;
 using Sandbox.Definitions;
 using Sandbox.ModAPI;
 using InGame = Sandbox.ModAPI.Ingame;
@@ -26,7 +28,7 @@ namespace GardenConquest.Extensions {
 		/// <param name="def">Optional: Builder definition</param>
 		/// <param name="count">Optional: Number of items</param>
 		/// <returns></returns>
-		public static InGame.IMyCargoContainer getAvailableCargo(this IMyCubeGrid grid, BuilderDefs.SerializableDefinitionId? def = null, int count = 1) {
+		public static InGame.IMyCargoContainer getAvailableCargo(this IMyCubeGrid grid, VRage.ObjectBuilders.SerializableDefinitionId? def = null, int count = 1) {
 			List<IMySlimBlock> containers = new List<IMySlimBlock>();
 			grid.GetBlocks(containers, x => x.FatBlock != null && x.FatBlock is InGame.IMyCargoContainer);
 

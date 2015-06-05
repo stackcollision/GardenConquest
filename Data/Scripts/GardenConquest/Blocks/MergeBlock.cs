@@ -8,7 +8,9 @@ using Sandbox.Common;
 using Sandbox.Definitions;
 using Sandbox.Common.Components;
 using Sandbox.Common.ObjectBuilders;
-using Sandbox.Common.ObjectBuilders.Serializer;
+using VRage.ModAPI;
+using VRage.ObjectBuilders;
+using VRage.Components;
 using Sandbox.Engine;
 using Sandbox.Game;
 using Sandbox.ModAPI;
@@ -26,7 +28,7 @@ namespace GardenConquest.Blocks {
 
 		public override void Init(MyObjectBuilder_EntityBase objectBuilder) {
 			base.Init(objectBuilder);
-			m_MergeBlock = Entity as InGame.IMyShipMergeBlock;
+			m_MergeBlock = Container.Entity as InGame.IMyShipMergeBlock;
 			m_Grid = m_MergeBlock.CubeGrid as IMyCubeGrid;
 
 			m_Logger = new Logger(m_Grid.EntityId.ToString(), "MergeBlock");
@@ -51,7 +53,7 @@ namespace GardenConquest.Blocks {
 		}
 
 		public override MyObjectBuilder_EntityBase GetObjectBuilder(bool copy = false) {
-			return Entity.GetObjectBuilder();
+			return Container.Entity.GetObjectBuilder();
 		}
 
 		private void log(String message, String method = null, Logger.severity level = Logger.severity.DEBUG) {

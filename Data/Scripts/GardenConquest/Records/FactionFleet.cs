@@ -139,7 +139,7 @@ namespace GardenConquest.Records {
 		private bool updateSupportAdded(GridEnforcer ge) {
 			HullClass.CLASS hc = ge.Class;
 			uint c = (uint)hc;
-			long eID = ge.Entity.EntityId;
+			long eID = ge.Container.Entity.EntityId;
 			//log("adding " + eID + " as " + c, "updateSupportAdded");
 
 			// if we have enough room, support it
@@ -187,7 +187,7 @@ namespace GardenConquest.Records {
 			//log("start", "updateSupportRemoved", Logger.severity.TRACE);
 
 			uint c = (uint)classID;
-			long eID = ge.Entity.EntityId;
+			long eID = ge.Container.Entity.EntityId;
 			//log("checking where to remove it from", "updateSupportRemoved", Logger.severity.TRACE);
 			if (m_SupportedGrids[c].ContainsKey(eID)) {
 				m_SupportedGrids[c].Remove(eID);
@@ -214,7 +214,7 @@ namespace GardenConquest.Records {
 		/// <returns></returns>
 		public bool updateSupport(GridEnforcer ge) {
 			uint c = (uint)ge.Class;
-			long eID = ge.Entity.EntityId;
+			long eID = ge.Container.Entity.EntityId;
 			Dictionary<long, GridEnforcer> supportedGrids = m_SupportedGrids[c];
 			Dictionary<long, GridEnforcer> unsupportedGrids = m_UnsupportedGrids[c];
 

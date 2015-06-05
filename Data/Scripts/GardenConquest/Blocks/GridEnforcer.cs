@@ -7,8 +7,10 @@ using System.Threading.Tasks;
 using Sandbox.Common;
 using Sandbox.Definitions;
 using Sandbox.Common.Components;
+using VRage.ModAPI;
+using VRage.ObjectBuilders;
 using Sandbox.Common.ObjectBuilders;
-using Sandbox.Common.ObjectBuilders.Serializer;
+using VRage.Components;
 using Sandbox.Engine;
 using Sandbox.Game;
 using Sandbox.ModAPI;
@@ -182,7 +184,7 @@ namespace GardenConquest.Blocks {
 
 		public override void Init(MyObjectBuilder_EntityBase objectBuilder) {
 			base.Init(objectBuilder);
-			m_Grid = Entity as IMyCubeGrid;
+			m_Grid = Container.Entity as IMyCubeGrid;
 
 			m_Logger = new Logger(m_Grid.EntityId.ToString(), "GridEnforcer");
 			log("Loaded into new grid", "Init");
@@ -1283,7 +1285,7 @@ namespace GardenConquest.Blocks {
 		#region Utility - General
 
 		public override MyObjectBuilder_EntityBase GetObjectBuilder(bool copy = false) {
-			return Entity.GetObjectBuilder();
+			return Container.Entity.GetObjectBuilder();
 		}
 
 		private void log(String message, String method = null, Logger.severity level = Logger.severity.DEBUG) {
