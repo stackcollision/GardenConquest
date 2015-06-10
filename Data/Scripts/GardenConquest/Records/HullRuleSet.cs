@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Xml.Serialization;
 
+using GardenConquest.Extensions;
+
 namespace GardenConquest.Records {
 
 	/// <summary>
@@ -31,5 +33,36 @@ namespace GardenConquest.Records {
 		[XmlArray("BlockTypeLimits")]
 		[XmlArrayItem("Limit")]
 		public int[] BlockTypeLimits { get; set; }
+
+		public void serialize(VRage.ByteStream stream) {
+			stream.addString(DisplayName);
+			stream.addUShort((ushort)MaxPerFaction);
+			stream.addUShort((ushort)MaxPerSoloPlayer);
+			stream.addUShort((ushort)CaptureMultiplier);
+			stream.addLong(MaxBlocks);
+
+			stream.addUShort((ushort)BlockTypeLimits.Length);
+			foreach (int limit in BlockTypeLimits) {
+				stream.addUShort((ushort)limit);
+			}
+
+		}
+
+		public static HullRuleSet deserialize(VRage.ByteStream stream) {
+			HullRuleSet result = new HullRuleSet();
+			result.DisplayName = stream.getString();
+			result.MaxPerFaction = stream.getUShort();
+			result.MaxPerSoloPlayer = stream.getUShort();
+			result.CaptureMultiplier = stream.getUShort();
+			result.MaxBlocks = (int)stream.getLong();
+
+			ushort blockTypeLimitsCount = stream.getUShort();
+			result.BlockTypeLimits = new int[blockTypeLimitsCount];
+			for (ushort i = 0; i < blockTypeLimitsCount; ++i) {
+				result.BlockTypeLimits[i] = stream.getUShort();
+			}
+
+			return result;
+		}
 	}
 }

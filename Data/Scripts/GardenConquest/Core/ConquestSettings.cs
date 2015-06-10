@@ -67,6 +67,9 @@ namespace GardenConquest.Core {
 		public HullRuleSet[] HullRules {
 			get { return m_Settings.HullRules; }
 		}
+		public SETTINGS Settings {
+			get { return m_Settings; }
+		}
 		public bool WriteFailed { get; private set; }
 
 		#endregion

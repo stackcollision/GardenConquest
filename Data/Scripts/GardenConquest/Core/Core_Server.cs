@@ -90,7 +90,7 @@ namespace GardenConquest.Core {
 				m_MailMan.localReceiver += m_LocalReceiver.incomming;
 				m_CmdProc = new CommandProcessor(m_LocalReceiver);
 				m_CmdProc.initialize();
-				m_LocalReceiver.requestCPGPS();
+				m_LocalReceiver.requestSettings();
 			}
 
 			// Subscribe events

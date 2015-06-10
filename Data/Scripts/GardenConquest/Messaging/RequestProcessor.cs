@@ -57,11 +57,11 @@ namespace GardenConquest.Messaging {
 
 				// Process type
 				switch (msg.MsgType) {
-					case BaseRequest.TYPE.CPGPS:
-						processCPGPSRequest(msg as CPGPSRequest);
-						break;
 					case BaseRequest.TYPE.FLEET:
 						processFleetRequest(msg as FleetRequest);
+						break;
+					case BaseRequest.TYPE.SETTINGS:
+						processSettingsRequest(msg as SettingsRequest);
 						break;
 					case BaseRequest.TYPE.VIOLATIONS:
 						processViolationsRequest(msg as ViolationsRequest);
@@ -73,37 +73,21 @@ namespace GardenConquest.Messaging {
 		}
 
 		public void send(BaseResponse msg) {
+			log("Sending " + msg.MsgType + " response", "send");
+
 			if (msg == null)
 				return;
 
 			byte[] buffer = msg.serialize();
 			MyAPIGateway.Multiplayer.SendMessageToOthers(Constants.GCMessageId, buffer);
-			log("Sent packet of " + buffer.Length + " bytes", "send");
 
 			try {
 				onSend(buffer);
+				log("Sent packet of " + buffer.Length + " bytes", "send");
 			}
 			catch (Exception e) {
 				log("Error in onSend(buffer) " + e, "send", Logger.severity.ERROR);
 			}
-		}
-
-		private void processCPGPSRequest(CPGPSRequest req) {
-			log("", "processCPGPSRequest");
-			CPGPSResponse resp = new CPGPSResponse();
-
-			resp.DestType = BaseResponse.DEST_TYPE.PLAYER;
-			resp.Destination = new List<long>() { req.ReturnAddress };
-			foreach(ControlPoint cp in ConquestSettings.getInstance().ControlPoints) {
-				resp.CPs.Add(new CPGPSResponse.CPGPS() {
-					x = (long)cp.Position.X,
-					y = (long)cp.Position.Y,
-					z = (long)cp.Position.Z,
-					name = cp.Name
-				});
-			}
-
-			send(resp);
 		}
 
 		private void processFleetRequest(FleetRequest req) {
@@ -132,6 +116,17 @@ namespace GardenConquest.Messaging {
 			DialogResponse resp = new DialogResponse() {
 				Body = body,
 				Title = title,
+				Destination = new List<long>() { req.ReturnAddress },
+				DestType = BaseResponse.DEST_TYPE.PLAYER
+			};
+
+			send(resp);
+		}
+
+		private void processSettingsRequest(SettingsRequest req) {
+			log("", "processSettingsRequest");
+			SettingsResponse resp = new SettingsResponse() {
+				Settings = ConquestSettings.getInstance().Settings,
 				Destination = new List<long>() { req.ReturnAddress },
 				DestType = BaseResponse.DEST_TYPE.PLAYER
 			};

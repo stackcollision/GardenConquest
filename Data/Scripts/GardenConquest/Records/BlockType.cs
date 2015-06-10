@@ -4,6 +4,8 @@ using System.Xml.Serialization;
 
 using Sandbox.ModAPI;
 
+using GardenConquest.Extensions;
+
 namespace GardenConquest.Records {
 
 	/// <summary>
@@ -55,6 +57,29 @@ namespace GardenConquest.Records {
 			}
 			log("It doesn't", "appliedToBlock", Logger.severity.TRACE);
 			return false;
+		}
+
+		public void serialize(VRage.ByteStream stream) {
+			stream.addString(DisplayName);
+
+			stream.addUShort((ushort)SubTypeStrings.Count);
+			foreach (String subTypeString in SubTypeStrings) {
+				stream.addString(subTypeString);
+			}
+		}
+
+		public static BlockType deserialize(VRage.ByteStream stream) {
+			BlockType result = new BlockType();
+
+			result.DisplayName = stream.getString();
+
+			ushort subTypeStringsCount = stream.getUShort();
+			result.SubTypeStrings = new List<string>();
+			for (ushort i = 0; i < subTypeStringsCount; ++i) {
+				result.SubTypeStrings.Add(stream.getString());
+			}
+
+			return result;
 		}
 
 		private void log(String message, String method = null, Logger.severity level = Logger.severity.DEBUG) {

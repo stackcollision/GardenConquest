@@ -92,5 +92,13 @@ namespace GardenConquest {
 
 			return seconds + " seconds";
 		}
+
+		public static String prettyDistance(int meters) {
+			int km = (int)Math.Floor((float)(meters / 1000));
+			if (km > 0)
+				return km + "km";
+
+			return meters + "m";
+		}
 	}
 }
