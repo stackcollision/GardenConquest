@@ -240,16 +240,12 @@ namespace GardenConquest.Core {
 		}
 
 		public void eventCleanupTimerStart(GridEnforcer ge, int secondsRemaining) {
-			log("start", "eventCleanupTimerStart", Logger.severity.TRACE);
 			if (ge == null)
 				return;
 
 			GridOwner owner = ge.Owner;
-			log("owner", "eventCleanupTimerStart", Logger.severity.TRACE);
 			GridOwner.OWNER_TYPE owner_type = owner.OwnerType;
-			log("owner_type", "eventCleanupTimerStart", Logger.severity.TRACE);
 			long gridFactionID = ge.Owner.FactionID;
-			log("gridFaction", "eventCleanupTimerStart", Logger.severity.TRACE);
 
 			BaseResponse.DEST_TYPE destType = BaseResponse.DEST_TYPE.NONE;
 			List<long> Destinations = new List<long>();

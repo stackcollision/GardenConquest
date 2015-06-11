@@ -93,7 +93,7 @@ namespace GardenConquest.Records {
 			m_TotalCount++;
 			//log("m_Counts[classID] is " + m_Counts[classID], "add", Logger.severity.TRACE);
 
-			debugPrint("add");
+			//debugPrint("add");
 		}
 
 		/// <summary>
@@ -111,7 +111,7 @@ namespace GardenConquest.Records {
 			}
 
 			updateSupportRemoved(classID, ge);
-			debugPrint("remove");
+			//debugPrint("remove");
 		}
 
 		/// <summary>
