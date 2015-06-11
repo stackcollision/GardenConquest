@@ -210,10 +210,13 @@ namespace GardenConquest.Core {
 					MyAPIGateway.Utilities.WriteFileInLocalStorage(
 					Constants.StateFileName, typeof(SavedState));
 				writer.Write(MyAPIGateway.Utilities.SerializeToXML<SavedState>(m_SavedState));
+
 				writer.Flush();
+				writer.Close();
+				writer = null;
 				log("Write finished", "saveState");
 			} catch (Exception e) {
-				log("Exception occured: " + e, "saveState");
+				log("Exception occured: " + e, "saveState", Logger.severity.ERROR);
 			}
 		}
 

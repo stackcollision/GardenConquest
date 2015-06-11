@@ -170,6 +170,8 @@ namespace GardenConquest.Core {
 
 				writer.Write(MyAPIGateway.Utilities.SerializeToXML<SETTINGS>(m_Settings));
 				writer.Flush();
+				writer.Close();
+				writer = null;
 				log("Config written", "writeSettings");
 
 				WriteFailed = false;
