@@ -28,6 +28,7 @@ namespace GardenConquest
 	public class Logger : Sandbox.Common.MySessionComponentBase
 	{
 		private static System.IO.TextWriter logWriter = null;
+		public static severity maxLevelToLog = severity.WARNING;
 		private StringBuilder stringCache = new StringBuilder();
 
 		private static int maxNumLines = 1000000;
@@ -162,7 +163,7 @@ namespace GardenConquest
 		/// <param name="secondaryState">class specific, appears before message in log</param>
 		public void log(severity level, string methodName, string toLog, string primaryState = null, string secondaryState = null)
 		{
-			if (closed)
+			if (closed || level > maxLevelToLog)
 				return;
 			lock_log.AcquireExclusive();
 			try
