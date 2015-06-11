@@ -25,10 +25,14 @@ namespace GardenConquest.Messaging {
 
 		static Logger s_Logger = null;
 
-		private Action<byte[]> onSend;
-		public event Action<byte[]> localReceiver {
-			add { onSend += value; }
-			remove { onSend -= value; }
+		private Action<byte[]> localMsgSend;
+		public event Action<byte[]> localMsgSent {
+			add { localMsgSend += value; }
+			remove { localMsgSend -= value; }
+		}
+		private void sendLocalMsg(byte[] buffer) {
+			if (localMsgSend != null)
+				localMsgSend(buffer);
 		}
 
 		public RequestProcessor() {
@@ -82,7 +86,7 @@ namespace GardenConquest.Messaging {
 			MyAPIGateway.Multiplayer.SendMessageToOthers(Constants.GCMessageId, buffer);
 
 			try {
-				onSend(buffer);
+				sendLocalMsg(buffer);
 				log("Sent packet of " + buffer.Length + " bytes", "send");
 			}
 			catch (Exception e) {

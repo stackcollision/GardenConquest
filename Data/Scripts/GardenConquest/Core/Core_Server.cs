@@ -87,7 +87,7 @@ namespace GardenConquest.Core {
 			// If the server is a player (non-dedicated) they also need to receive notifications
 			if (!MyAPIGateway.Utilities.IsDedicated) {
 				m_LocalReceiver = new ResponseProcessor(false);
-				m_MailMan.localReceiver += m_LocalReceiver.incomming;
+				m_MailMan.localMsgSent += m_LocalReceiver.incomming;
 				m_CmdProc = new CommandProcessor(m_LocalReceiver);
 				m_CmdProc.initialize();
 				m_LocalReceiver.requestSettings();
@@ -111,7 +111,7 @@ namespace GardenConquest.Core {
 			GridEnforcer.OnCleanupTimerEnd -= eventCleanupTimerEnd;
 
 			if (m_LocalReceiver != null) {
-				m_MailMan.localReceiver -= m_LocalReceiver.incomming;
+				m_MailMan.localMsgSent -= m_LocalReceiver.incomming;
 				m_LocalReceiver.unload();
 				m_LocalReceiver = null;
 			}
