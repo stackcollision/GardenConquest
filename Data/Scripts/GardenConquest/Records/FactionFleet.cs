@@ -174,7 +174,7 @@ namespace GardenConquest.Records {
 			}
 
 			// if not, mark as unsupported
-			log("can't support", "updateSupportAdded");
+			log("can't support, marking grid as unsupported", "updateSupportAdded");
 			m_UnsupportedGrids[c][eID] = ge;
 			ge.markUnsupported(m_FactionId);
 			return false;
@@ -191,12 +191,14 @@ namespace GardenConquest.Records {
 			//log("checking where to remove it from", "updateSupportRemoved", Logger.severity.TRACE);
 			if (m_SupportedGrids[c].ContainsKey(eID)) {
 				m_SupportedGrids[c].Remove(eID);
-				log("supportedGrids.count " + m_SupportedGrids[c].Count, 
+				log(String.Format("Removing {0} from supported grids, count now {1}", 
+					eID, m_SupportedGrids[c].Count),
 					"updateSupportRemoved", Logger.severity.TRACE);
 			}
 			else if (m_UnsupportedGrids[c].ContainsKey(eID)) {
 				m_UnsupportedGrids[c].Remove(eID);
-				log("unsupportedGrids.count " + m_UnsupportedGrids[c].Count, 
+				log(String.Format("Removing {0} from unsupported grids, count now {1}",
+					eID, m_UnsupportedGrids[c].Count),
 					"updateSupportRemoved", Logger.severity.TRACE);
 			}
 

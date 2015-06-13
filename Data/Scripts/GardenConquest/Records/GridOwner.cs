@@ -77,6 +77,8 @@ namespace GardenConquest.Records {
 		private FactionFleet m_Fleet;
 		private HullClass.CLASS m_Class;
 
+		private bool m_StateLoaded;
+
 		private Logger m_Logger = null;
 
 		#endregion
@@ -125,11 +127,11 @@ namespace GardenConquest.Records {
 			if (m_Class == c)
 				return;
 
-			log("changing classification to " + c, "setClassification");
+			log("changing owner class to " + c, "setClassification");
 			m_Fleet.remove(m_Class, m_Enforcer);
 			m_Class = c;
 			m_Fleet.add(m_Class, m_Enforcer);
-			log("Classification changed to " + m_Class, "setClassification");
+			log("Owner class changed to " + m_Class, "setClassification");
 		}
 
 		/// <summary>
@@ -137,16 +139,14 @@ namespace GardenConquest.Records {
 		/// </summary>
 		/// <returns>Returns true if the owner has changed</returns>
 		public bool reevaluateOwnership(List<long> bigOwners) {
-			log("old type: " + m_OwnerType + ", player: " + m_PlayerID +
-				", faction: " + m_FactionID + ", fleet: " + m_FleetID,
-				"reevaluateOwnership");
+			log("Reevaluating owner", "reevaluateOwnership");
+			bool changed = false;
 
+			// = Get new ownership details
 			OWNER_TYPE newType = OWNER_TYPE.UNOWNED;
 			long newPlayerID = 0;
 			long newFactionID = 0;
 
-			// = Get new ownership details
-			// Is there an owner at all?
 			if (bigOwners.Count == 0) {
 				newType = OWNER_TYPE.UNOWNED;
 
@@ -158,7 +158,7 @@ namespace GardenConquest.Records {
 
 				newPlayerID = bigOwners[0];
 				IMyFaction fac = MyAPIGateway.Session.Factions.TryGetPlayerFaction(newPlayerID);
-				
+
 				// Is the player solo?
 				if (fac == null) {
 					newType = OWNER_TYPE.PLAYER;
@@ -168,12 +168,61 @@ namespace GardenConquest.Records {
 				}
 			}
 
-			// = Was there a change?
-			if (m_OwnerType != newType || m_PlayerID != newPlayerID ||m_FactionID != newFactionID) {
-				effectOwnershipChanged(newType, newFactionID, newPlayerID);
+			long newFleetID = calcFleetID(newType, newPlayerID, newFactionID);
+
+			// = Effect changes
+			if (m_OwnerType != newType) {
+				log(String.Format("type changed from {0} => {1}",
+					m_OwnerType, newType), "reevaluateOwnership");
+				m_OwnerType = newType;
+				changed = true;
+			}
+
+			if (m_PlayerID != newPlayerID) {
+				log(String.Format("player changed from {0} => {1}",
+					m_PlayerID, newPlayerID), "reevaluateOwnership");
+				m_PlayerID = newPlayerID;
+				changed = true;
+			}
+
+			if (m_FactionID != newFactionID) {
+				log(String.Format("faction changed from {0} => {1}",
+					m_FactionID, newFactionID), "reevaluateOwnership");
+				m_FactionID = newFactionID;
+				changed = true;
+			}
+
+			// If the fleet tracking ID has changed, or if we've got a temp fleet, update the fleet
+			if ((m_FleetID != newFleetID) || (!m_StateLoaded && GridEnforcer.StateTracker != null)) {
+				log(String.Format("Doing fleet change {0} => {1}, was temp? {2}",
+					m_FleetID, newFleetID, !m_StateLoaded), "reevaluateOwnership");
+
+				// Remove the grid from the previous fleet
+				if (m_Fleet == null) {
+					log("Fleet is null", "reevaluateOwnership", Logger.severity.ERROR);
+				} else {
+					m_Fleet.remove(m_Class, m_Enforcer);
+				}
+
+				m_FleetID = newFleetID;
+				m_Fleet = getFleet();
+
+				// Add the grid to the new fleet
+				if (m_Fleet == null) {
+					log("Failed to get new fleet for " + m_FleetID,
+						"reevaluateOwnership", Logger.severity.ERROR);
+				} else {
+					m_Fleet.add(m_Class, m_Enforcer);
+				}
+
+				changed = true;
+			}
+
+			if (changed) {
 				return true;
 			} else {
-				log("no change", "reevaluateOwnership");
+				log(String.Format("no change, owner: {0} {1}", m_OwnerType, m_FleetID),
+					"reevaluateOwnership");
 				return false;
 			}
 		}
@@ -183,59 +232,33 @@ namespace GardenConquest.Records {
 		/// </summary>
 		/// <returns></returns>
 		public FactionFleet getFleet() {
-			return StateTracker.getInstance().getFleet(m_FleetID, OwnerType);
-		}
+			if (GridEnforcer.StateTracker == null) {
+				log("null state, probably initing", "getFleet");
+				m_StateLoaded = false;
 
+				if (m_Fleet == null) {
+					log("creating temporary untracked fleet", "getFleet");
+					m_Fleet = new FactionFleet(m_FleetID, OwnerType);
+				}
 
-		/// <summary>
-		/// Stores the new ownership data and changes the StateTracker fleets for the previous
-		/// owner and the new owner
-		/// </summary>
-		/// <param name="newType"></param>
-		/// <param name="newFac"></param>
-		/// <param name="newPlayer"></param>
-		private void effectOwnershipChanged(OWNER_TYPE newType, long newFactionID, long newPlayerID) {
-			log("Changing ownership to: " + newType + ", player: " + newPlayerID +
-				", faction: " + newFactionID, "effectOwnershipChanged");
-
-			// Remove the grid from the previous fleet, if there was one
-			if (m_Fleet == null) {
-				log("Fleet is null", "effectOwnershipChanged", Logger.severity.ERROR);
+				return m_Fleet;
 			} else {
-				m_Fleet.remove(m_Class, m_Enforcer);
-			}
-
-			// Update the stored details
-			m_OwnerType = newType;
-			m_FactionID = newFactionID;
-			m_PlayerID = newPlayerID;
-			long newFleetID = getFleetID();
-
-			if (newFleetID == m_FleetID) {
-				log("FleetID " + m_FleetID + "didn't change with new ownership",
-					"effectOwnershipChanged", Logger.severity.ERROR);
-				return;
-			}
-
-			m_FleetID = newFleetID;
-			m_Fleet = getFleet();
-
-			// Add the grid to the new fleet, if there is one
-			FactionFleet newFleet = getFleet();
-			if (m_Fleet == null) {
-				log("Failed to get new fleet for " + m_FleetID,
-					"effectOwnershipChanged", Logger.severity.ERROR);
-			} else {
-				newFleet.add(m_Class, m_Enforcer);
+				log("retreiving fleet from state tracker", "getFleet");
+				m_StateLoaded = true;
+				return GridEnforcer.StateTracker.getFleet(m_FleetID, OwnerType);
 			}
 		}
 
 		private long getFleetID() {
-			switch (m_OwnerType) {
+			return calcFleetID(m_OwnerType, m_PlayerID, m_FactionID);
+		}
+
+		private long calcFleetID(OWNER_TYPE ownerType, long playerID, long factionID) {
+			switch (ownerType) {
 				case OWNER_TYPE.FACTION:
-					return m_FactionID;
+					return factionID;
 				case OWNER_TYPE.PLAYER:
-					return m_PlayerID;
+					return playerID;
 				case OWNER_TYPE.UNOWNED:
 				default:
 					return StateTracker.UNOWNED_FLEET_ID;

@@ -94,6 +94,7 @@ namespace GardenConquest.Blocks {
 		private bool m_IsServer = false;
 		private bool m_CheckServerLater = false;
 		private bool m_BeyondFirst100 = false;
+		private bool m_StateLoaded = false;
 		private bool m_Merging = false;
 		private bool m_CheckCleanupNextUpdate;
 		private bool m_CheckOwnerNextUpdate;
@@ -124,6 +125,7 @@ namespace GardenConquest.Blocks {
 			return m_CleanupTimer.SecondsRemaining;
 		}}
 		public bool SupportedByFleet { get { return m_Supported; } }
+		public static StateTracker StateTracker { get; private set; }
 
 		#endregion
 		#region Events
@@ -244,7 +246,7 @@ namespace GardenConquest.Blocks {
 		private void unServerize() {
 			detatchGrid();
 			detatchOwner();
-			detatchClassifier();
+			detatchClassifier(false);
 			m_ExtraClassifiers = null;
 			detatchCleanupTimer();
 			m_Owner = null;
@@ -279,8 +281,10 @@ namespace GardenConquest.Blocks {
 					log("Is server: " + m_IsServer, "Init");
 					m_CheckServerLater = false;
 
-					if (!m_IsServer)
+					if (!m_IsServer) {
 						unServerize();
+						return;
+					}
 				} catch (NullReferenceException e) {
 					// Continue thinking we are server for the time being
 					// This shouldn't happen (lol)
@@ -299,6 +303,7 @@ namespace GardenConquest.Blocks {
 					return;
 				}
 
+				// clear flags not used in updates
 				// when initing or merging, if any blocks are added they will flag m_CheckCleanup,
 				// but blockAdded uses these flags to know it must allow any block through temporarily
 				if (!m_BeyondFirst100) {
@@ -308,67 +313,45 @@ namespace GardenConquest.Blocks {
 					m_Merging = false;
 				}
 
-				if (m_CleanupTimer != null && m_CleanupTimer.TimerExpired) {
-					log("timer expired, running cleanup", "UpdateBeforeSimulation100");
+				// If we're missing State data, try to get it
+				if (!m_StateLoaded) {
+					StateTracker = StateTracker.getInstance();
 
-					updateViolations();
-					doCleanupPhase();
-
-					m_CheckCleanupNextUpdate = true;
-					log("finishing cleanup round, m_DeleteNextUpdate? " + m_DeleteNextUpdate, "UpdateBeforeSimulation100");
+					if (StateTracker != null) {
+						// Load state-dependent things
+						m_StateLoaded = true;
+					}
 				}
 
+				// Update ownership
+				if (m_CheckOwnerNextUpdate || m_CheckCleanupNextUpdate) {
+					m_CheckOwnerNextUpdate = false;
+
+					reevaluateOwnership();
+				}
+
+				// Update cleanup state - violations & timers
 				if (m_CheckCleanupNextUpdate) {
 					log("checking cleanup state due to flag", "UpdateBeforeSimulation100");
 					m_CheckCleanupNextUpdate = false;
 
 					updateViolations();
 					updateCleanupTimers();
-
-					m_CheckOwnerNextUpdate = false;  // update violations takes care of this
-					//m_NotifyViolationsNextUpdate = true;
-				} 
-
-				if (m_NotifyViolationsNextUpdate) {
-					m_NotifyViolationsNextUpdate = false;
-
-					notifyViolations();
 				}
 
-				if (m_CheckOwnerNextUpdate) {
-					m_CheckOwnerNextUpdate = false;
+				// Do cleanup if needed
+				if (m_CleanupTimer != null && m_CleanupTimer.TimerExpired) {
+					log("timer expired, running cleanup", "UpdateBeforeSimulation100");
 
-					reevaluateOwnership();
+					doCleanupPhase();
+					if (m_DeleteNextUpdate) return;
+					m_CheckCleanupNextUpdate = true;
 				}
-
 
 			} catch (Exception e) {
-				log("Exception occured: " + e, "UpdateBeforeSimulation100");
+				log("Exception occured: " + e, "UpdateBeforeSimulation100", Logger.severity.ERROR);
 			}
 		}
-
-		/*
-		public override void UpdateAfterSimulation100() {
-			base.UpdateAfterSimulation100();
-
-			if (m_Grid.Transparent)
-				return;
-
-			if (m_FinishDeleteNextUpdate) {
-			
-				log("trying to delete blocks...", "UpdateAfterSimulation100");
-				try {
-					List<IMySlimBlock> allBlocks = new List<IMySlimBlock>();
-					m_Grid.GetBlocks(allBlocks);
-					foreach (IMySlimBlock block in allBlocks) {
-						removeBlock(block);
-					}
-				} catch (Exception e) {
-					log("Exception " + e, "UpdateAfterSimulation100");
-				}
-				log("finished deleting blocks...", "UpdateAfterSimulation100");
-			}
-		}* */
 
 		/// <summary>
 		/// Marks the grid to skip rule enforcement for the next few frames because of a grid merge.
@@ -385,11 +368,11 @@ namespace GardenConquest.Blocks {
 		/// Called when a block is added to the grid.
 		/// Decides whether or not to allow the block to be placed.
 		/// Increments counts, checks for classification, and sets
-		/// a flag to refresh cleanup status 
+		/// a flag to refresh cleanup status
 		/// </summary>
 		/// <param name="added">block that was added to the grid</param>
 		private void blockAdded(IMySlimBlock added) {
-			log(added.ToString() + " added to grid " + m_Grid.DisplayName, "blockAdded");
+			//log(added.ToString() + " added to grid " + m_Grid.DisplayName, "blockAdded");
 
 			try {
 				// = update block counts and grid state, get violations
@@ -441,7 +424,6 @@ namespace GardenConquest.Blocks {
 
 		Allowed:
 			log("allowed, Total Count now: " + m_BlockCount, "blockAdded");
-			//m_NotifyViolationsNextUpdate = false;
 			m_CheckOwnerNextUpdate = true;
 			m_CheckCleanupNextUpdate = true; // temporarily doing this on block add too, let's see if it's ok
 			return;
@@ -478,24 +460,22 @@ namespace GardenConquest.Blocks {
 				if ((!m_BeyondFirst100 || m_Merging)) {
 					log("init/merge, must add it", "updateClassificationWith");
 
-					if (classID > m_ReservedClass) {
-						log("this one's better than what we have", "updateClassificationWith");
-
-						if (m_Classifier != null) {
-							log("removing existing classifier", "updateClassificationWith");
-							demoteClass();
-							m_ExtraClassifiers.Add(m_Classifier.FatBlock.EntityId, m_Classifier);
-							detatchClassifier();
-						}
-
+					if (m_Classifier == null) {
+						log("new classifier", "updateClassificationWith");
 						goto Reserve;
-
-					} else {
-						log("extra classifier", "updateClassificationWith");
-						m_ExtraClassifiers.Add(classifier.FatBlock.EntityId, classifier);
-						applied = false;
-						return VIOLATION_TYPE.NONE;
 					}
+
+					if (classID > m_ReservedClass) {
+						log("better than what we have", "updateClassificationWith");
+						m_ExtraClassifiers.Add(m_Classifier.FatBlock.EntityId, m_Classifier);
+						unsetClassifier();
+						goto Reserve;
+					}
+
+					log("extra classifier", "updateClassificationWith");
+					m_ExtraClassifiers.Add(classifier.FatBlock.EntityId, classifier);
+					applied = false;
+					return VIOLATION_TYPE.NONE;
 				}
 
 				// Two classifiers not allowed
@@ -605,7 +585,7 @@ namespace GardenConquest.Blocks {
 		/// <param name="removed"></param>
 		private void blockRemoved(IMySlimBlock removed) {
 			m_BlockCount--;
-			log(removed.ToString() + " removed from grid '" + m_Grid.DisplayName + 
+			log(removed.ToString() + " removed from grid '" + m_Grid.DisplayName +
 				"'. Total Count now: " + m_BlockCount, "blockRemoved");
 
 			updateClassificationWithout(removed);
@@ -625,8 +605,8 @@ namespace GardenConquest.Blocks {
 
 			// Not in use?
 			if (m_Classifier == null || !m_Classifier.SlimBlock.Equals(block)) {
-				log("wasn't in use", "updateClassificationWithout");
-				m_ExtraClassifiers.Remove(m_Classifier.SlimBlock.FatBlock.EntityId);
+				log("wasn't in use, removing from extra classifiers list", "updateClassificationWithout");
+				m_ExtraClassifiers.Remove(block.FatBlock.EntityId);
 				return;
 			}
 
@@ -634,7 +614,7 @@ namespace GardenConquest.Blocks {
 			//demoteClass(); // would have happened before
 			unsetClassifier();
 
-			log("looking for existing alternatives", "updateClassificationWithout");
+			//log("looking for existing alternatives", "updateClassificationWithout");
 			long bestClassifierID = 0;
 			HullClass.CLASS hc = HullClass.CLASS.UNCLASSIFIED;
 			HullClass.CLASS bestClassAvailable = HullClass.CLASS.UNCLASSIFIED;
@@ -647,7 +627,7 @@ namespace GardenConquest.Blocks {
 			}
 
 			if (bestClassAvailable > HullClass.CLASS.UNCLASSIFIED) {
-				log("found a usable existing classifier", "updateClassificationWithout");
+				log("found an alternative existing classifier", "updateClassificationWithout");
 				setClassifier(m_ExtraClassifiers[bestClassifierID]);
 				m_ExtraClassifiers.Remove(bestClassifierID);
 				// existing classifiers might already be Working
@@ -676,7 +656,7 @@ namespace GardenConquest.Blocks {
 		#region SE Hooks - Block Owner Changed
 
 		/// <summary>
-		/// Called when someone adds or removes any FatBlock 
+		/// Called when someone adds or removes any FatBlock
 		/// or if the ownership on a Fatblock changes
 		/// </summary>
 		/// <remarks>
@@ -684,7 +664,8 @@ namespace GardenConquest.Blocks {
 		/// </remarks>
 		/// <param name="changed"></param>
 		private void blockOwnerChanged(IMyCubeGrid changed) {
-			log("", "blockOwnerChanged", Logger.severity.TRACE);
+			log("flagging for ownership check next update",
+				"blockOwnerChanged", Logger.severity.TRACE);
 			m_CheckOwnerNextUpdate = true;
 		}
 
@@ -734,9 +715,19 @@ namespace GardenConquest.Blocks {
 			m_ReservedRules = s_Settings.HullRules[(int)DEFAULT_CLASS];
 		}
 
+		private void setReservedToClassifier() {
+			m_ReservedClass = m_Classifier.Class;
+			m_ReservedRules = s_Settings.HullRules[(int)m_ReservedClass];
+		}
+
 		private void setEffectiveToDefault() {
 			m_EffectiveClass = DEFAULT_CLASS;
 			m_EffectiveRules = s_Settings.HullRules[(int)DEFAULT_CLASS];
+		}
+
+		private void setEffectiveToReserved() {
+			m_EffectiveClass = m_ReservedClass;
+			m_EffectiveRules = s_Settings.HullRules[(int)m_EffectiveClass];
 		}
 
 		#endregion
@@ -747,7 +738,7 @@ namespace GardenConquest.Blocks {
 			m_Classifier.FatBlock.IsWorkingChanged += classifierWorkingChanged;
 		}
 
-		private void detatchClassifier() {
+		private void detatchClassifier(bool expectSet = true) {
 			//log("start", "detatchClassifier", Logger.severity.TRACE);
 			if (m_Classifier != null) {
 				log("detaching", "detatchClassifier");
@@ -755,7 +746,7 @@ namespace GardenConquest.Blocks {
 				m_Classifier = null;
 				//log("m_Classifier == null " + (m_Classifier = null), "detatchClassifier", Logger.severity.TRACE);
 			}
-			else {
+			else if (expectSet) {
 				log("failed to detatch, wasn't stored", "detatchClassifier", Logger.severity.ERROR);
 			}
 			//log("end", "detatchClassifier", Logger.severity.TRACE);
@@ -804,8 +795,8 @@ namespace GardenConquest.Blocks {
 				if (removeCount > 0) {
 					if (HullClassifier.isClassifierBlock(block) &&
 						!block.Equals(Classifier.SlimBlock)) {
-							removeBlock(block);
-							removeCount--;
+						removeBlock(block);
+						removeCount--;
 					}
 				} else {
 					return;
@@ -813,39 +804,39 @@ namespace GardenConquest.Blocks {
 			}
 		}
 
-		private void setClassifier(HullClassifier classifier){
+		private void setClassifier(HullClassifier classifier) {
+			log("Hull class reserved as " + m_ReservedRules.DisplayName, "setClassifier");
 			if (m_Classifier != null) {
 				log(" existing classifier is still set, skipping",
 					"unsetClassifier", Logger.severity.ERROR);
 				return;
-			 }
+			}
 
 			attachClassifier(classifier);
-			m_ReservedClass = m_Classifier.Class;
-			m_ReservedRules = s_Settings.HullRules[(int)m_ReservedClass];
-			log("Hull class reserved as " + m_ReservedRules.DisplayName, "setClassifier");
+			setReservedToClassifier();
+			// promotion will be taken care of when the block starts working
 			m_CheckCleanupNextUpdate = true;
 		}
 
 		private void unsetClassifier() {
+			log("Removing reserved " + m_ReservedRules.DisplayName + " classifier", "unsetClassifier");
 			if (m_Classifier == null) {
 				log("m_Classifier is null",
 					"unsetClassifier", Logger.severity.WARNING);
 				return;
 			}
 
-			detatchClassifier();
 			setReservedToDefault();
 			demoteClass();
+			detatchClassifier();
 		}
 
 		/// <summary>
 		/// Promotes the grid's effective class to its reserved class
 		/// </summary>
 		private void promoteClass() {
-			log("Promoting Effective class to " + m_ReservedClass, "promoteClass");
-			m_EffectiveClass = m_ReservedClass;
-			m_EffectiveRules = s_Settings.HullRules[(int)m_EffectiveClass];
+			log("Promoting Effective class to " + m_ReservedClass + " from " + m_EffectiveClass, "promoteClass");
+			setEffectiveToReserved();
 			m_Owner.setClassification(m_EffectiveClass);
 			m_CheckCleanupNextUpdate = true;
 		}
@@ -855,7 +846,7 @@ namespace GardenConquest.Blocks {
 		/// A beacon must be working to have its rules applied
 		/// </summary>
 		private void demoteClass() {
-			log("Returning Effective class to " + DEFAULT_CLASS, "demoteClass");
+			log("Returning Effective class to " + DEFAULT_CLASS + " from " + m_EffectiveClass, "demoteClass");
 			setEffectiveToDefault();
 			m_Owner.setClassification(m_EffectiveClass);
 			m_CheckCleanupNextUpdate = true;
@@ -865,7 +856,7 @@ namespace GardenConquest.Blocks {
 		#region Ownership & Fleet
 
 		/// <summary>
-		/// Figures out who owns this grid and updates their fleet 
+		/// Figures out who owns this grid and updates their fleet
 		/// There's no way for us to hook into Player faction changes,
 		/// so we call this before anything important runs that relies
 		/// on fleet data, and after someone adds/removes a block.
@@ -914,6 +905,7 @@ namespace GardenConquest.Blocks {
 		/// Returns all violated rules
 		/// </summary>
 		private List<VIOLATION> currentViolations() {
+			//log("", "currentViolations", Logger.severity.TRACE);
 			List<VIOLATION> violations = new List<VIOLATION>();
 			//log("starting", "checkRules");
 
@@ -924,7 +916,7 @@ namespace GardenConquest.Blocks {
 
 			// class count violations are handled by the fleet
 			if (!m_Supported) {
-				violations.Add(new VIOLATION(){
+				violations.Add(new VIOLATION() {
 					Type = VIOLATION_TYPE.TOO_MANY_OF_CLASS,
 					Name = "Total of this Class",
 					Count = (int)Owner.Fleet.countClass(m_EffectiveClass),
@@ -933,7 +925,6 @@ namespace GardenConquest.Blocks {
 			}
 
 			// total block violations
-			//log("checking block count", "checkRules");
 			if (m_BlockCount > m_EffectiveRules.MaxBlocks)
 				violations.Add(new VIOLATION() {
 					Type = VIOLATION_TYPE.TOTAL_BLOCKS,
@@ -943,7 +934,6 @@ namespace GardenConquest.Blocks {
 					//Diff = m_BlockCount - m_EffectiveRules.MaxBlocks,
 				});
 
-			//log("checking block type counts", "checkRules");
 			// block type violations
 			BlockType[] types = s_Settings.BlockTypes;
 			int[] limits = m_EffectiveRules.BlockTypeLimits;
@@ -965,12 +955,22 @@ namespace GardenConquest.Blocks {
 				}
 			}
 
-			log("finished", "currentViolations");
+			String violation_log_descr;
+			foreach (VIOLATION v in violations) {
+				violation_log_descr = v.Name;
+				if (v.Type == VIOLATION_TYPE.BLOCK_TYPE)
+					violation_log_descr += " " + v.BlockType.DisplayName;
+
+				log(String.Format("found violation {0} - {1}/{2}",
+					violation_log_descr, v.Count, v.Limit),
+					"currentViolations");
+			}
 			return violations;
 		}
 
 		private void updateViolations() {
-			reevaluateOwnership();
+			log("", "updateViolations", Logger.severity.TRACE);
+			//reevaluateOwnership(); // done in simulation
 			m_CurrentViolations = currentViolations();
 		}
 
@@ -1008,48 +1008,27 @@ namespace GardenConquest.Blocks {
 			//VIOLATION shouldBeStaticViolation;
 			bool shouldBeStatic = false;
 
-			//log("BlockType[] types = s_Settings.BlockTypes;", "doCleanupPhase", Logger.severity.TRACE);
 			BlockType[] types = s_Settings.BlockTypes;
 			List<VIOLATION> typeViolations = new List<VIOLATION>();
-			//log("build array of num to remove by Type", "doCleanupPhase", Logger.severity.TRACE);
-			//log("typeViolations == null ?" + (typeViolations == null), "doCleanupPhase", Logger.severity.TRACE);
-			//log("typeViolations.Count " + typeViolations.Count, "doCleanupPhase", Logger.severity.TRACE);
-			log("typeRemoveCounts", "doCleanupPhase", Logger.severity.TRACE);
 			int[] typeRemoveCounts = new int[types.Length];
-			//log("foreach (VIOLATION v in typeViolations", "doCleanupPhase", Logger.severity.TRACE);
 
-			log("all violations: ", "doCleanupPhase", Logger.severity.TRACE);
 			foreach (VIOLATION v in m_CurrentViolations) {
-				log("    " + v.Name + " " + v.Type + " " + v.Count + "/" + v.Limit,
-					"doCleanupPhase", Logger.severity.TRACE);
-
 				switch (v.Type) {
 					case VIOLATION_TYPE.BLOCK_TYPE:
-						log("BLOCK_TYPE", "doCleanupPhase", Logger.severity.TRACE);
 						int typeID = s_Settings.blockTypeID(v.BlockType);
 						typeRemoveCounts[typeID] = phasedRemoveCount(v);
-						log("typeRemoveCounts[typeID] " + typeRemoveCounts[typeID], "doCleanupPhase", Logger.severity.TRACE);
 						break;
 					case VIOLATION_TYPE.DOUBLE_CLASSIFICATION:
-						//tooManyClassifiersViolation = v;
-						log("DOUBLE_CLASSIFICATION ", "doCleanupPhase", Logger.severity.TRACE);
 						classifierCountToRemove = phasedRemoveCount(v);
-						log("classifierCountToRemove " + classifierCountToRemove, "doCleanupPhase", Logger.severity.TRACE);
 						break;
 					case VIOLATION_TYPE.SHOULD_BE_STATIC:
-						log("SHOULD_BE_STATIC", "doCleanupPhase", Logger.severity.TRACE);
 						shouldBeStatic = phasedRemoveCount(v) == 1;
-						log("shouldBeStatic " + shouldBeStatic, "doCleanupPhase", Logger.severity.TRACE);
 						break;
 					case VIOLATION_TYPE.TOO_MANY_OF_CLASS:
-						log("TOO_MANY_OF_CLASS", "doCleanupPhase", Logger.severity.TRACE);
 						removeClass = phasedRemoveCount(v) == 1;
-						log("removeSetClassifier " + removeClass, "doCleanupPhase", Logger.severity.TRACE);
 						break;
 					case VIOLATION_TYPE.TOTAL_BLOCKS:
-						log("TOTAL_BLOCKS", "doCleanupPhase", Logger.severity.TRACE);
 						totalToRemove = phasedRemoveCount(v);
-						log("totalToRemove " + totalToRemove, "doCleanupPhase", Logger.severity.TRACE);
 						break;
 				}
 			}
@@ -1062,8 +1041,8 @@ namespace GardenConquest.Blocks {
 				// if it's unclassified, it wouldn't have one. We just need to delete instead
 				if (m_ReservedClass == DEFAULT_CLASS) {
 					// if this class isn't allowed, we must remove it
-					log("class is " + m_ReservedClass +", remove it", "doCleanupPhase", Logger.severity.TRACE);
-					//m_DeleteNextUpdate = true;
+					log("class is " + m_ReservedClass + ", remove it", "doCleanupPhase", Logger.severity.TRACE);
+
 					// pretend block limit is 0 and use that cleanup
 					// having a Unsupported Unclassified grid is equivalent to having one with zero allowed blocks
 					totalToRemove = phasedRemoveCount(new VIOLATION {
@@ -1074,12 +1053,13 @@ namespace GardenConquest.Blocks {
 				} else {
 					log("class is set, try to use a lower classifier", "doCleanupPhase", Logger.severity.TRACE);
 					IMySlimBlock classifierBlock = m_Classifier.SlimBlock;
+					m_ExtraClassifiers.Add(m_Classifier.FatBlock.EntityId, m_Classifier);
 					unsetClassifier();
 					removeBlock(classifierBlock);
 					setBestClassifier();
 				}
 
-			// too many classifiers, only done if we didn't do the above b/c it affects the cached limit
+				// too many classifiers, only done if we didn't do the above b/c it affects the cached limit
 			} else if (classifierCountToRemove > 0) {
 				log("too many classifiers, remove " + classifierCountToRemove, "doCleanupPhase", Logger.severity.TRACE);
 				removeExtraClassifiers(classifierCountToRemove);
@@ -1117,11 +1097,14 @@ namespace GardenConquest.Blocks {
 			// breaking it into multiple grids, target things that take CPU but aren't
 			// valuable first
 			// note: special treatment for the last block, we need to close the grid
-			log("need to remove " + totalToRemove + " remaining blocks", "doCleanupPhase", Logger.severity.TRACE);
+			allBlocks.Clear();
+			log("go through all blocks and remove total violations", "doCleanupPhase", Logger.severity.TRACE);
 			if (totalToRemove > 0) {
-				log("totalToRemove > 0", "doCleanupPhase", Logger.severity.TRACE);
 				m_Grid.GetBlocks(allBlocks);
 				int blocksRemaining = allBlocks.Count;
+
+				log("removing " + totalToRemove + " of " + blocksRemaining + " blocks",
+					"doCleanupPhase");
 
 				if (blocksRemaining > 1) {
 					foreach (IMySlimBlock block in allBlocks) {
@@ -1143,6 +1126,7 @@ namespace GardenConquest.Blocks {
 			}
 
 			elapseCleanupTimer();
+
 			m_CheckCleanupNextUpdate = true;
 			log("done", "doCleanupPhase", Logger.severity.TRACE);
 		}
@@ -1156,14 +1140,14 @@ namespace GardenConquest.Blocks {
 
 			} else if (type == VIOLATION_TYPE.TOO_MANY_OF_CLASS) {
 				m_TooManyOfClassTicks++;
-				if (m_TooManyOfClassTicks > CLEANUP_CLASS_TICKS) {
+				if (m_TooManyOfClassTicks >= CLEANUP_CLASS_TICKS) {
 					m_TooManyOfClassTicks = 0;
 					return 1;
 				}
 				return 0;
 			} else if (type == VIOLATION_TYPE.SHOULD_BE_STATIC) {
 				m_ShouldBeStaticTicks++;
-				if (m_ShouldBeStaticTicks > CLEANUP_STATIC_TICKS) {
+				if (m_ShouldBeStaticTicks >= CLEANUP_STATIC_TICKS) {
 					m_ShouldBeStaticTicks = 0;
 					return 1;
 				}
@@ -1196,7 +1180,7 @@ namespace GardenConquest.Blocks {
 		/// Ensure it's stopped if we're not
 		/// </summary>
 		private void updateCleanupTimers(bool notifyStarted = true) {
-			log("start", "updateCleanup");
+			//log("start", "updateCleanup");
 
 			if (m_CurrentViolations.Count > 0) {
 				if (m_CleanupTimer == null) {
@@ -1216,7 +1200,7 @@ namespace GardenConquest.Blocks {
 		/// Starts the timer and alerts the player
 		/// </summary>
 		private void startCleanupTimer(bool notify = true) {
-			log("", "startCleanupTimer");
+			//log("", "startCleanupTimer");
 			// Don't start a second timer
 			if (m_CleanupTimer != null) {
 				log("already running", "startCleanupTimer");
@@ -1226,13 +1210,13 @@ namespace GardenConquest.Blocks {
 			m_CleanupTimer = new DerelictTimer(m_Grid);
 			log("new timer", "startCleanupTimer");
 			if (m_CleanupTimer.start() && notify) {
-				log("started", "startCleanupTimer");
+				log("notifying", "startCleanupTimer");
 				notifyCleanupTimerStart(m_CleanupTimer.SecondsRemaining);
 			}
 		}
 
 		/// <summary>
-		/// If the rules are met before the timer experies this cancels the timer
+		/// If the rules are met before the timer expires this cancels the timer
 		/// </summary>
 		private void cancelCleanupTimer(bool notify = true) {
 			log("start", "cancelCleanupTimer", Logger.severity.TRACE);
