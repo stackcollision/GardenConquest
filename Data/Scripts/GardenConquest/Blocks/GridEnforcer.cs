@@ -396,7 +396,7 @@ namespace GardenConquest.Blocks {
 				// i.e. during World Load or a Merge
 				// we clean those up over time with Cleanup
 				if (classified || m_Merging || !m_BeyondFirst100) {
-					log("Currently merging, initing, or classifying", "blockAdded");
+					//log("Currently merging, initing, or classifying", "blockAdded");
 					m_CheckCleanupNextUpdate = true;
 					goto Allowed;
 				}
@@ -423,13 +423,16 @@ namespace GardenConquest.Blocks {
 			}
 
 		Allowed:
-			log("allowed, Total Count now: " + m_BlockCount, "blockAdded");
+			log(added.ToString() + " added to grid '" + m_Grid.DisplayName +
+				"'. Total Count now: " + m_BlockCount, "blockAdded");
 			m_CheckOwnerNextUpdate = true;
 			m_CheckCleanupNextUpdate = true; // temporarily doing this on block add too, let's see if it's ok
 			return;
 
 		Denied:
-			log("denied", "blockAdded");
+			log(added.ToString() + " denied for grid '" + m_Grid.DisplayName +
+				"'. Total Count now: " + m_BlockCount, "blockAdded");
+
 			removeBlock(added);
 		}
 
