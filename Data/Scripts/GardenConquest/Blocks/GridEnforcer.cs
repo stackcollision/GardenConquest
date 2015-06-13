@@ -1080,6 +1080,7 @@ namespace GardenConquest.Blocks {
 			log("go through all blocks and remove type violations", "doCleanupPhase", Logger.severity.TRACE);
 			List<IMySlimBlock> allBlocks = new List<IMySlimBlock>();
 			m_Grid.GetBlocks(allBlocks);
+			allBlocks.Reverse(); // remove most recently added blocks
 			int numToRemove;
 			foreach (IMySlimBlock block in allBlocks) {
 				for (int typeID = 0; typeID < types.Length; typeID++) {
@@ -1105,6 +1106,7 @@ namespace GardenConquest.Blocks {
 			if (totalToRemove > 0) {
 				m_Grid.GetBlocks(allBlocks);
 				int blocksRemaining = allBlocks.Count;
+				allBlocks.Reverse(); // remove most recently added blocks
 
 				log("removing " + totalToRemove + " of " + blocksRemaining + " blocks",
 					"doCleanupPhase");
