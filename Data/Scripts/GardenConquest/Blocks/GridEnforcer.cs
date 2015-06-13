@@ -323,6 +323,11 @@ namespace GardenConquest.Blocks {
 					}
 				}
 
+				// check for failed derelict timers
+				if (m_CleanupTimer != null) {
+					m_CleanupTimer.updateTimeRemaining();
+				}
+
 				// Update ownership
 				if (m_CheckOwnerNextUpdate || m_CheckCleanupNextUpdate) {
 					m_CheckOwnerNextUpdate = false;

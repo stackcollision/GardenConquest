@@ -180,6 +180,44 @@ namespace GardenConquest.Records {
 			TimerExpired = true;
 		}
 
+		public void updateTimeRemaining() {
+			//log("", "updateTimeRemaining");
+
+			if (TimerExpired) {
+				return;
+			}
+
+			// Update Time Remaining
+			DateTime currentTime = DateTime.UtcNow;
+
+			int millisSinceLastUpdate = (int)(currentTime - m_TimerInfo.StartTime).TotalMilliseconds;
+
+			//log(String.Format("current time {0}, last updated {1}, millis since {2}, old millis remaining {3}",
+			//	currentTime, m_TimerInfo.StartTime, millisSinceLastUpdate, m_TimerInfo.MillisRemaining), "updateTimeRemaining");
+
+			m_TimerInfo.MillisRemaining = m_TimerInfo.MillisRemaining - millisSinceLastUpdate;
+			m_TimerInfo.StartTime = currentTime;
+
+			//log(String.Format("new millis remaining {0}",
+			//	m_TimerInfo.MillisRemaining), "updateTimeRemaining");
+
+			// If there's negative time left, we missed an expiration
+			if (m_TimerInfo.MillisRemaining <= 0) {
+				if (m_Timer == null) {
+					log("negative time left but unexpired, no timer stored",
+						"updateTimeRemaining", Logger.severity.ERROR);
+				}
+				else {
+					log("timer failed to trigger expire",
+						"updateTimeRemaining", Logger.severity.ERROR);
+				}
+
+				// uncomment this to hotfix the issue
+				log("manually expiring","updateTimeRemaining", Logger.severity.WARNING);
+				timerExpired();
+			}
+		}
+
 		private void log(String message, String method = null, Logger.severity level = Logger.severity.DEBUG) {
 			if (m_Logger != null)
 				m_Logger.log(level, method, message);
