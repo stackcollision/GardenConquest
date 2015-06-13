@@ -110,8 +110,12 @@ namespace GardenConquest.Records {
 
 		public void Close() {
 			log("", "Close");
-			m_Fleet.remove(m_Class, m_Enforcer);
-			StateTracker.getInstance().removeFleetIfEmpty(m_FleetID, m_OwnerType);
+			try {
+				m_Fleet.remove(m_Class, m_Enforcer);
+				StateTracker.getInstance().removeFleetIfEmpty(m_FleetID, m_OwnerType);
+			} catch (NullReferenceException e) {
+				log("Error: " + e, "Close", Logger.severity.ERROR);
+			}
 			m_Fleet = null;
 			m_Enforcer = null;
 			m_Logger = null;
@@ -232,20 +236,31 @@ namespace GardenConquest.Records {
 		/// </summary>
 		/// <returns></returns>
 		public FactionFleet getFleet() {
-			if (GridEnforcer.StateTracker == null) {
-				log("null state, probably initing", "getFleet");
-				m_StateLoaded = false;
-
-				if (m_Fleet == null) {
-					log("creating temporary untracked fleet", "getFleet");
-					m_Fleet = new FactionFleet(m_FleetID, OwnerType);
-				}
-
-				return m_Fleet;
-			} else {
+			if (GridEnforcer.StateTracker != null) {
 				log("retreiving fleet from state tracker", "getFleet");
-				m_StateLoaded = true;
-				return GridEnforcer.StateTracker.getFleet(m_FleetID, OwnerType);
+				FactionFleet loadedFleet = GridEnforcer.StateTracker.getFleet(m_FleetID, OwnerType);
+
+				if (loadedFleet != null) {
+					m_StateLoaded = true;
+					return loadedFleet;
+				} else {
+					log("state tracker returned null fleet", "getFleet",
+						Logger.severity.ERROR);
+				}
+			} else {
+				log("null state, probably initing", "getFleet");
+			}
+
+			log("failed to load fleet from state tracker",
+				"getFleet", Logger.severity.WARNING);
+			m_StateLoaded = false;
+
+			if (m_Fleet == null) {
+				log("creating temporary untracked fleet", "getFleet");
+				return new FactionFleet(m_FleetID, OwnerType);
+			} else {
+				log("returning existing stored fleet", "getFleet");
+				return m_Fleet;
 			}
 		}
 
