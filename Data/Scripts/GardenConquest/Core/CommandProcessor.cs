@@ -233,12 +233,12 @@ namespace GardenConquest.Core {
 				"Each CP has a Position, Radius, and Reward:\n\n";
 
 			foreach (Records.ControlPoint cp in m_MailMan.ServerSettings.ControlPoints) {
-				s_HelpCPsText += String.Format("{0} @ {1}, {2}, {3} Licenses",
+				s_HelpCPsText += String.Format("{0} @ {1}, {2}, {3} Licenses\n",
 					cp.Name, cp.Position, Utility.prettyDistance(cp.Radius), cp.TokensPerPeriod);
 			}
 
 			s_HelpCPsText +=
-				"\n\nWhomever controls a CP at the end of a round will receive its reward. " +
+				"\nWhomever controls a CP at the end of a round will receive its reward. " +
 				"Rounds are calculated every " +
 				Utility.prettySeconds(m_MailMan.ServerSettings.CPPeriod) + ".\n\n" +
 
