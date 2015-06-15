@@ -169,12 +169,12 @@ namespace GardenConquest.Core {
 					// Need to keep track of when the server was started and how many
 					// millis were remaining at that time
 					// This is critical for saving again later
-					timer.StartingMillisRemaining = timer.MillisRemaining;
-					timer.StartTime = startTime;
+					//timer.StartingMillisRemaining = timer.MillisRemaining;
+					timer.LastUpdated = startTime;
 
-					if (timer.StartingMillisRemaining <= 0) {
-						m_SavedState.DerelictTimers.Remove(timer);
-					}
+					//if (timer.StartingMillisRemaining <= 0) {
+					//	m_SavedState.DerelictTimers.Remove(timer);
+					//}
 				}
 
 				log("State loaded from file", "loadState");
@@ -202,8 +202,9 @@ namespace GardenConquest.Core {
 					// If this results in a negative time remaining, it means the timer expired but
 					// hasn't been removed from the dictionary yet.  We'll leave it alone and let it go
 					// to the file, but when we try to load it later it'll get dropped
-					int difference = (int)(now - timer.StartTime).TotalMilliseconds;
-					timer.MillisRemaining = timer.StartingMillisRemaining - difference;
+					int difference = (int)(now - timer.LastUpdated).TotalMilliseconds;
+					timer.MillisRemaining = timer.MillisRemaining - difference;
+					timer.LastUpdated = now;
 				}
 
 				// Write the state to the file
