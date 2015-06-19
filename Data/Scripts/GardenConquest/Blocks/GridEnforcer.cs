@@ -413,6 +413,13 @@ namespace GardenConquest.Blocks {
 					goto Denied;
 				}
 				else if (totalBlocksViolation != VIOLATION_TYPE.NONE) {
+					if (providesNeededPower(added)) {
+						// note this is not perfect because it allows people to stack
+						// infintely many reactors in this specific situation, but that's not
+						// really prone to exploitation...
+						log("too many blocks but provides needed power, must allow", "blockAdded");
+						goto Allowed;
+					}
 					log("totalBlocksViolation", "blockAdded");
 					notifyPlacementViolation(totalBlocksViolation);
 					goto Denied;
@@ -538,7 +545,6 @@ namespace GardenConquest.Blocks {
 				if (classified) {
 					return VIOLATION_TYPE.NONE;
 				}
-
 				return VIOLATION_TYPE.TOTAL_BLOCKS;
 			}
 
@@ -581,7 +587,27 @@ namespace GardenConquest.Blocks {
 			log("checking if fleet can support more of " + c, "checkClassAllowed");
 			// update ownership/fleet now to get the player the most up-to-date info
 			reevaluateOwnership();
+			if (m_Owner.OwnerType == GridOwner.OWNER_TYPE.UNOWNED) {
+				// people find it really annoying that they have to have an owned block before placing a classifier.
+				// Fleet Support will still take care of this for us via cleanup down the line.
+				// Players would need to look at their fleet and notice this isn't there to know it's still under cleanup,
+				// because it wouldn't be listed in their violations
+				log("No owner, thus no way to tell if too many of class, but allowing for convenience",
+					"checkClassAllowed");
+				notifyPlacementViolation(VIOLATION_TYPE.TOO_MANY_OF_CLASS);
+				return true;
+			}
+
 			return m_Owner.Fleet.canSupportAnother(c);
+		}
+
+		private bool providesNeededPower(IMySlimBlock block) {
+			if (m_EffectiveClass == HullClass.CLASS.UNCLASSIFIED &&
+				m_ReservedClass != HullClass.CLASS.UNCLASSIFIED) {
+				IMyReactor reactor = block.FatBlock as IMyReactor;
+				return (reactor != null);
+			}
+			return false;
 		}
 
 		#endregion

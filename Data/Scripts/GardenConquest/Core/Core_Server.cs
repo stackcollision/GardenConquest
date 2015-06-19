@@ -161,7 +161,7 @@ namespace GardenConquest.Core {
 			else if (v == GridEnforcer.VIOLATION_TYPE.TOO_MANY_OF_CLASS) {
 				GridOwner.OWNER_TYPE owner_type = ge.Owner.OwnerType;
 				if (owner_type == GridOwner.OWNER_TYPE.UNOWNED) {
-					message = "Unowned grids can't be classified";
+					message = "Take ownership of this grid or it will eventually be removed.";
 				}
 				else if (owner_type == GridOwner.OWNER_TYPE.PLAYER) {
 					message = "No more ships of this class allowed in this player's fleet. " +
