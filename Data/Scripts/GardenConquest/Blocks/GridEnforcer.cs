@@ -752,6 +752,7 @@ namespace GardenConquest.Blocks {
 		private void setReservedToClassifier() {
 			m_ReservedClass = m_Classifier.Class;
 			m_ReservedRules = s_Settings.HullRules[(int)m_ReservedClass];
+			log("Reserved class changed to" + m_ReservedRules.DisplayName, "setReservedToClassifier");
 		}
 
 		private void setEffectiveToDefault() {
@@ -839,7 +840,6 @@ namespace GardenConquest.Blocks {
 		}
 
 		private void setClassifier(HullClassifier classifier) {
-			log("Hull class reserved as " + m_ReservedRules.DisplayName, "setClassifier");
 			if (m_Classifier != null) {
 				log(" existing classifier is still set, skipping",
 					"unsetClassifier", Logger.severity.ERROR);
@@ -849,6 +849,11 @@ namespace GardenConquest.Blocks {
 			attachClassifier(classifier);
 			setReservedToClassifier();
 			// promotion will be taken care of when the block starts working
+			// Working Blocks added on init have IsWorkingChanged triggered after
+			// Working blocks added during a merge don't, so go check now
+			if (m_Merging) {
+				classifierWorkingChanged(m_Classifier.FatBlock);
+			}
 			m_CheckCleanupNextUpdate = true;
 		}
 
