@@ -37,7 +37,7 @@ namespace GardenConquest.Blocks {
 			NONE,
 			TOTAL_BLOCKS,
 			BLOCK_TYPE,
-			DOUBLE_CLASSIFICATION,
+			TOO_MANY_CLASSIFIERS,
 			TOO_MANY_OF_CLASS,
 			SHOULD_BE_STATIC
 		}
@@ -529,7 +529,7 @@ namespace GardenConquest.Blocks {
 				if (m_Classifier != null) {
 					log("Too many classifiers", "updateClassificationWith");
 					applied = false;
-					return VIOLATION_TYPE.DOUBLE_CLASSIFICATION;
+					return VIOLATION_TYPE.TOO_MANY_CLASSIFIERS;
 				}
 
 				// Too many per Player/Faction not allowed
@@ -1034,6 +1034,17 @@ namespace GardenConquest.Blocks {
 				}
 			}
 
+			// too many classifiers violation
+			int extraClassifiersCount = m_ExtraClassifiers.Count;
+			if (extraClassifiersCount > 0) {
+				violations.Add(new VIOLATION() {
+					Type = VIOLATION_TYPE.TOO_MANY_CLASSIFIERS,
+					Name = "Hull Classifiers",
+					Count = extraClassifiersCount,
+					Limit = 1
+				});
+			}
+
 			// not-a-station violation
 			// This is only detected on block add/remove, it would be nice if we could listen
 			// for grid.IsStatic changes, but that needs to be pr'd into core
@@ -1109,7 +1120,7 @@ namespace GardenConquest.Blocks {
 						int typeID = s_Settings.blockTypeID(v.BlockType);
 						typeRemoveCounts[typeID] = phasedRemoveCount(v);
 						break;
-					case VIOLATION_TYPE.DOUBLE_CLASSIFICATION:
+					case VIOLATION_TYPE.TOO_MANY_CLASSIFIERS:
 						classifierCountToRemove = phasedRemoveCount(v);
 						break;
 					case VIOLATION_TYPE.SHOULD_BE_STATIC:
@@ -1235,7 +1246,7 @@ namespace GardenConquest.Blocks {
 			VIOLATION_TYPE type = v.Type;
 			if (type == VIOLATION_TYPE.BLOCK_TYPE ||
 				type == VIOLATION_TYPE.TOTAL_BLOCKS ||
-				type == VIOLATION_TYPE.DOUBLE_CLASSIFICATION) {
+				type == VIOLATION_TYPE.TOO_MANY_CLASSIFIERS) {
 				return (int)Math.Ceiling((float)(v.Count - v.Limit) * CLEANUP_RATE);
 
 			} else if (type == VIOLATION_TYPE.TOO_MANY_OF_CLASS) {
