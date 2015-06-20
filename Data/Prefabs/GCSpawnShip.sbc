@@ -382,32 +382,23 @@
               <ShareMode>None</ShareMode>
               <DeformationRatio>0</DeformationRatio>
             </MyObjectBuilder_CubeBlock>
-            <MyObjectBuilder_CubeBlock xsi:type="MyObjectBuilder_Assembler">
-              <SubtypeName>LargeAssembler</SubtypeName>
-              <EntityId>148184242414880961</EntityId>
+            <MyObjectBuilder_CubeBlock xsi:type="MyObjectBuilder_OxygenGenerator">
+              <SubtypeName />
+              <EntityId>194269764886469317</EntityId>
               <Min x="3" y="1" z="6" />
-              <BlockOrientation Forward="Backward" Up="Left" />
+              <BlockOrientation Forward="Left" Up="Forward" />
               <ColorMaskHSV x="0.122222222" y="0.87" z="0.29" />
-              <Owner>144115188075855874</Owner>
-              <ShareMode>Faction</ShareMode>
+              <ShareMode>All</ShareMode>
               <DeformationRatio>0</DeformationRatio>
-              <CustomName>Assembler 4</CustomName>
+              <CustomName>Oxygen Generator 2</CustomName>
               <ShowOnHUD>false</ShowOnHUD>
               <ShowInTerminal>true</ShowInTerminal>
+              <ShowInToolbarConfig>true</ShowInToolbarConfig>
               <Enabled>true</Enabled>
-              <InputInventory>
+              <Inventory>
                 <Items />
                 <nextItemId>0</nextItemId>
-              </InputInventory>
-              <OutputInventory>
-                <Items />
-                <nextItemId>0</nextItemId>
-              </OutputInventory>
-              <CurrentProgress>0</CurrentProgress>
-              <DisassembleEnabled>false</DisassembleEnabled>
-              <RepeatAssembleEnabled>false</RepeatAssembleEnabled>
-              <RepeatDisassembleEnabled>false</RepeatDisassembleEnabled>
-              <SlaveEnabled>false</SlaveEnabled>
+              </Inventory>
             </MyObjectBuilder_CubeBlock>
             <MyObjectBuilder_CubeBlock xsi:type="MyObjectBuilder_CubeBlock">
               <SubtypeName>LargeBlockArmorSlope2Tip</SubtypeName>
