@@ -66,6 +66,7 @@ namespace GardenConquest.Blocks {
 		private bool m_GridSubscribed;
 		private int m_BlockCount;
 		private int[] m_BlockTypeCounts;
+		private Dictionary<long, InGame.IMyProjector> m_Projectors;
 
 		// Ownership
 		private GridOwner m_Owner = null;
@@ -125,6 +126,21 @@ namespace GardenConquest.Blocks {
 			return m_CleanupTimer.SecondsRemaining;
 		}}
 		public bool SupportedByFleet { get { return m_Supported; } }
+		// This is pretty dumb - it reports true if the grid has any projector blocks that are ON
+		// There needs to be a Sandbox.Common.ModAPI.IMyProjectorBlock that exposes .StartProjecting and .StopProjecting,
+		// or at least expose IsProjecting from Sandbox.ModAPI.Ingame.IMyProjector
+		// But really the easiest way to fix this would be to only do placement restrictions when a character is actually placing
+		// the block, and we know that's a big to-do
+		private bool Projecting {
+			get {
+				foreach (KeyValuePair<long, InGame.IMyProjector> pair in m_Projectors) {
+					if (pair.Value.IsWorking) {
+						return true;
+					}
+				}
+				return false;
+			}
+		}
 		public static StateTracker StateTracker { get; private set; }
 
 		#endregion
@@ -222,6 +238,7 @@ namespace GardenConquest.Blocks {
 			m_BlockTypeCounts = new int[s_Settings.BlockTypes.Length];
 			m_Owner = new GridOwner(this);
 			m_ExtraClassifiers = new Dictionary<long, HullClassifier>();
+			m_Projectors = new Dictionary<long, InGame.IMyProjector>();
 
 			setReservedToDefault();
 			setEffectiveToDefault();
@@ -395,13 +412,21 @@ namespace GardenConquest.Blocks {
 				// update type counts
 				List<BlockType> violatedTypes = updateBlockTypeCountsWith(added);
 
+				// update projectors
+				// track these outside of block types, because those are currently user-configurable
+				InGame.IMyProjector projector = added.FatBlock as InGame.IMyProjector;
+				if (projector != null) {
+					log("Added a projector", "blockAdded");
+					m_Projectors.Add(projector.EntityId, projector);
+				}
+
 				// = If there are violations, remove the block and notify the appropriate parties
 
 				// we skip violation checks for blocks being added that aren't actually placed by a user,
 				// i.e. during World Load or a Merge
 				// we clean those up over time with Cleanup
-				if (classified || m_Merging || !m_BeyondFirst100) {
-					//log("Currently merging, initing, or classifying", "blockAdded");
+				if (classified || m_Merging || !m_BeyondFirst100 || Projecting) {
+					log("Currently merging, initing, classifying, or projecting. Must allow.", "blockAdded");
 					m_CheckCleanupNextUpdate = true;
 					goto Allowed;
 				}
@@ -630,6 +655,15 @@ namespace GardenConquest.Blocks {
 
 			updateClassificationWithout(removed);
 			updateBlockTypeCountsWithout(removed);
+
+			// update projectors
+			// track these outside of block types, because those are currently user-configurable
+			InGame.IMyProjector projector = removed.FatBlock as InGame.IMyProjector;
+			if (projector != null) {
+				log("Removed a projector", "blockRemoved");
+				m_Projectors.Remove(projector.EntityId);
+			}
+
 			m_CheckCleanupNextUpdate = true;
 		}
 
