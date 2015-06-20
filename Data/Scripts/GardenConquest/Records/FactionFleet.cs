@@ -376,8 +376,11 @@ namespace GardenConquest.Records {
 
 								//log("supportedResults +=" + supportedResults, "violationsToString");
 								foreach (GridEnforcer.VIOLATION v in violations) {
-									supportedResults += "        " + v.Name + ": " + v.Count + "/" + v.Limit + "\n";
-									//log("supportedResults +=" + supportedResults, "violationsToString");
+									if (v.Type == GridEnforcer.VIOLATION_TYPE.SHOULD_BE_STATIC) {
+										supportedResults += "        " + v.Name + "\n";
+									} else {
+										supportedResults += "        " + v.Name + ": " + v.Count + "/" + v.Limit + "\n";
+									}
 								}
 
 							}

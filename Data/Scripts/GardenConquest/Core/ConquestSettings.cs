@@ -359,7 +359,8 @@ namespace GardenConquest.Core {
 				MaxPerSoloPlayer = 0,
 				CaptureMultiplier = 2,
 				MaxBlocks = 600,
-				BlockTypeLimits = new int[2] { 2, 0 }
+				BlockTypeLimits = new int[2] { 2, 0 },
+				ShouldBeStation = true
 			};
 			results[(int)HullClass.CLASS.INSTALLATION] = new HullRuleSet() {
 				DisplayName = "Installation",
@@ -367,7 +368,8 @@ namespace GardenConquest.Core {
 				MaxPerSoloPlayer = 0,
 				CaptureMultiplier = 4,
 				MaxBlocks = 1800,
-				BlockTypeLimits = new int[2] { 4, 0 }
+				BlockTypeLimits = new int[2] { 4, 0 },
+				ShouldBeStation = true
 			};
 			results[(int)HullClass.CLASS.FORTRESS] = new HullRuleSet() {
 				DisplayName = "Fortress",
@@ -375,7 +377,8 @@ namespace GardenConquest.Core {
 				MaxPerSoloPlayer = 0,
 				CaptureMultiplier = 6,
 				MaxBlocks = 2700,
-				BlockTypeLimits = new int[2] { 6, 0 }
+				BlockTypeLimits = new int[2] { 6, 0 },
+				ShouldBeStation = true
 			};
 
 			return results;

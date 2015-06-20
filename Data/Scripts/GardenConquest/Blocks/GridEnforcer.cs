@@ -493,6 +493,12 @@ namespace GardenConquest.Blocks {
 					return VIOLATION_TYPE.NONE;
 				}
 
+				// Ensure it's the right type for this grid
+				if (s_Settings.HullRules[(int)classifier.Class].ShouldBeStation && !m_Grid.IsStatic) {
+					applied = false;
+					return VIOLATION_TYPE.SHOULD_BE_STATIC;
+				}
+
 				// Two classifiers not allowed
 				//log("Existing classifier? " + (m_Classifier != null), "updateClassificationWith");
 				if (m_Classifier != null) {
@@ -994,6 +1000,17 @@ namespace GardenConquest.Blocks {
 				}
 			}
 
+			// not-a-station violation
+			// This is only detected on block add/remove, it would be nice if we could listen
+			// for grid.IsStatic changes, but that needs to be pr'd into core
+			if (m_EffectiveRules.ShouldBeStation && !m_Grid.IsStatic) {
+				violations.Add(new VIOLATION() {
+					Type = VIOLATION_TYPE.SHOULD_BE_STATIC,
+					Name = "Should be a Station"
+				});
+			}
+
+			// log violations
 			String violation_log_descr;
 			foreach (VIOLATION v in violations) {
 				violation_log_descr = v.Name;
@@ -1004,6 +1021,7 @@ namespace GardenConquest.Blocks {
 					violation_log_descr, v.Count, v.Limit),
 					"currentViolations");
 			}
+
 			return violations;
 		}
 
@@ -1106,10 +1124,17 @@ namespace GardenConquest.Blocks {
 
 			// should be static
 			if (shouldBeStatic) {
-				// todo
-				// there doesn't seem to be a way to make it static, not even via info control,
-				// is this not possible? In that case, we'll have to remove the classifier.
-				//m_Grid.
+				// there's no way to make it static via existing function (or even via control panel)
+				// we could spawn a station next to it with a merge block and hope we can get them to merge,
+				// that would make it static. But sounds hard, let's just remove blocks for now and make the user
+				// take care of this
+				log("should be static, remove it", "doCleanupPhase", Logger.severity.TRACE);
+
+				totalToRemove = phasedRemoveCount(new VIOLATION {
+					Type = VIOLATION_TYPE.TOTAL_BLOCKS,
+					Count = m_BlockCount,
+					Limit = 0
+				});
 			}
 
 			// type violations

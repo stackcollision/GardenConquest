@@ -183,6 +183,10 @@ namespace GardenConquest.Core {
 					hr.MaxPerSoloPlayer + " for an individual.\n" +
 					"Max blocks: " + hr.MaxBlocks + "\n";
 
+				if (hr.ShouldBeStation) {
+					s_HelpClassesText += "Must be a Station\n";
+				}
+
 				allowedBlockTypes.Clear();
 				disallowedBlockTypes.Clear();
 

@@ -30,6 +30,8 @@ namespace GardenConquest.Records {
 		public int CaptureMultiplier { get; set; }
 		[XmlElement("MaxBlocks")]
 		public int MaxBlocks { get; set; }
+		[XmlElement("ShouldBeStation")]
+		public bool ShouldBeStation { get; set; }
 		[XmlArray("BlockTypeLimits")]
 		[XmlArrayItem("Limit")]
 		public int[] BlockTypeLimits { get; set; }

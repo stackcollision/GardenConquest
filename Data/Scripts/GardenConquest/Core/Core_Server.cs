@@ -158,6 +158,8 @@ namespace GardenConquest.Core {
 				message = "No more blocks of this type allowed for this Class";
 			else if (v == GridEnforcer.VIOLATION_TYPE.DOUBLE_CLASSIFICATION)
 				message = "Only one Hull Classifier allowed";
+			else if (v == GridEnforcer.VIOLATION_TYPE.SHOULD_BE_STATIC)
+				message = "This classifier is only allowed on Stations";
 			else if (v == GridEnforcer.VIOLATION_TYPE.TOO_MANY_OF_CLASS) {
 				GridOwner.OWNER_TYPE owner_type = ge.Owner.OwnerType;
 				if (owner_type == GridOwner.OWNER_TYPE.UNOWNED) {
