@@ -124,12 +124,13 @@ namespace GardenConquest.Core {
 		}
 
 		public override void updateBeforeSimulation() {
-			//lock (m_SyncObject) {
+			try {
+				//lock (m_SyncObject) {
 				if (m_RoundEnded) {
 					distributeRewards();
 					m_RoundEnded = false;
 				}
-			//}
+				//}
 				if (s_DelayedSettingWrite) {
 					log("Settings Write was delayed, trying again", "updateBeforeSimulation");
 					s_Settings.writeSettings();
@@ -137,8 +138,12 @@ namespace GardenConquest.Core {
 						s_DelayedSettingWrite = false;
 						log("Setting Write Success", "updateBeforeSimulation");
 					}
-						
+
 				}
+			}
+			catch (Exception e) {
+				log("Error" + e, "updateBeforeSimulation", Logger.severity.ERROR);
+			}
 		}
 
 		#endregion
