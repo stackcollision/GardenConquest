@@ -50,6 +50,8 @@ namespace GardenConquest.Blocks {
 			public int Limit { get; set; }
 		}
 
+		private static readonly bool CLEANUP_LARGE_UNCLASSIFIED_IMMEDIATELY = true;
+		private static readonly int CLEANUP_LARGE_UNCLASSIFIED_BLOCKS = 100;
 		private static readonly int CLEANUP_CLASS_TICKS = 1; // So 30 min with default 30 min ticks
 		private static readonly int CLEANUP_STATIC_TICKS = 96; //2 days
 		private static readonly int CLEANUP_NOTIFY_WAIT = 5;
@@ -1145,13 +1147,21 @@ namespace GardenConquest.Blocks {
 					// if this class isn't allowed, we must remove it
 					log("class is " + m_ReservedClass + ", remove it", "doCleanupPhase", Logger.severity.TRACE);
 
-					// pretend block limit is 0 and use that cleanup
-					// having a Unsupported Unclassified grid is equivalent to having one with zero allowed blocks
-					totalToRemove = phasedRemoveCount(new VIOLATION {
-						Type = VIOLATION_TYPE.TOTAL_BLOCKS,
-						Count = m_BlockCount,
-						Limit = 0
-					});
+					// dumb detection for exploration ships, remove immediately
+					if (CLEANUP_LARGE_UNCLASSIFIED_IMMEDIATELY &&
+						m_BlockCount > CLEANUP_LARGE_UNCLASSIFIED_BLOCKS) {
+							totalToRemove = m_BlockCount;
+					}
+					else {
+						// pretend block limit is 0 and use that cleanup
+						// having a Unsupported Unclassified grid is equivalent to having one with zero allowed blocks
+						totalToRemove = phasedRemoveCount(new VIOLATION {
+							Type = VIOLATION_TYPE.TOTAL_BLOCKS,
+							Count = m_BlockCount,
+							Limit = 0
+						});
+					}
+
 				} else {
 					log("class is set, try to use a lower classifier", "doCleanupPhase", Logger.severity.TRACE);
 					IMySlimBlock classifierBlock = m_Classifier.SlimBlock;
