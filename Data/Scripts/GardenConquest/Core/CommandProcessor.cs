@@ -117,10 +117,10 @@ namespace GardenConquest.Core {
 							} else {
 								switch (cmd[2].ToLower()) {
 									case "disown":
-										String entityID = "";
-										if (numCommands > 2)
-											entityID = cmd[3];
-										//m_MailMan.requestDisown(cmd[3]);
+										// Disabled until the Mod API supports the ability to change owners of individual blocks
+										/*if (numCommands == 4) {
+											m_MailMan.requestDisown(cmd[3], cmd[4]);
+										}*/
 										break;
 								}
 							}

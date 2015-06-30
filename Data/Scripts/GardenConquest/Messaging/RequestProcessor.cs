@@ -12,6 +12,7 @@ using VRage.Library.Utils;
 using Interfaces = Sandbox.ModAPI.Interfaces;
 using InGame = Sandbox.ModAPI.Ingame;
 
+using GardenConquest.Blocks;
 using GardenConquest.Core;
 using GardenConquest.Records;
 
@@ -70,6 +71,9 @@ namespace GardenConquest.Messaging {
 					case BaseRequest.TYPE.VIOLATIONS:
 						processViolationsRequest(msg as ViolationsRequest);
 						break;
+					case BaseRequest.TYPE.DISOWN:
+						processDisownRequest(msg as DisownRequest);
+						break;
 				}
 			} catch (Exception e) {
 				log("Exception occured: " + e, "incomming");
@@ -94,31 +98,16 @@ namespace GardenConquest.Messaging {
 		}
 
 		private void processFleetRequest(FleetRequest req) {
-			// Get an Owner object from the player ID of the request
+			// Get an Owner object from the palyer ID of the request
 			GridOwner.OWNER owner = GridOwner.ownerFromPlayerID(req.ReturnAddress);
 
 			// Retrieve that owner's fleet
-			FactionFleet fleet = GardenConquest.Core.StateTracker.
-				getInstance().getFleet(owner.FleetID, owner.OwnerType);
+			FactionFleet fleet = GardenConquest.Core.StateTracker
+				.getInstance().getFleet(owner.FleetID, owner.OwnerType);
 
-			// Get the fleet's juicy description
-			String body = fleet.classesToString();
-
-			// build the title
-			String title = "";
-			switch (owner.OwnerType) {
-				case GridOwner.OWNER_TYPE.FACTION:
-					title = "Your Faction's Fleet:";
-					break;
-				case GridOwner.OWNER_TYPE.PLAYER:
-					title = "Your Fleet";
-					break;
-			}
-
-			// send the response
-			DialogResponse resp = new DialogResponse() {
-				Body = body,
-				Title = title,
+			FleetResponse resp = new FleetResponse() {
+				Fleet = fleet,
+				Owner = owner,
 				Destination = new List<long>() { req.ReturnAddress },
 				DestType = BaseResponse.DEST_TYPE.PLAYER
 			};
@@ -168,6 +157,24 @@ namespace GardenConquest.Messaging {
 			};
 
 			send(resp);
+		}
+
+		private void processDisownRequest(DisownRequest req) {
+			IMyCubeGrid gridToDisown = MyAPIGateway.Entities.GetEntityById(req.EntityID) as IMyCubeGrid;
+
+			List<IMySlimBlock> allBlocks = new List<IMySlimBlock>();
+
+			// Get only FatBlocks from the blocks list from the grid
+			Func<IMySlimBlock, bool> isFatBlock = b => b.FatBlock != null;
+			gridToDisown.GetBlocks(allBlocks, isFatBlock);
+
+			foreach (IMySlimBlock block in allBlocks) {
+				if (block.FatBlock.OwnerId == req.ReturnAddress)  {
+						// Code to disown blocks goes here
+					// Disabled because current Space Engineer's Mod API does not have the capability to disown individual blocks
+					//fatBlock.ChangeOwner(0, 0);
+				}
+			}
 		}
 
 		private void log(String message, String method = null, Logger.severity level = Logger.severity.DEBUG) {

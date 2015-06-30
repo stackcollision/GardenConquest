@@ -12,6 +12,8 @@ using VRage.Library.Utils;
 using Interfaces = Sandbox.ModAPI.Interfaces;
 using InGame = Sandbox.ModAPI.Ingame;
 
+using GardenConquest.Blocks;
+using GardenConquest.Records;
 using GardenConquest.Core;
 
 namespace GardenConquest.Messaging {
@@ -20,6 +22,10 @@ namespace GardenConquest.Messaging {
 	/// </summary>
 	public class ResponseProcessor {
 		private static Logger s_Logger = null;
+
+		private uint[] m_Counts = null;
+		private Dictionary<int, List<GridEnforcer.GridData>> m_SupportedGrids;
+		private Dictionary<int, List<GridEnforcer.GridData>> m_UnsupportedGrids;
 
 		private ConquestSettings.SETTINGS m_ServerSettings;
 		private bool m_Registered = false;
@@ -35,6 +41,10 @@ namespace GardenConquest.Messaging {
 				m_Registered = true;
 				MyAPIGateway.Multiplayer.RegisterMessageHandler(Constants.GCMessageId, incomming);
 			}
+			int classCount = Enum.GetValues(typeof(HullClass.CLASS)).Length;
+			m_Counts = new uint[classCount];
+			m_SupportedGrids = new Dictionary<int, List<GridEnforcer.GridData>>();
+			m_UnsupportedGrids = new Dictionary<int, List<GridEnforcer.GridData>>();
 		}
 
 		public void unload() {
@@ -100,6 +110,31 @@ namespace GardenConquest.Messaging {
 			}
 		}
 
+		public bool requestDisown(string shipClass, string ID) {
+			log("Sending Disown request", "requestDisown");
+			try {
+				int classID = (int)Enum.Parse(typeof(HullClass.CLASS), shipClass.ToUpper());
+				int localID = Convert.ToInt32(ID);
+				long entityID;
+
+				//Some logic to decide whether or not the choice is a supported or unsupported grid, and its entityID
+				if (localID >= m_SupportedGrids[classID].Count) {
+					entityID = m_UnsupportedGrids[classID][localID - m_SupportedGrids[classID].Count].shipID;
+				} else {
+					entityID = m_SupportedGrids[classID][localID].shipID;
+				}
+				DisownRequest req = new DisownRequest();
+				req.ReturnAddress = MyAPIGateway.Session.Player.PlayerID;
+				req.EntityID = entityID;
+				send(req);
+				return true;
+			}
+			catch (Exception e) {
+				log("Exception occured: " + e, "requestDisown");
+				return false;
+			}
+		}
+
 		#endregion
 		#region Process Responses
 
@@ -134,6 +169,9 @@ namespace GardenConquest.Messaging {
 					case BaseResponse.TYPE.SETTINGS:
 						processSettingsResponse(msg as SettingsResponse);
 						break;
+					case BaseResponse.TYPE.FLEET:
+						processFleetResponse(msg as FleetResponse);
+						break;
 				}
 			} catch (Exception e) {
 				log("Exception occured: " + e, "incomming", Logger.severity.ERROR);
@@ -162,6 +200,105 @@ namespace GardenConquest.Messaging {
 					true, true);
 				MyAPIGateway.Session.GPS.AddLocalGps(gps);
 			}
+		}
+
+		private void processFleetResponse(FleetResponse resp) {
+			log("Loading fleet data from server", "processFleetResponse");
+			List<GridEnforcer.GridData> gridData = resp.FleetData;
+
+			// Clear our current data to get fresh data from server
+			Array.Clear(m_Counts, 0, m_Counts.Length);
+			m_SupportedGrids.Clear();
+			m_UnsupportedGrids.Clear();
+
+			// Saving data from server to client
+			for (int i = 0; i < gridData.Count; ++i) {
+				int classID = (int)gridData[i].shipClass;
+				m_Counts[classID] += 1;
+				if (gridData[i].supported) {
+					if (!m_SupportedGrids.ContainsKey(classID)) {
+						m_SupportedGrids[classID] = new List<GridEnforcer.GridData>();
+					}
+					m_SupportedGrids[classID].Add(gridData[i]);
+				}
+				else {
+					if (!m_UnsupportedGrids.ContainsKey(classID)) {
+						m_UnsupportedGrids[classID] = new List<GridEnforcer.GridData>();
+					}
+					m_UnsupportedGrids[classID].Add(gridData[i]);
+				}
+			}
+
+			// Building fleet info to display in a dialog
+			string fleetInfoBody = buildFleetInfoBody(resp.OwnerType);
+			string fleetInfoTitle = buildFleetInfoTitle(resp.OwnerType);
+
+			// Displaying the fleet information
+			Utility.showDialog(fleetInfoTitle, fleetInfoBody, "Close");
+		}
+
+		#endregion
+		#region Process Response Utilities
+
+		private string buildFleetInfoBody(GridOwner.OWNER_TYPE ownerType) {
+			log("Building Fleet Info Body", "buildFleetInfoBody");
+			string fleetInfoBody = "";
+			List<GridEnforcer.GridData> gdList;
+			for (int i = 0; i < m_Counts.Length; ++i) {
+				if (m_Counts[i] > 0) {
+					fleetInfoBody += (HullClass.CLASS)i + ": " + m_Counts[i] + " / ";
+					if (ownerType == GridOwner.OWNER_TYPE.FACTION) {
+						fleetInfoBody += ServerSettings.HullRules[i].MaxPerFaction + "\n";
+					}
+					else if (ownerType == GridOwner.OWNER_TYPE.PLAYER) {
+						fleetInfoBody += ServerSettings.HullRules[i].MaxPerSoloPlayer + "\n";
+					}
+					else {
+						fleetInfoBody += "0\n";
+					}
+				}
+				if (m_SupportedGrids.ContainsKey(i)) {
+					gdList = m_SupportedGrids[i];
+					for (int j = 0; j < gdList.Count; ++j) {
+						fleetInfoBody += "  " + j + ". " + gdList[j].shipName + " - " + gdList[j].blockCount + " blocks\n";
+						if (gdList[j].displayPos) {
+							fleetInfoBody += "      GPS: " + gdList[j].shipPosition.X + ", " + gdList[j].shipPosition.Y + ", " + gdList[j].shipPosition.Z + "\n";
+						}
+						else {
+							fleetInfoBody += "      GPS: Unavailable - Must own the Main Cockpit\n";
+						}
+					}
+				}
+				if (m_UnsupportedGrids.ContainsKey(i)) {
+					gdList = m_UnsupportedGrids[i];
+					int offset = (m_SupportedGrids.ContainsKey(i) ? m_SupportedGrids[i].Count : 0);
+					fleetInfoBody += "\n  Unsupported:\n";
+					for (int j = 0; j < gdList.Count; ++j) {
+						//Some code logic to continue the numbering of entries where m_SupportedGrid leaves off
+						fleetInfoBody += "     " + (j + offset) + ". " + gdList[j].shipName + " - " + gdList[j].blockCount + " blocks\n";
+						if (gdList[j].displayPos) {
+							fleetInfoBody += "         GPS: " + gdList[j].shipPosition.X + ", " + gdList[j].shipPosition.Y + ", " + gdList[j].shipPosition.Z + "\n";
+						}
+						else {
+							fleetInfoBody += "         GPS: Unavailable - Must own the Main Cockpit\n";
+						}
+					}
+				}
+				fleetInfoBody += "\n";
+			}
+			return fleetInfoBody;
+		}
+		private string buildFleetInfoTitle(GridOwner.OWNER_TYPE ownerType) {
+			string fleetInfoTitle = "";
+			switch (ownerType) {
+				case GridOwner.OWNER_TYPE.FACTION:
+					fleetInfoTitle = "Your Faction's Fleet:";
+					break;
+				case GridOwner.OWNER_TYPE.PLAYER:
+					fleetInfoTitle = "Your Fleet:";
+					break;
+			}
+			return fleetInfoTitle;
 		}
 
 		#endregion

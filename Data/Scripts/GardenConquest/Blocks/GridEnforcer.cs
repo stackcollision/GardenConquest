@@ -32,6 +32,15 @@ namespace GardenConquest.Blocks {
 	public class GridEnforcer : MyGameLogicComponent {
 
 		#region Structs and Enums
+		public struct GridData {
+			public bool supported { get; set; }
+			public long shipID { get; set; }
+			public HullClass.CLASS shipClass { get; set; }
+			public string shipName { get; set; }
+			public int blockCount { get; set; }
+			public bool displayPos { get; set; }
+			public VRageMath.Vector3D shipPosition { get; set; }
+		}
 
 		public enum VIOLATION_TYPE {
 			NONE,
@@ -1451,6 +1460,47 @@ namespace GardenConquest.Blocks {
 		private void log(String message, String method = null, Logger.severity level = Logger.severity.DEBUG) {
 			if (m_Logger != null)
 				m_Logger.log(level, method, message);
+		}
+
+		public void serialize(VRage.ByteStream stream) {
+			stream.addBoolean(SupportedByFleet);
+			stream.addLong(Grid.EntityId);
+			stream.addUShort((ushort)m_EffectiveClass);
+			stream.addString(Grid.DisplayName);
+			stream.addUShort((ushort)BlockCount);
+
+			// Serialize position data if the owner of the grid
+			if (Grid.canDisplayPositionTo(Owner.PlayerID)) {
+				stream.addBoolean(true);
+				stream.addLong((long)Grid.GetPosition().X);
+				stream.addLong((long)Grid.GetPosition().Y);
+				stream.addLong((long)Grid.GetPosition().Z);
+			}
+			else {
+				stream.addBoolean(false);
+			}
+		}
+
+		public static GridData deserialize(VRage.ByteStream stream) {
+			GridData result = new GridData();
+
+			result.supported = stream.getBoolean();
+			result.shipID = stream.getLong();
+			result.shipClass = (HullClass.CLASS)stream.getUShort();
+			result.shipName = stream.getString();
+			result.blockCount = (int)stream.getUShort();
+			result.displayPos = stream.getBoolean();
+			if (result.displayPos) {
+				long x, y, z;
+				x = stream.getLong();
+				y = stream.getLong();
+				z = stream.getLong();
+				result.shipPosition = new VRageMath.Vector3D(x, y, z);
+			}
+			else {
+				result.shipPosition = new VRageMath.Vector3D();
+			}
+			return result;
 		}
 
 		#endregion

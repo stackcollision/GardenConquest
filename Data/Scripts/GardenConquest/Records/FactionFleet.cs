@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Xml.Serialization;
 
 using GardenConquest.Blocks;
+using GardenConquest.Extensions;
 using GardenConquest.Core;
 
 namespace GardenConquest.Records {
@@ -346,6 +347,34 @@ namespace GardenConquest.Records {
 					}
 					result += "\n";
 				}
+			}
+			return result;
+		}
+
+		public void serialize(VRage.ByteStream stream) {
+			stream.addUShort((ushort)TotalCount);
+			for (int i = 0; i < m_Counts.Length; ++i) {
+				if (m_Counts[i] > 0) {
+					if (m_SupportedGrids[i].Count > 0) {
+						foreach (KeyValuePair<long, GridEnforcer> entry in m_SupportedGrids[i])
+							entry.Value.serialize(stream);
+					}
+					if (m_UnsupportedGrids[i].Count > 0) {
+						foreach (KeyValuePair<long, GridEnforcer> entry in m_UnsupportedGrids[i])
+							entry.Value.serialize(stream);
+					}
+				}
+			}
+		}
+
+		public static List<GridEnforcer.GridData> deserialize(VRage.ByteStream stream) {
+			List<GridEnforcer.GridData> result = new List<GridEnforcer.GridData>();
+
+			ushort count = stream.getUShort();
+
+			for (int i = 0; i < count; ++i) {
+				GridEnforcer.GridData incomingData = GridEnforcer.deserialize(stream);
+				result.Add(incomingData);
 			}
 			return result;
 		}
