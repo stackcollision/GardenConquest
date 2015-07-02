@@ -34,7 +34,7 @@ namespace GardenConquest.Core {
 		}
 
 		private static readonly int DEFAULT_CP_PERIOD = 300; // 5 minutes
-		private static readonly int DEFAULT_CLEANUP_PERIOD = 900; //1800; // 30 minutes
+		private static readonly int DEFAULT_CLEANUP_PERIOD = 1200; // 1800; // 30 minutes
 		private static Logger s_Logger;
 		private static ConquestSettings s_Instance;
 
@@ -583,7 +583,7 @@ namespace GardenConquest.Core {
 				MaxPerSoloPlayer = 0,
 				CaptureMultiplier = 4,
 				MaxBlocks = 600,
-                BlockTypeLimits = new int[7] {
+				BlockTypeLimits = new int[7] {
 					//40,  // Conveyors
 					//1,   // Gravity
 					5,     // Industrial

@@ -155,6 +155,9 @@ namespace GardenConquest.Core {
 			// Check for players within the vicinity of the grid, since there's no
 			// built-in way to tell who just placed the block
 			List<long> players = getPlayersNearGrid(ge.Grid);
+
+			if (players.Count <= 0)
+				return;
 			
 			string message = "";
 			if (v == GridEnforcer.VIOLATION_TYPE.TOTAL_BLOCKS)
@@ -181,7 +184,7 @@ namespace GardenConquest.Core {
 			log("Sending message", "eventPlacementViolation");
 			NotificationResponse noti = new NotificationResponse() {
 				NotificationText = message,
-				Time = 5000,
+				Time = Constants.NotificationMillis,
 				Font = MyFontEnum.Red,
 				Destination = players,
 				DestType = BaseResponse.DEST_TYPE.PLAYER
@@ -190,9 +193,11 @@ namespace GardenConquest.Core {
 		}
 
 		public void eventCleanupViolation(GridEnforcer ge, List<GridEnforcer.VIOLATION> violations) {
+			log("Start", "eventCleanupViolation");
 			if (ge == null)
 				return;
 
+			log("Determine destination", "eventCleanupViolation");
 			GridOwner owner = ge.Owner;
 			GridOwner.OWNER_TYPE owner_type = owner.OwnerType;
 			long gridFactionID = ge.Owner.FactionID;
@@ -220,25 +225,30 @@ namespace GardenConquest.Core {
 				}
 			}
 
+			message += "grid '" + ge.Grid.DisplayName + "' ";
 
-			// build notification
-			message += "grid " + ge.Grid.DisplayName + " is violating:"; //: \n";
+			log("Build violations message", "eventCleanupViolation");
+			if (violations != null) {
+				message += "is violating: ";
 
-			foreach (GridEnforcer.VIOLATION violation in violations)
-				message += violation.Name + ": " + violation.Count + "/" + 
-					violation.Limit + "  ";
+				foreach (GridEnforcer.VIOLATION violation in violations)
+					message += violation.Name + ": " + violation.Count + "/" +
+						violation.Limit + " ";
 
+				message += " and ";
+			}
+
+			log("Build time message", "eventCleanupViolation");
 			int secondsUntilCleanup = ge.TimeUntilCleanup;
 
-			if (secondsUntilCleanup > 0)
-				message += "and will have some offending blocks removed in " +
-					Utility.prettySeconds(secondsUntilCleanup);
+			message += "will have some blocks removed in " +
+				Utility.prettySeconds(secondsUntilCleanup);
 
 			// send
 			log("Sending message", "eventDerelictStart");
 			NotificationResponse noti = new NotificationResponse() {
 				NotificationText = message,
-				Time = 6000,
+				Time = Constants.NotificationMillis,
 				Font = MyFontEnum.Red,
 				Destination = Destinations,
 				DestType = destType
@@ -289,7 +299,7 @@ namespace GardenConquest.Core {
 			log("msg built, building noti", "eventDerelictStart");
 			NotificationResponse noti = new NotificationResponse() {
 				NotificationText = message,
-				Time = 6000,
+				Time = Constants.NotificationMillis,
 				Font = MyFontEnum.Red,
 				Destination = Destinations,
 				DestType = destType
@@ -352,7 +362,7 @@ namespace GardenConquest.Core {
 			log("Sending message", "eventDerelictEnd");
 			NotificationResponse noti = new NotificationResponse() {
 				NotificationText = message,
-				Time = 6000,
+				Time = Constants.NotificationMillis,
 				Font = font,
 				Destination = Destinations,
 				DestType = destType
@@ -483,7 +493,7 @@ namespace GardenConquest.Core {
 				log("Sending message", "roundEnd");
 				NotificationResponse endedMessage = new NotificationResponse() {
 					NotificationText = "Conquest Round Ended",
-					Time = 10000,
+					Time = Constants.NotificationMillis,
 					Font = MyFontEnum.White,
 					Destination = null,
 					DestType = BaseResponse.DEST_TYPE.EVERYONE
@@ -494,7 +504,7 @@ namespace GardenConquest.Core {
 				// For every faction that got rewards, tell them
 				NotificationResponse rewardMessage = new NotificationResponse() {
 					NotificationText = "",
-					Time = 10000,
+					Time = Constants.NotificationMillis,
 					Font = MyFontEnum.White,
 					Destination = new List<long>() { 0 },
 					DestType = BaseResponse.DEST_TYPE.FACTION
