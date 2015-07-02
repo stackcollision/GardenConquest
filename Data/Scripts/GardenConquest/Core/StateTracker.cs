@@ -35,13 +35,6 @@ namespace GardenConquest.Core {
 			TokensLastRound = new Dictionary<long, long>();
 			m_Fleets = new Dictionary<long, FactionFleet>();
 			m_PlayerFleets = new Dictionary<long, FactionFleet>();
-
-			if (!loadState()) {
-				// If the state is not loaded from the file we need to create an
-				// empty state
-				m_SavedState = new SavedState();
-				log("State not loaded.  Creating blank state", "ctor");
-			}
 		}
 
 		/// <summary>
@@ -49,8 +42,14 @@ namespace GardenConquest.Core {
 		/// </summary>
 		/// <returns></returns>
 		public static StateTracker getInstance() {
-			if (s_Instance == null)
+			if (s_Instance == null) {
 				s_Instance = new StateTracker();
+
+				// We may need to wait on MyAPIGateway
+				if (!s_Instance.loadState())
+					s_Instance = null;
+			}
+
 			return s_Instance;
 		}
 
@@ -82,22 +81,22 @@ namespace GardenConquest.Core {
 				case GridOwner.OWNER_TYPE.FACTION:
 					if (m_Fleets.ContainsKey(fleetId)) {
 						if (m_Fleets[fleetId].TotalCount == 0) {
-							m_Fleets[fleetId] = null;
+							m_Fleets.Remove(fleetId);
 						}
 					}
 					return;
 				case GridOwner.OWNER_TYPE.PLAYER:
-					if (!m_PlayerFleets.ContainsKey(fleetId)) {
+					if (m_PlayerFleets.ContainsKey(fleetId)) {
 						if (m_PlayerFleets[fleetId].TotalCount == 0) {
-							m_PlayerFleets[fleetId] = null;
+							m_PlayerFleets.Remove(fleetId);
 						}
 					}
 					return;
 				case GridOwner.OWNER_TYPE.UNOWNED:
 				default:
-					if (!m_PlayerFleets.ContainsKey(fleetId)) {
+					if (m_PlayerFleets.ContainsKey(fleetId)) {
 						if (m_PlayerFleets[fleetId].TotalCount == 0) {
-							m_PlayerFleets[fleetId] = null;
+							m_PlayerFleets.Remove(fleetId);
 						}
 					}
 					return;
@@ -146,49 +145,51 @@ namespace GardenConquest.Core {
 		/// <summary>
 		/// Loads the last saved state from the file
 		/// </summary>
-		/// <returns>True if file could be found</returns>
+		/// <returns>True if loaded without exception</returns>
 		private bool loadState() {
 			try {
-				if (MyAPIGateway.Utilities.FileExistsInLocalStorage(
-					Constants.StateFileName, typeof(SavedState))
-				) {
-					DateTime startTime = DateTime.UtcNow;
+				if (!MyAPIGateway.Utilities.FileExistsInLocalStorage(
+					Constants.StateFileName, typeof(SavedState)))
+					goto loadDefault;
 
-					TextReader reader = MyAPIGateway.Utilities.ReadFileInLocalStorage(
-						Constants.StateFileName, typeof(SavedState));
-					m_SavedState =
-						MyAPIGateway.Utilities.SerializeFromXML<SavedState>(reader.ReadToEnd());
-					if (m_SavedState == null) {
-						log("Read null m_SavedState", "loadState");
-						return false;
-					}
+				TextReader reader = MyAPIGateway.Utilities.ReadFileInLocalStorage(
+					Constants.StateFileName, typeof(SavedState));
+				m_SavedState = MyAPIGateway.Utilities.SerializeFromXML<SavedState>(
+					reader.ReadToEnd());
 
-					// Once the state is loaded from the file there's some housekeeping to do
-					// Make a copy of the list to iterate so we can remove from the actual one
-					List<DerelictTimer.DT_INFO> copy =
-						new List<DerelictTimer.DT_INFO>(m_SavedState.DerelictTimers);
-					foreach (DerelictTimer.DT_INFO timer in copy) {
-						// Need to keep track of when the server was started and how many
-						// millis were remaining at that time
-						// This is critical for saving again later
-						timer.StartingMillisRemaining = timer.MillisRemaining;
-						timer.StartTime = startTime;
+				if (m_SavedState == null)
+					goto loadDefault;
 
-						if (timer.StartingMillisRemaining <= 0) {
-							m_SavedState.DerelictTimers.Remove(timer);
-						}
-					}
+				DateTime startTime = DateTime.UtcNow;
+				// Once the state is loaded from the file there's some housekeeping to do
+				// Make a copy of the list to iterate so we can remove from the actual one
+				List<DerelictTimer.DT_INFO> copy =
+					new List<DerelictTimer.DT_INFO>(m_SavedState.DerelictTimers);
+				foreach (DerelictTimer.DT_INFO timer in copy) {
+					// Need to keep track of when the server was started and how many
+					// millis were remaining at that time
+					// This is critical for saving again later
+					//timer.StartingMillisRemaining = timer.MillisRemaining;
+					timer.LastUpdated = startTime;
 
-					log("State loaded from file", "loadState");
-					return true;
-				} else {
-					log("State file not found", "loadState");
-					return false;
+					//if (timer.StartingMillisRemaining <= 0) {
+					//	m_SavedState.DerelictTimers.Remove(timer);
+					//}
 				}
+
+				log("State loaded from file", "loadState");
+				return true;
+
+				loadDefault:
+					log("State file not found, creating blank state", "loadState");
+					m_SavedState = new SavedState();
+					return true;
+
 			} catch (Exception e) {
 				log("Exception occured: " + e, "loadState");
 				return false;
 			}
+
 		}
 
 		public void saveState() {
@@ -201,8 +202,9 @@ namespace GardenConquest.Core {
 					// If this results in a negative time remaining, it means the timer expired but
 					// hasn't been removed from the dictionary yet.  We'll leave it alone and let it go
 					// to the file, but when we try to load it later it'll get dropped
-					int difference = (int)(now - timer.StartTime).TotalMilliseconds;
-					timer.MillisRemaining = timer.StartingMillisRemaining - difference;
+					int difference = (int)(now - timer.LastUpdated).TotalMilliseconds;
+					timer.MillisRemaining = timer.MillisRemaining - difference;
+					timer.LastUpdated = now;
 				}
 
 				// Write the state to the file
@@ -210,10 +212,13 @@ namespace GardenConquest.Core {
 					MyAPIGateway.Utilities.WriteFileInLocalStorage(
 					Constants.StateFileName, typeof(SavedState));
 				writer.Write(MyAPIGateway.Utilities.SerializeToXML<SavedState>(m_SavedState));
+
 				writer.Flush();
+				writer.Close();
+				writer = null;
 				log("Write finished", "saveState");
 			} catch (Exception e) {
-				log("Exception occured: " + e, "saveState");
+				log("Exception occured: " + e, "saveState", Logger.severity.ERROR);
 			}
 		}
 

@@ -87,10 +87,10 @@ namespace GardenConquest.Core {
 			// If the server is a player (non-dedicated) they also need to receive notifications
 			if (!MyAPIGateway.Utilities.IsDedicated) {
 				m_LocalReceiver = new ResponseProcessor(false);
-				m_MailMan.localReceiver += m_LocalReceiver.incomming;
+				m_MailMan.localMsgSent += m_LocalReceiver.incomming;
 				m_CmdProc = new CommandProcessor(m_LocalReceiver);
 				m_CmdProc.initialize();
-				m_LocalReceiver.requestCPGPS();
+				m_LocalReceiver.requestSettings();
 			}
 
 			// Subscribe events
@@ -111,7 +111,7 @@ namespace GardenConquest.Core {
 			GridEnforcer.OnCleanupTimerEnd -= eventCleanupTimerEnd;
 
 			if (m_LocalReceiver != null) {
-				m_MailMan.localReceiver -= m_LocalReceiver.incomming;
+				m_MailMan.localMsgSent -= m_LocalReceiver.incomming;
 				m_LocalReceiver.unload();
 				m_LocalReceiver = null;
 			}
@@ -156,12 +156,14 @@ namespace GardenConquest.Core {
 				message = "No more blocks allowed for this Class";
 			else if (v == GridEnforcer.VIOLATION_TYPE.BLOCK_TYPE)
 				message = "No more blocks of this type allowed for this Class";
-			else if (v == GridEnforcer.VIOLATION_TYPE.DOUBLE_CLASSIFICATION)
+			else if (v == GridEnforcer.VIOLATION_TYPE.TOO_MANY_CLASSIFIERS)
 				message = "Only one Hull Classifier allowed";
+			else if (v == GridEnforcer.VIOLATION_TYPE.SHOULD_BE_STATIC)
+				message = "This classifier is only allowed on Stations";
 			else if (v == GridEnforcer.VIOLATION_TYPE.TOO_MANY_OF_CLASS) {
 				GridOwner.OWNER_TYPE owner_type = ge.Owner.OwnerType;
 				if (owner_type == GridOwner.OWNER_TYPE.UNOWNED) {
-					message = "Unowned grids can't be classified";
+					message = "Take ownership of this grid or it will eventually be removed.";
 				}
 				else if (owner_type == GridOwner.OWNER_TYPE.PLAYER) {
 					message = "No more ships of this class allowed in this player's fleet. " +
@@ -240,16 +242,12 @@ namespace GardenConquest.Core {
 		}
 
 		public void eventCleanupTimerStart(GridEnforcer ge, int secondsRemaining) {
-			log("start", "eventCleanupTimerStart", Logger.severity.TRACE);
 			if (ge == null)
 				return;
 
 			GridOwner owner = ge.Owner;
-			log("owner", "eventCleanupTimerStart", Logger.severity.TRACE);
 			GridOwner.OWNER_TYPE owner_type = owner.OwnerType;
-			log("owner_type", "eventCleanupTimerStart", Logger.severity.TRACE);
 			long gridFactionID = ge.Owner.FactionID;
-			log("gridFaction", "eventCleanupTimerStart", Logger.severity.TRACE);
 
 			BaseResponse.DEST_TYPE destType = BaseResponse.DEST_TYPE.NONE;
 			List<long> Destinations = new List<long>();

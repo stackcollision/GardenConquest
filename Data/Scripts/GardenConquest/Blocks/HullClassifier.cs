@@ -35,9 +35,22 @@ namespace GardenConquest.Blocks {
 		/// Otherwise, return Unclassified
 		/// </summary>
 		private static HullClass.CLASS HullClassFromSubTypeString(String subTypeString) {
-			for (int i = 0; i < SUBTYPES_IN_CLASS_ORDER.Length; i++)
-				if (subTypeString.Contains(SUBTYPES_IN_CLASS_ORDER[i]))
-					return (HullClass.CLASS)i;
+			int longestMatchIndex = -1;
+			String subtype;
+			for (int i = 0; i < SUBTYPES_IN_CLASS_ORDER.Length; i++) {
+				subtype = SUBTYPES_IN_CLASS_ORDER[i];
+				if (subTypeString.Contains(subtype)) {
+					if (longestMatchIndex == -1) {
+						longestMatchIndex = i;
+					} else if (subtype.Length > SUBTYPES_IN_CLASS_ORDER[longestMatchIndex].Length) {
+							longestMatchIndex = i;
+					}
+				}
+			}
+
+			if (longestMatchIndex > -1) {
+				return (HullClass.CLASS)longestMatchIndex;
+			}
 
 			// subtype not recognized, this shouldn't happen
 			log("Classifier Subtype not recognized, defaulting to Unclassified", 

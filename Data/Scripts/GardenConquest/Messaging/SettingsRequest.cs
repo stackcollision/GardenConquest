@@ -9,11 +9,11 @@ namespace GardenConquest.Messaging {
 	/// <summary>
 	/// Requests CP GPS coordinates from the server
 	/// </summary>
-	public class CPGPSRequest : BaseRequest {
+	public class SettingsRequest : BaseRequest {
 		// No special data needed
 
-		public CPGPSRequest()
-			: base(BaseRequest.TYPE.CPGPS) {
+		public SettingsRequest()
+			: base(BaseRequest.TYPE.SETTINGS) {
 			// Empty
 		}
 	}

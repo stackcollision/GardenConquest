@@ -34,13 +34,9 @@ namespace GardenConquest.Records {
 
 			public long GridID;
 			public int MillisRemaining;
+			public DateTime LastUpdated;
 			public int TimerLength;
 			public PHASE Phase;
-
-			[XmlIgnore]
-			public DateTime StartTime;
-			[XmlIgnore]
-			public int StartingMillisRemaining;
 		}
 
 		private DT_INFO m_TimerInfo = null;
@@ -118,9 +114,7 @@ namespace GardenConquest.Records {
 				m_TimerInfo.Phase = DT_INFO.PHASE.INITIAL;
 				m_TimerInfo.TimerLength = seconds * 1000;
 				m_TimerInfo.MillisRemaining = m_TimerInfo.TimerLength;
-
-				m_TimerInfo.StartTime = DateTime.UtcNow;
-				m_TimerInfo.StartingMillisRemaining = m_TimerInfo.MillisRemaining;
+				m_TimerInfo.LastUpdated = DateTime.UtcNow;
 
 				m_Timer = new MyTimer(m_TimerInfo.MillisRemaining, timerExpired);
 				m_Timer.Start();
@@ -178,6 +172,44 @@ namespace GardenConquest.Records {
 			m_TimerInfo = null;
 
 			TimerExpired = true;
+		}
+
+		public void updateTimeRemaining() {
+			//log("", "updateTimeRemaining");
+
+			if (TimerExpired) {
+				return;
+			}
+
+			// Update Time Remaining
+			DateTime currentTime = DateTime.UtcNow;
+
+			int millisSinceLastUpdate = (int)(currentTime - m_TimerInfo.LastUpdated).TotalMilliseconds;
+
+			//log(String.Format("current time {0}, last updated {1}, millis since {2}, old millis remaining {3}",
+			//	currentTime, m_TimerInfo.StartTime, millisSinceLastUpdate, m_TimerInfo.MillisRemaining), "updateTimeRemaining");
+
+			m_TimerInfo.MillisRemaining = m_TimerInfo.MillisRemaining - millisSinceLastUpdate;
+			m_TimerInfo.LastUpdated = currentTime;
+
+			//log(String.Format("new millis remaining {0}",
+			//	m_TimerInfo.MillisRemaining), "updateTimeRemaining");
+
+			// If there's negative time left, we missed an expiration
+			if (m_TimerInfo.MillisRemaining <= 0) {
+				if (m_Timer == null) {
+					log("negative time left but unexpired, no timer stored",
+						"updateTimeRemaining", Logger.severity.ERROR);
+				}
+				else {
+					log("timer failed to trigger expire",
+						"updateTimeRemaining", Logger.severity.ERROR);
+				}
+
+				// uncomment this to hotfix the issue
+				log("manually expiring","updateTimeRemaining", Logger.severity.WARNING);
+				timerExpired();
+			}
 		}
 
 		private void log(String message, String method = null, Logger.severity level = Logger.severity.DEBUG) {

@@ -67,6 +67,9 @@ namespace GardenConquest.Core {
 		public HullRuleSet[] HullRules {
 			get { return m_Settings.HullRules; }
 		}
+		public SETTINGS Settings {
+			get { return m_Settings; }
+		}
 		public bool WriteFailed { get; private set; }
 
 		#endregion
@@ -167,6 +170,8 @@ namespace GardenConquest.Core {
 
 				writer.Write(MyAPIGateway.Utilities.SerializeToXML<SETTINGS>(m_Settings));
 				writer.Flush();
+				writer.Close();
+				writer = null;
 				log("Config written", "writeSettings");
 
 				WriteFailed = false;
@@ -354,7 +359,8 @@ namespace GardenConquest.Core {
 				MaxPerSoloPlayer = 0,
 				CaptureMultiplier = 2,
 				MaxBlocks = 600,
-				BlockTypeLimits = new int[2] { 2, 0 }
+				BlockTypeLimits = new int[2] { 2, 0 },
+				ShouldBeStation = true
 			};
 			results[(int)HullClass.CLASS.INSTALLATION] = new HullRuleSet() {
 				DisplayName = "Installation",
@@ -362,7 +368,8 @@ namespace GardenConquest.Core {
 				MaxPerSoloPlayer = 0,
 				CaptureMultiplier = 4,
 				MaxBlocks = 1800,
-				BlockTypeLimits = new int[2] { 4, 0 }
+				BlockTypeLimits = new int[2] { 4, 0 },
+				ShouldBeStation = true
 			};
 			results[(int)HullClass.CLASS.FORTRESS] = new HullRuleSet() {
 				DisplayName = "Fortress",
@@ -370,7 +377,8 @@ namespace GardenConquest.Core {
 				MaxPerSoloPlayer = 0,
 				CaptureMultiplier = 6,
 				MaxBlocks = 2700,
-				BlockTypeLimits = new int[2] { 6, 0 }
+				BlockTypeLimits = new int[2] { 6, 0 },
+				ShouldBeStation = true
 			};
 
 			return results;

@@ -13,9 +13,9 @@ namespace GardenConquest.Messaging {
 	/// </summary>
 	public class BaseRequest {
 		public enum TYPE {
-			CPGPS,
 			FLEET,
-			VIOLATIONS
+			VIOLATIONS,
+			SETTINGS
 		}
 
 		public TYPE MsgType { get; set; }
@@ -47,11 +47,11 @@ namespace GardenConquest.Messaging {
 
 			BaseRequest msg = null;
 			switch (t) {
-				case TYPE.CPGPS:
-					msg = new CPGPSRequest();
-					break;
 				case TYPE.FLEET:
 					msg = new FleetRequest();
+					break;
+				case TYPE.SETTINGS:
+					msg = new SettingsRequest();
 					break;
 				case TYPE.VIOLATIONS:
 					msg = new ViolationsRequest();
