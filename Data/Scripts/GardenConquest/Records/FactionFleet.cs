@@ -156,15 +156,16 @@ namespace GardenConquest.Records {
 
 				// it is!
 				if (ge.BlockCount > supported.BlockCount) {
-					log("it's larger than one of our supporting, supporting", "updateSupportAdded");
+					log("it's larger than one of our supported, supporting", "updateSupportAdded");
 
 					// remove support from the old supported one
+					log("removing support from " + supportedID, "updateSupportAdded");
 					m_SupportedGrids[c].Remove(supportedID);
 					m_UnsupportedGrids[c][supportedID] = supported;
 					supported.markUnsupported(m_FactionId);
 
 					// add support to the new
-					log("supporting", "updateSupportAdded");
+					log("supporting " + eID, "updateSupportAdded");
 					m_SupportedGrids[c][eID] = ge;
 					ge.markSupported(m_FactionId);
 

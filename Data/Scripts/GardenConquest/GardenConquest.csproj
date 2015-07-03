@@ -32,8 +32,9 @@
     <PlatformTarget>x86</PlatformTarget>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Sandbox.Common">
-      <HintPath>..\..\..\..\..\..\..\..\..\..\SteamLibrary\steamapps\common\SpaceEngineers\Bin\Sandbox.Common.dll</HintPath>
+    <Reference Include="Sandbox.Common, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Steam\SteamApps\common\SpaceEngineers\Bin\Sandbox.Common.dll</HintPath>
     </Reference>
     <Reference Include="Sandbox.Game">
       <HintPath>..\..\..\..\..\..\..\..\..\..\SteamLibrary\steamapps\common\SpaceEngineers\Bin\Sandbox.Game.dll</HintPath>
@@ -46,7 +47,7 @@
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
     <Reference Include="VRage.Game">
-      <HintPath>..\..\..\..\..\..\..\..\..\..\SteamLibrary\steamapps\common\SpaceEngineers\Bin\VRage.Game.dll</HintPath>
+      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Steam\SteamApps\common\SpaceEngineers\Bin\VRage.Game.dll</HintPath>
     </Reference>
     <Reference Include="VRage.Library">
       <HintPath>..\..\..\..\..\..\..\..\..\..\SteamLibrary\steamapps\common\SpaceEngineers\Bin\VRage.Library.dll</HintPath>
@@ -63,11 +64,11 @@
     <Compile Include="Messaging\BaseRequest.cs" />
     <Compile Include="Messaging\BaseResponse.cs" />
     <Compile Include="Extensions\ByteConverterExtension.cs" />
+    <Compile Include="Messaging\SettingsRequest.cs" />
+    <Compile Include="Messaging\SettingsResponse.cs" />
     <Compile Include="Messaging\NotificationResponse.cs" />
     <Compile Include="Messaging\ViolationsRequest .cs" />
     <Compile Include="Messaging\FleetRequest.cs" />
-    <Compile Include="Messaging\CPGPSRequest.cs" />
-    <Compile Include="Messaging\CPGPSResponse.cs" />
     <Compile Include="Messaging\DialogResponse.cs" />
     <Compile Include="Constants.cs" />
     <Compile Include="Core\CoreComponent.cs" />

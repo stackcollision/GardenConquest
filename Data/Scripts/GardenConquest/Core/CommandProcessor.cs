@@ -24,6 +24,7 @@ namespace GardenConquest.Core {
 		private static Logger s_Logger = null;
 
 		private static string s_HelpText =
+			" ----- Garden Conquest V" + Constants.Version + " ------ \n\n" +
 			"Garden Conquest is a new, open source, Conquest-type mod. " +
 			"It introduces ship classes and control points for " +
 			"combat-focused servers.\n\n" +

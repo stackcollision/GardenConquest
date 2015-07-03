@@ -50,10 +50,12 @@ namespace GardenConquest.Blocks {
 			public int Limit { get; set; }
 		}
 
-		private static readonly int CLEANUP_CLASS_TICKS = 4; // So 2 hours with default 30 min ticks
-		private static readonly int CLEANUP_STATIC_TICKS = 2;
-		private static readonly int CLEANUP_NOTIFY_WAIT = 5;
-		private static readonly float CLEANUP_RATE = .25f;
+		private static readonly bool CLEANUP_PREFABS_IMMEDIATELY = true;
+		private static readonly int PREFAB_BLOCK_THRESHOLD = 200;
+		private static readonly int CLEANUP_CLASS_TICKS = 1; // So 30 min with default 30 min ticks
+		private static readonly int CLEANUP_STATIC_TICKS = 96; // 2 days
+		private static readonly int CLEANUP_NOTIFY_WAIT = 180; // 3 minutes
+		private static readonly float CLEANUP_RATE = .15f;
 		private static readonly HullClass.CLASS DEFAULT_CLASS = HullClass.CLASS.UNCLASSIFIED;
 
 		private static ConquestSettings s_Settings;
@@ -78,7 +80,8 @@ namespace GardenConquest.Blocks {
 		// But if that block is incomplete/offline/damaged then the rules are
 		// still applied as if it was UNCLASSIFIED
 		private HullClassifier m_Classifier;
-		private Dictionary<long, HullClassifier> m_ExtraClassifiers;
+		private bool m_ClassifierWorking;
+		private Dictionary<long, HullClassifier> m_Classifiers;
 		private HullClass.CLASS m_ReservedClass;
 		private HullClass.CLASS m_EffectiveClass;
 		private HullRuleSet m_ReservedRules;
@@ -97,6 +100,7 @@ namespace GardenConquest.Blocks {
 		private bool m_BeyondFirst100 = false;
 		private bool m_StateLoaded = false;
 		private bool m_Merging = false;
+		private bool m_CheckClassifierNextUpdate;
 		private bool m_CheckCleanupNextUpdate;
 		private bool m_CheckOwnerNextUpdate;
 		private bool m_NotifyViolationsNextUpdate;
@@ -237,14 +241,13 @@ namespace GardenConquest.Blocks {
 			m_BlockCount = 0;
 			m_BlockTypeCounts = new int[s_Settings.BlockTypes.Length];
 			m_Owner = new GridOwner(this);
-			m_ExtraClassifiers = new Dictionary<long, HullClassifier>();
+			m_Classifiers = new Dictionary<long, HullClassifier>();
 			m_Projectors = new Dictionary<long, InGame.IMyProjector>();
-
-			setReservedToDefault();
-			setEffectiveToDefault();
-			//log("setClassification" + m_IsServer, "Init");
-			m_Owner.setClassification(m_EffectiveClass);
-			//log("end setClassification" + m_IsServer, "Init");
+			m_ReservedClass = DEFAULT_CLASS;
+			m_ReservedRules = s_Settings.HullRules[(int)DEFAULT_CLASS];
+			m_EffectiveClass = DEFAULT_CLASS;
+			m_EffectiveRules = s_Settings.HullRules[(int)DEFAULT_CLASS];
+			reserveEffectiveClassFromOwner();
 
 			m_Grid.OnBlockAdded += blockAdded;
 			m_Grid.OnBlockRemoved += blockRemoved;
@@ -263,8 +266,7 @@ namespace GardenConquest.Blocks {
 		private void unServerize() {
 			detatchGrid();
 			detatchOwner();
-			detatchClassifier(false);
-			m_ExtraClassifiers = null;
+			detatchClassifiers();
 			detatchCleanupTimer();
 			m_Owner = null;
 			m_Logger = null;
@@ -340,16 +342,27 @@ namespace GardenConquest.Blocks {
 					}
 				}
 
-				// check for failed derelict timers
+				// check for existing cleanup, fix failed timers and let owner know
+				// if cleanup is ongoing
 				if (m_CleanupTimer != null) {
 					m_CleanupTimer.updateTimeRemaining();
+					notifyViolations();
 				}
 
 				// Update ownership
-				if (m_CheckOwnerNextUpdate || m_CheckCleanupNextUpdate) {
+				if (m_CheckOwnerNextUpdate || m_CheckCleanupNextUpdate || m_CheckClassifierNextUpdate) {
+					log("checking owner due to flag", "UpdateBeforeSimulation100");
 					m_CheckOwnerNextUpdate = false;
 
 					reevaluateOwnership();
+				}
+
+				// Update classification
+				if (m_CheckClassifierNextUpdate) {
+					log("checking classifier due to flag", "UpdateBeforeSimulation100");
+					m_CheckClassifierNextUpdate = false;
+
+					reevaluateClassification();
 				}
 
 				// Update cleanup state - violations & timers
@@ -397,61 +410,71 @@ namespace GardenConquest.Blocks {
 			//log(added.ToString() + " added to grid " + m_Grid.DisplayName, "blockAdded");
 
 			try {
-				// = update block counts and grid state, get violations
-				//
-				// Block counts must be updated whether we're removing the block or not,
+				// Counts and Caches must be updated whether we're removing the block or not,
 				// because blockRemoved has no way of knowing if we touched counts for it
-
-				// update classification first since this influences limits
-				bool classified;
-				VIOLATION_TYPE classifierViolation = updateClassificationWith(added, out classified);
-
-				// update total count
-				VIOLATION_TYPE totalBlocksViolation = incrementTotalBlocks(classified);
-
-				// update type counts
+				log("Update block lists and counts", "blockAdded");
+				VIOLATION_TYPE classifierViolation = updateClassifiersWith(added);
+				VIOLATION_TYPE totalBlocksViolation = incrementBlockCount();
 				List<BlockType> violatedTypes = updateBlockTypeCountsWith(added);
+				updateProjectorsWith(added);
 
-				// update projectors
-				// track these outside of block types, because those are currently user-configurable
-				InGame.IMyProjector projector = added.FatBlock as InGame.IMyProjector;
-				if (projector != null) {
-					log("Added a projector", "blockAdded");
-					m_Projectors.Add(projector.EntityId, projector);
+				// we skip violation checks:
+				// for blocks that aren't actually placed by a user, i.e. during World Load or a Merge
+				log("checking enforcement skip conditions", "blockAdded");
+
+				if (m_Merging || !m_BeyondFirst100) {
+					log("Currently merging or initing, don't do placement enforcment",
+						"blockAdded");
+					goto Allowed;
 				}
-
-				// = If there are violations, remove the block and notify the appropriate parties
-
-				// we skip violation checks for blocks being added that aren't actually placed by a user,
-				// i.e. during World Load or a Merge
-				// we clean those up over time with Cleanup
-				if (classified || m_Merging || !m_BeyondFirst100 || Projecting) {
-					log("Currently merging, initing, classifying, or projecting. Must allow.", "blockAdded");
-					m_CheckCleanupNextUpdate = true;
+				// if we're projecting
+				if (Projecting) {
+					log("We are projecting, don't do placement enforcment",
+						"blockAdded");
 					goto Allowed;
 				}
 
-				// if violations, notify and deny
+				// If there are violations, disallow placement
+				// Everything will eventually be cleaned up over time, but we do this
+				// enforcment on placement to help keep people in line
+				log("check placement violations", "blockAdded");
+
+				// classifier violations come first
 				if (classifierViolation != VIOLATION_TYPE.NONE) {
-					log("classifierViolation", "blockAdded");
+
+					// people find it really annoying that they have to have an
+					// owned block before placing a classifier.
+					if (classifierViolation == VIOLATION_TYPE.TOO_MANY_OF_CLASS &&
+						isUnowned()) {
+						log("Too many of class but unowned, don't do placement enforcment",
+							"checkClassAllowed");
+						goto Allowed;
+					}
+
+					log("classifierViolation enforce", "blockAdded");
 					notifyPlacementViolation(classifierViolation);
 					goto Denied;
 				}
+
+				// then total blocks
 				else if (totalBlocksViolation != VIOLATION_TYPE.NONE) {
-					if (providesNeededPower(added)) {
-						// note this is not perfect because it allows people to stack
-						// infintely many reactors in this specific situation, but that's not
-						// really prone to exploitation...
-						log("too many blocks but provides needed power, must allow", "blockAdded");
+
+					// people also find it annoying to have to delete all the blocks
+					// on a ship that just became unclassified before they can build
+					// another classifier or reactor to bring it in line
+					if (helpsClassifyUnclassified(added)) {
+						log("provides needed classification, don't do placement enforcment",
+							"blockAdded");
 						goto Allowed;
 					}
-					log("totalBlocksViolation", "blockAdded");
+
+					log("totalBlocksViolation enforce", "blockAdded");
 					notifyPlacementViolation(totalBlocksViolation);
 					goto Denied;
 				}
 				else if (violatedTypes.Count > 0) {
-					log("block type violation", "blockAdded");
 					notifyPlacementViolation(VIOLATION_TYPE.BLOCK_TYPE);
+					log("block type violation enforced", "blockAdded");
 					goto Denied;
 				}
 			}
@@ -463,7 +486,7 @@ namespace GardenConquest.Blocks {
 			log(added.ToString() + " added to grid '" + m_Grid.DisplayName +
 				"'. Total Count now: " + m_BlockCount, "blockAdded");
 			m_CheckOwnerNextUpdate = true;
-			m_CheckCleanupNextUpdate = true; // temporarily doing this on block add too, let's see if it's ok
+			m_CheckCleanupNextUpdate = true;
 			return;
 
 		Denied:
@@ -473,18 +496,28 @@ namespace GardenConquest.Blocks {
 			removeBlock(added);
 		}
 
+
+		private void updateProjectorsWith(IMySlimBlock block) {
+			log("", "updateBlockCountsWith");
+
+			InGame.IMyProjector projector = block.FatBlock as InGame.IMyProjector;
+			if (projector != null) {
+				log("Added a projector", "blockAdded");
+				m_Projectors.Add(projector.EntityId, projector);
+			}
+		}
+
 		/// <summary>
 		/// Applies the new class if block is a Classifier and we can reserve the Class
 		/// Returns true if this was a happy update,
 		/// false if the block needs to be removed
 		/// </summary>
 		/// <param name="block"></param>
-		private VIOLATION_TYPE updateClassificationWith(IMySlimBlock block, out bool applied) {
-			//log("", "updateClassificationWith");
+		private VIOLATION_TYPE updateClassifiersWith(IMySlimBlock block) {
+			log("", "updateClassificationWith");
 			try {
 				// If it's not a classifier, we don't care about it
 				if (!HullClassifier.isClassifierBlock(block)) {
-					applied = false;
 					return VIOLATION_TYPE.NONE;
 				}
 
@@ -495,66 +528,25 @@ namespace GardenConquest.Blocks {
 					s_Settings.HullRules[(int)classID].DisplayName,
 					"updateClassificationWith");
 
-				// if we're initializing or merging this grid, the block must be placed,
-				// so determine which classifier to use. The others will be cleaned up later
-				if ((!m_BeyondFirst100 || m_Merging)) {
-					log("init/merge, must add it", "updateClassificationWith");
-
-					if (m_Classifier == null) {
-						log("new classifier", "updateClassificationWith");
-						goto Reserve;
-					}
-
-					if (classID > m_ReservedClass) {
-						log("better than what we have", "updateClassificationWith");
-						m_ExtraClassifiers.Add(m_Classifier.FatBlock.EntityId, m_Classifier);
-						unsetClassifier();
-						goto Reserve;
-					}
-
-					log("extra classifier", "updateClassificationWith");
-					m_ExtraClassifiers.Add(classifier.FatBlock.EntityId, classifier);
-					applied = false;
-					return VIOLATION_TYPE.NONE;
-				}
+				addClassifier(classifier);
 
 				// Ensure it's the right type for this grid
 				if (s_Settings.HullRules[(int)classifier.Class].ShouldBeStation && !m_Grid.IsStatic) {
-					applied = false;
 					return VIOLATION_TYPE.SHOULD_BE_STATIC;
 				}
 
 				// Two classifiers not allowed
-				//log("Existing classifier? " + (m_Classifier != null), "updateClassificationWith");
-				if (m_Classifier != null) {
-					log("Too many classifiers", "updateClassificationWith");
-					applied = false;
+				if (m_Classifiers.Count > 1) {
 					return VIOLATION_TYPE.TOO_MANY_CLASSIFIERS;
 				}
 
 				// Too many per Player/Faction not allowed
-				bool fleetAllows = checkClassAllowed(classID);
-				//log("Too many per Player/Faction? " + !fleetAllows, "updateClassificationWith");
-				if (!fleetAllows) {
-					log("Too many of this class for this owner", "updateClassificationWith");
-					applied = false;
+				if (!checkClassAllowed(classID)) {
 					return VIOLATION_TYPE.TOO_MANY_OF_CLASS;
 				}
-
-			Reserve:
-				log("Applying classifier", "updateClassificationWith");
-				setClassifier(classifier);
-
-				// let block enforcement know to let this thing through
-				applied = true;
-
-				// the rules of the new class might be broken by existing blocks,
-				// check next update
-				m_CheckCleanupNextUpdate = true;
 			}
 			catch (Exception e) {
 				log("Error: " + e, "updateClassificationWith", Logger.severity.ERROR);
-				applied = false;
 			}
 
 			return VIOLATION_TYPE.NONE;
@@ -564,22 +556,33 @@ namespace GardenConquest.Blocks {
 		/// Adds 1 to total block count
 		/// returns a violation if over the limit
 		/// </summary>
-		private VIOLATION_TYPE incrementTotalBlocks(bool classified) {
+		private VIOLATION_TYPE incrementBlockCount() {
+			log("", "incrementTotalBlocks");
 			m_BlockCount++;
 			//log("new count " + m_BlockCount, "incrementTotalBlocks");
-			//log("m_EffectiveRules.DisplayName " + m_EffectiveRules.DisplayName, "incrementTotalBlocks");
-			//log("m_EffectiveRules.MaxBlocks " + m_EffectiveRules.MaxBlocks, "incrementTotalBlocks");
+			log("m_EffectiveRules: ", "incrementTotalBlocks");
+			log("m_EffectiveRules.DisplayName " + m_EffectiveRules.DisplayName, "incrementTotalBlocks");
+			log("m_EffectiveRules.MaxBlocks " + m_EffectiveRules.MaxBlocks, "incrementTotalBlocks");
 
 			if (m_BlockCount > m_EffectiveRules.MaxBlocks) {
-
-				// let applied classifiers through this limit
-				if (classified) {
-					return VIOLATION_TYPE.NONE;
-				}
 				return VIOLATION_TYPE.TOTAL_BLOCKS;
 			}
 
 			return VIOLATION_TYPE.NONE;
+		}
+
+		private bool helpsClassifyUnclassified(IMySlimBlock block) {
+			if (m_EffectiveClass != DEFAULT_CLASS) {
+				return false;
+			}
+
+			if (m_ReservedClass == DEFAULT_CLASS) {
+				return HullClassifier.isClassifierBlock(block);
+			}
+			else {
+				IMyReactor reactor = block.FatBlock as IMyReactor;
+				return (reactor != null);
+			}
 		}
 
 		/// <summary>
@@ -587,6 +590,7 @@ namespace GardenConquest.Blocks {
 		/// Returns the violated limits if any
 		/// </summary>
 		private List<BlockType> updateBlockTypeCountsWith(IMySlimBlock block) {
+			log("", "updateBlockCountsWith");
 			List<BlockType> violated_types = new List<BlockType>();
 
 			BlockType[] types = s_Settings.BlockTypes;
@@ -608,38 +612,6 @@ namespace GardenConquest.Blocks {
 			return violated_types;
 		}
 
-		/// <summary>
-		/// Certain classes have count limitations.  Check if this faction can have any more
-		/// of this class.
-		/// </summary>
-		/// <param name="c">Class to check</param>
-		/// <returns>True if the class is allowed</returns>
-		private bool checkClassAllowed(HullClass.CLASS c) {
-			log("checking if fleet can support more of " + c, "checkClassAllowed");
-			// update ownership/fleet now to get the player the most up-to-date info
-			reevaluateOwnership();
-			if (m_Owner.OwnerType == GridOwner.OWNER_TYPE.UNOWNED) {
-				// people find it really annoying that they have to have an owned block before placing a classifier.
-				// Fleet Support will still take care of this for us via cleanup down the line.
-				// Players would need to look at their fleet and notice this isn't there to know it's still under cleanup,
-				// because it wouldn't be listed in their violations
-				log("No owner, thus no way to tell if too many of class, but allowing for convenience",
-					"checkClassAllowed");
-				notifyPlacementViolation(VIOLATION_TYPE.TOO_MANY_OF_CLASS);
-				return true;
-			}
-
-			return m_Owner.Fleet.canSupportAnother(c);
-		}
-
-		private bool providesNeededPower(IMySlimBlock block) {
-			if (m_EffectiveClass == HullClass.CLASS.UNCLASSIFIED &&
-				m_ReservedClass != HullClass.CLASS.UNCLASSIFIED) {
-				IMyReactor reactor = block.FatBlock as IMyReactor;
-				return (reactor != null);
-			}
-			return false;
-		}
 
 		#endregion
 		#region SE Hooks - Block Removed
@@ -649,66 +621,36 @@ namespace GardenConquest.Blocks {
 		/// </summary>
 		/// <param name="removed"></param>
 		private void blockRemoved(IMySlimBlock removed) {
-			m_BlockCount--;
-			log(removed.ToString() + " removed from grid '" + m_Grid.DisplayName +
-				"'. Total Count now: " + m_BlockCount, "blockRemoved");
+			try {
+				updateClassificationWithout(removed);
+				decrementBlockCount();
+				updateBlockTypeCountsWithout(removed);
+				updateProjectorsWithout(removed);
 
-			updateClassificationWithout(removed);
-			updateBlockTypeCountsWithout(removed);
+				log(removed.ToString() + " removed from grid '" + m_Grid.DisplayName +
+					"'. Total Count now: " + m_BlockCount, "blockRemoved");
 
-			// update projectors
-			// track these outside of block types, because those are currently user-configurable
-			InGame.IMyProjector projector = removed.FatBlock as InGame.IMyProjector;
-			if (projector != null) {
-				log("Removed a projector", "blockRemoved");
-				m_Projectors.Remove(projector.EntityId);
+				m_CheckCleanupNextUpdate = true;
+
+			} catch (Exception e) {
+				log("Error: " + e, "blockRemoved");
 			}
+		}
 
-			m_CheckCleanupNextUpdate = true;
+		private void decrementBlockCount() {
+			m_BlockCount--;
 		}
 
 		/// <summary>
 		/// Removes the classifier and reserved class if block is a Classifier
 		/// </summary>
 		private void updateClassificationWithout(IMySlimBlock block) {
-			// Not a classifier?
+			// classifier?
 			if (!HullClassifier.isClassifierBlock(block))
 				return;
 
 			log("removing classifier", "updateClassificationWithout");
-
-			// Not in use?
-			if (m_Classifier == null || !m_Classifier.SlimBlock.Equals(block)) {
-				log("wasn't in use, removing from extra classifiers list", "updateClassificationWithout");
-				m_ExtraClassifiers.Remove(block.FatBlock.EntityId);
-				return;
-			}
-
-			log("in use, unsetting", "updateClassificationWithout");
-			//demoteClass(); // would have happened before
-			unsetClassifier();
-
-			//log("looking for existing alternatives", "updateClassificationWithout");
-			long bestClassifierID = 0;
-			HullClass.CLASS hc = HullClass.CLASS.UNCLASSIFIED;
-			HullClass.CLASS bestClassAvailable = HullClass.CLASS.UNCLASSIFIED;
-			foreach (KeyValuePair<long, HullClassifier> entry in m_ExtraClassifiers) {
-				hc = entry.Value.Class;
-				if (hc > bestClassAvailable) {
-					bestClassifierID = entry.Key;
-					bestClassAvailable = hc;
-				}
-			}
-
-			if (bestClassAvailable > HullClass.CLASS.UNCLASSIFIED) {
-				log("found an alternative existing classifier", "updateClassificationWithout");
-				setClassifier(m_ExtraClassifiers[bestClassifierID]);
-				m_ExtraClassifiers.Remove(bestClassifierID);
-				// existing classifiers might already be Working
-				classifierWorkingChanged(m_Classifier.FatBlock);
-			}
-
-			m_CheckCleanupNextUpdate = true;
+			removeClassifier(block.FatBlock.EntityId);
 		}
 
 		/// <summary>
@@ -726,6 +668,16 @@ namespace GardenConquest.Blocks {
 			}
 		}
 
+		private void updateProjectorsWithout(IMySlimBlock block) {
+			// update projectors
+			// track these outside of block types, because those are currently user-configurable
+			InGame.IMyProjector projector = block.FatBlock as InGame.IMyProjector;
+			if (projector != null) {
+				log("Removed a projector", "blockRemoved");
+				m_Projectors.Remove(projector.EntityId);
+			}
+		}
+
 		#endregion
 		#region SE Hooks - Block Owner Changed
 
@@ -738,9 +690,12 @@ namespace GardenConquest.Blocks {
 		/// </remarks>
 		/// <param name="changed"></param>
 		private void blockOwnerChanged(IMyCubeGrid changed) {
-			log("flagging for ownership check next update",
-				"blockOwnerChanged", Logger.severity.TRACE);
-			m_CheckOwnerNextUpdate = true;
+			try {
+				log("flagging for ownership check next update", "blockOwnerChanged");
+				m_CheckOwnerNextUpdate = true;
+			} catch (Exception e) {
+				log("Error: " + e, "blockOwnerChanged");
+			}
 		}
 
 		#endregion
@@ -784,74 +739,204 @@ namespace GardenConquest.Blocks {
 		#endregion
 		#region Class
 
-		private void setReservedToDefault() {
-			m_ReservedClass = DEFAULT_CLASS;
-			m_ReservedRules = s_Settings.HullRules[(int)DEFAULT_CLASS];
+		/// <summary>
+		/// Check if the owner can have any more of this class.
+		/// </summary>
+		/// <param name="c">Class to check</param>
+		/// <returns>True if the class is allowed</returns>
+		private bool checkClassAllowed(HullClass.CLASS c) {
+			log("checking if fleet can support more of " + c, "checkClassAllowed");
+			return m_Owner.Fleet.canSupportAnother(c);
 		}
 
 		private void setReservedToClassifier() {
-			m_ReservedClass = m_Classifier.Class;
-			m_ReservedRules = s_Settings.HullRules[(int)m_ReservedClass];
-			log("Reserved class changed to" + m_ReservedRules.DisplayName, "setReservedToClassifier");
+			if (m_Classifier == null) {
+				log("No classifier available", "setReservedToClassifier");
+				setReservedTo(DEFAULT_CLASS);
+			}
+			else {
+				log("Using classifier of class " + m_Classifier.Class, "setReservedToClassifier");
+				setReservedTo(m_Classifier.Class);
+			}
 		}
 
-		private void setEffectiveToDefault() {
-			m_EffectiveClass = DEFAULT_CLASS;
-			m_EffectiveRules = s_Settings.HullRules[(int)DEFAULT_CLASS];
+		private void setReservedTo(HullClass.CLASS newClass) {
+			if (m_ReservedClass == newClass) {
+				log("No change, ReservedClass remains " + m_ReservedClass, "setReservedTo");
+			}
+			else {
+				log("Changing ReservedClass from " + m_ReservedClass + " to " + newClass,
+					"setReservedTo");
+				m_ReservedClass = newClass;
+				m_ReservedRules = s_Settings.HullRules[(int)newClass];
+			}
 		}
 
-		private void setEffectiveToReserved() {
-			m_EffectiveClass = m_ReservedClass;
-			m_EffectiveRules = s_Settings.HullRules[(int)m_EffectiveClass];
+		private void setEffectiveToClassifier() {
+			if (m_Classifier != null && m_Classifier.FatBlock.IsWorking) {
+				log("Have working classifier", "setReservedToClassifier");
+				setEffectiveTo(m_ReservedClass);
+			}
+			else {
+				log("No working classifier", "setReservedToClassifier");
+				setEffectiveTo(DEFAULT_CLASS);
+			}
+		}
+
+		private void setEffectiveTo(HullClass.CLASS newClass) {
+			if (m_EffectiveClass == newClass) {
+				log("No changed, EffectiveClass remains " + m_EffectiveClass, "setEffectiveTo");
+			}
+			else {
+				log("Changing EffectiveClass from " + m_EffectiveClass + " to " + newClass,
+					"setEffectiveTo");
+				m_EffectiveClass = newClass;
+				m_EffectiveRules = s_Settings.HullRules[(int)newClass];
+				reserveEffectiveClassFromOwner();
+				m_CheckCleanupNextUpdate = true;
+			}
 		}
 
 		#endregion
 		#region Classifier
 
-		private void attachClassifier(HullClassifier classifier) {
-			m_Classifier = classifier;
-			m_Classifier.FatBlock.IsWorkingChanged += classifierWorkingChanged;
-		}
-
-		private void detatchClassifier(bool expectSet = true) {
-			//log("start", "detatchClassifier", Logger.severity.TRACE);
-			if (m_Classifier != null) {
-				log("detaching", "detatchClassifier");
-				m_Classifier.FatBlock.IsWorkingChanged -= classifierWorkingChanged;
-				m_Classifier = null;
-				//log("m_Classifier == null " + (m_Classifier = null), "detatchClassifier", Logger.severity.TRACE);
-			}
-			else if (expectSet) {
-				log("failed to detatch, wasn't stored", "detatchClassifier", Logger.severity.ERROR);
-			}
-			//log("end", "detatchClassifier", Logger.severity.TRACE);
-		}
-
-		private void setBestClassifier() {
-			if (m_Classifier != null) {
-				log("m_Classifier is still set! Aborting.",
-					"setBestClassifie", Logger.severity.ERROR);
+		// <summary>
+		/// Returns true if the added classifier is used
+		/// </summary>
+		/// <param name="classifier"></param>
+		/// <returns></returns>
+		private void addClassifier(HullClassifier classifier) {
+			if (classifier == null || classifier.FatBlock == null) {
+				log("Null classifier or Fatblock",
+					"addClassifier", Logger.severity.ERROR);
 				return;
 			}
 
-			// find the best classifier on grid
-			HullClassifier bestClassifier = null;
-			HullClassifier classifier;
-			List<IMySlimBlock> allBlocks = new List<IMySlimBlock>();
-			m_Grid.GetBlocks(allBlocks);
-			foreach (IMySlimBlock block in allBlocks) {
-				if (HullClassifier.isClassifierBlock(block)) {
-					classifier = new HullClassifier(block);
-					if (bestClassifier == null || classifier.Class > bestClassifier.Class) {
-						bestClassifier = classifier;
-					}
-				}
+			log("adding classifier with ID " + classifier.FatBlock.EntityId,
+				"addClassifier");
+
+			m_Classifiers.Add(classifier.FatBlock.EntityId, classifier);
+			classifier.FatBlock.IsWorkingChanged += classifierWorkingChanged;
+			m_CheckClassifierNextUpdate = true;
+		}
+
+		private void removeClassifier(long entityID) {
+			log("remove classifier with ID " + entityID,
+				"removeClassifier");
+
+			HullClassifier storedClassifier;
+			m_Classifiers.TryGetValue(entityID, out storedClassifier);
+			if (storedClassifier == null) {
+				log("Classifier with id " + entityID + " was not stored",
+					"removeClassifier", Logger.severity.ERROR);
+			} else {
+				log("Removing from Classifiers",  "removeClassifier");
+				m_Classifiers.Remove(entityID);
+				log("storedClassifier.FatBlock.IsWorkingChanged -= classifierWorkingChanged", "removeClassifier");
+				storedClassifier.FatBlock.IsWorkingChanged -= classifierWorkingChanged;
 			}
 
-			// use it
-			if (bestClassifier != null) {
-				setClassifier(bestClassifier);
+			if (m_Classifier == null) {
+				log("Removing a classifier but none was set as main yet", "removeClassifier", Logger.severity.WARNING);
+				// This could happen if the classifier was added and then removed before reevaluateClassification
+				// has a chance to run through and store it as the new classifier
+			} else if (m_Classifier.Equals(storedClassifier)) {
+				log("Was the main Classifier, flagging for update", "removeClassifier");
+				m_CheckClassifierNextUpdate = true;
 			}
+		}
+
+		private void reevaluateClassification() {
+			log("Reevaluate classifier", "reevaluateClassification");
+
+			HullClassifier bestClassifier = findBestClassifier();
+
+			if (m_Classifier != bestClassifier) {
+				log("Classifier changed", "reevaluateClassification");
+				m_Classifier = bestClassifier;
+				setReservedToClassifier();
+				setEffectiveToClassifier();
+			} else {
+				log("Classifier unchanged", "reevaluateClassification");
+				bool workingNow = (m_Classifier == null) ? false : m_Classifier.FatBlock.IsWorking;
+				if (m_ClassifierWorking != workingNow) {
+					log("Working changed", "reevaluateClassification");
+					m_ClassifierWorking = workingNow;
+					setEffectiveToClassifier();
+				}
+			}
+		}
+
+		private HullClassifier findBestClassifier() {
+			HullClassifier bestFound = null;
+			bool bestFoundIsWorking = false;
+			bool bestFoundIsSupported = false;
+			HullClass.CLASS bestFoundClass = HullClass.CLASS.UNCLASSIFIED;
+
+			HullClassifier current;
+			bool currentIsWorking;
+			bool currentIsSupported;
+			HullClass.CLASS currentClass;
+
+			foreach (KeyValuePair<long, HullClassifier> pair in m_Classifiers) {
+				current = pair.Value;
+				currentIsWorking = current.FatBlock.IsWorking;
+				currentClass = current.Class;
+				currentIsSupported = checkClassAllowed(currentClass);
+
+				if (bestFound == null) {
+					goto better;
+				}
+
+				// Always prefer a working classifier
+				if (!bestFoundIsWorking && currentIsWorking) {
+					goto better;
+				}
+				else if (bestFoundIsWorking && !currentIsWorking) {
+					goto worse;
+				}
+
+				// Then prefer a supported classifier
+				if (!bestFoundIsSupported && currentIsSupported) {
+					goto better;
+				}
+				else if (bestFoundIsSupported && !currentIsSupported) {
+					goto worse;
+				}
+
+				// Then prefer a higher level class
+				if (bestFoundClass < currentClass) {
+					goto better;
+				}
+				else if (bestFoundClass > currentClass) {
+					goto worse;
+				}
+
+				// Tie
+				log("Tie", "reevaluateBestClassifier");
+				goto worse;
+
+			better:
+				bestFound = current;
+				bestFoundIsWorking = currentIsWorking;
+				bestFoundIsSupported = currentIsSupported;
+				bestFoundClass = currentClass;
+				continue;
+			worse:
+				continue;
+			}
+
+			return bestFound;
+		}
+
+		private void detatchClassifiers() {
+			if (m_Classifiers != null) {
+				foreach (KeyValuePair<long, HullClassifier> pair in m_Classifiers) {
+					pair.Value.FatBlock.IsWorkingChanged -= classifierWorkingChanged;
+				}
+				m_Classifiers = null;
+			}
+			m_Classifier = null;
 		}
 
 		private void removeExtraClassifiers(int removeCount = 100) {
@@ -864,71 +949,46 @@ namespace GardenConquest.Blocks {
 				return;
 			}
 
-			List<IMySlimBlock> allBlocks = new List<IMySlimBlock>();
-			m_Grid.GetBlocks(allBlocks);
-			foreach (IMySlimBlock block in allBlocks) {
-				if (removeCount > 0) {
-					if (HullClassifier.isClassifierBlock(block) &&
-						!block.Equals(Classifier.SlimBlock)) {
-						removeBlock(block);
-						removeCount--;
-					}
-				} else {
-					return;
+			List<HullClassifier> worstClassifiers = findWorstClassifiers(1);
+			foreach (HullClassifier classifier in worstClassifiers) {
+				removeBlock(classifier.SlimBlock);
+			}
+		}
+
+		/// <summary>
+		/// Find the worst classifiers so we can remove them instead of better ones
+		/// </summary>
+		/// <remarks>
+		/// This is really dumb, just randomly picks some we aren't directly using.
+		/// Making this simpler, and making findBestClassifiers simpler, would be
+		/// best done by interfacing IComparable with Hull Classifiers.
+		/// The cleanest way to do that would be making Hull Classifiers a logic component
+		/// so we can track isWorking there and make sure it's closed when they are
+		/// This would require the ge to be able to find the HullClassifier component on
+		/// an added beacon, which seems like it might be possible, but also might not
+		/// </remarks>
+		private List<HullClassifier> findWorstClassifiers(uint removeCount = 0) {
+			List<HullClassifier> worstClassifiers = new List<HullClassifier>();
+			uint worstClassifiersCount = 0;
+			long currentClassifierID = m_Classifier.FatBlock.EntityId;
+
+			foreach (KeyValuePair<long, HullClassifier> pair in m_Classifiers) {
+				if (pair.Key == currentClassifierID)
+					continue;
+
+				if (removeCount > worstClassifiersCount) {
+					worstClassifiers.Add(pair.Value);
+					worstClassifiersCount++;
 				}
 			}
+
+			return worstClassifiers;
 		}
 
-		private void setClassifier(HullClassifier classifier) {
-			if (m_Classifier != null) {
-				log(" existing classifier is still set, skipping",
-					"unsetClassifier", Logger.severity.ERROR);
-				return;
-			}
-
-			attachClassifier(classifier);
-			setReservedToClassifier();
-			// promotion will be taken care of when the block starts working
-			// Working Blocks added on init have IsWorkingChanged triggered after
-			// Working blocks added during a merge don't, so go check now
-			if (m_Merging) {
-				classifierWorkingChanged(m_Classifier.FatBlock);
-			}
-			m_CheckCleanupNextUpdate = true;
-		}
-
-		private void unsetClassifier() {
-			log("Removing reserved " + m_ReservedRules.DisplayName + " classifier", "unsetClassifier");
-			if (m_Classifier == null) {
-				log("m_Classifier is null",
-					"unsetClassifier", Logger.severity.WARNING);
-				return;
-			}
-
-			setReservedToDefault();
-			demoteClass();
-			detatchClassifier();
-		}
-
-		/// <summary>
-		/// Promotes the grid's effective class to its reserved class
-		/// </summary>
-		private void promoteClass() {
-			log("Promoting Effective class to " + m_ReservedClass + " from " + m_EffectiveClass, "promoteClass");
-			setEffectiveToReserved();
-			m_Owner.setClassification(m_EffectiveClass);
-			m_CheckCleanupNextUpdate = true;
-		}
-
-		/// <summary>
-		/// Sets the effective class back to the default
-		/// A beacon must be working to have its rules applied
-		/// </summary>
-		private void demoteClass() {
-			log("Returning Effective class to " + DEFAULT_CLASS + " from " + m_EffectiveClass, "demoteClass");
-			setEffectiveToDefault();
-			m_Owner.setClassification(m_EffectiveClass);
-			m_CheckCleanupNextUpdate = true;
+		private void classifierWorkingChanged(IMyCubeBlock b) {
+			log("Classifier " + b.EntityId + " changed working state, flagging for update", 
+				"classifierWorkingChanged");
+			m_CheckClassifierNextUpdate = true;
 		}
 
 		#endregion
@@ -942,8 +1002,6 @@ namespace GardenConquest.Blocks {
 		/// </summary>
 		/// <returns>Whether or not the ownership changed.</returns>
 		public bool reevaluateOwnership() {
-			//log("", "reevaluateOwnership", Logger.severity.TRACE);
-
 			bool changed = m_Owner.reevaluateOwnership(BigOwners);
 
 			if (changed) {
@@ -951,10 +1009,18 @@ namespace GardenConquest.Blocks {
 				log("owner changed", "reevaluateOwnership");
 			}
 			else {
-				//log("no change", "reevaluateOwnership");
+				log("no change", "reevaluateOwnership");
 			}
 
 			return changed;
+		}
+
+		private void reserveEffectiveClassFromOwner() {
+			m_Owner.setClassification(m_EffectiveClass);
+		}
+
+		private bool isUnowned() {
+			return m_Owner.OwnerType == GridOwner.OWNER_TYPE.UNOWNED;
 		}
 
 		private void detatchOwner() {
@@ -966,14 +1032,19 @@ namespace GardenConquest.Blocks {
 		}
 
 		public void markSupported(long fleetOwnerID) {
+			log("Marking as supported", "markSupported");
 			// we may want this later if we need to lookup a fleet ?
 			//m_FleetOwnerID = fleetOwnerID;
 			m_Supported = true;
+			m_CheckCleanupNextUpdate = true;
 		}
 
 		public void markUnsupported(long fleetOwnerID) {
+			log("Marking as unsupported", "markUnsupported");
 			//m_FleetOwnerID = fleetOwnerID;
 			m_Supported = false;
+			m_CheckClassifierNextUpdate = true;
+			m_CheckCleanupNextUpdate = true;
 		}
 
 		#endregion
@@ -1035,12 +1106,12 @@ namespace GardenConquest.Blocks {
 			}
 
 			// too many classifiers violation
-			int extraClassifiersCount = m_ExtraClassifiers.Count;
-			if (extraClassifiersCount > 0) {
+			int classifiersCount = m_Classifiers.Count;
+			if (classifiersCount > 1) {
 				violations.Add(new VIOLATION() {
 					Type = VIOLATION_TYPE.TOO_MANY_CLASSIFIERS,
 					Name = "Hull Classifiers",
-					Count = extraClassifiersCount,
+					Count = classifiersCount,
 					Limit = 1
 				});
 			}
@@ -1071,9 +1142,17 @@ namespace GardenConquest.Blocks {
 		}
 
 		private void updateViolations() {
-			log("", "updateViolations", Logger.severity.TRACE);
-			//reevaluateOwnership(); // done in simulation
+			log("Updating violations", "updateViolations");
+
+			int oldCount;
+			if (m_CurrentViolations == null) {
+				oldCount = 0;
+			} else {
+				oldCount = m_CurrentViolations.Count;
+			}
+
 			m_CurrentViolations = currentViolations();
+			int newCount = m_CurrentViolations.Count;
 		}
 
 		/// <summary>
@@ -1137,31 +1216,25 @@ namespace GardenConquest.Blocks {
 
 
 			// unsupported classifier
+			// we actually know we're on the highest supported classifier, 
+			// so if we're unsupported it must not have any supported available
 			if (removeClass) {
-				log("class is unsupported, decrement it to any other existing classifiers or remove entirely",
+				log("Grid has no supported working classifiers, remove some blocks",
 					"doCleanupPhase", Logger.severity.TRACE);
-				// if it's unclassified, it wouldn't have one. We just need to delete instead
-				if (m_ReservedClass == DEFAULT_CLASS) {
-					// if this class isn't allowed, we must remove it
-					log("class is " + m_ReservedClass + ", remove it", "doCleanupPhase", Logger.severity.TRACE);
 
-					// pretend block limit is 0 and use that cleanup
-					// having a Unsupported Unclassified grid is equivalent to having one with zero allowed blocks
+				// detection for exploration ships, remove them immediately
+				if (CLEANUP_PREFABS_IMMEDIATELY && isGeneratedPrefab()) {
+					totalToRemove = m_BlockCount;
+				} else {
+					// having a Unsupported grid is equivalent to having one with zero allowed blocks
 					totalToRemove = phasedRemoveCount(new VIOLATION {
 						Type = VIOLATION_TYPE.TOTAL_BLOCKS,
 						Count = m_BlockCount,
 						Limit = 0
 					});
-				} else {
-					log("class is set, try to use a lower classifier", "doCleanupPhase", Logger.severity.TRACE);
-					IMySlimBlock classifierBlock = m_Classifier.SlimBlock;
-					m_ExtraClassifiers.Add(m_Classifier.FatBlock.EntityId, m_Classifier);
-					unsetClassifier();
-					removeBlock(classifierBlock);
-					setBestClassifier();
 				}
 
-				// too many classifiers, only done if we didn't do the above b/c it affects the cached limit
+			// too many classifiers, only done if we didn't do the above b/c it affects the cached limit
 			} else if (classifierCountToRemove > 0) {
 				log("too many classifiers, remove " + classifierCountToRemove, "doCleanupPhase", Logger.severity.TRACE);
 				removeExtraClassifiers(classifierCountToRemove);
@@ -1277,7 +1350,7 @@ namespace GardenConquest.Blocks {
 				DateTime now = DateTime.Now;
 				if (now > m_CleanupNotifyAfter) {
 					log("sending notification", "notifyViolations");
-					notifyCleanupViolation(m_CurrentViolations);
+					notifyCleanupViolation(null);
 					m_CleanupNotifyAfter = now.AddSeconds(CLEANUP_NOTIFY_WAIT);
 				}
 			}
@@ -1363,22 +1436,13 @@ namespace GardenConquest.Blocks {
 		}
 
 		#endregion
-		#region SE Hooks - Classifier Working
-
-		private void classifierWorkingChanged(IMyCubeBlock b) {
-			log("Working: " + b.IsWorking, "classifierWorkingChanged");
-
-			if (b.IsWorking) {
-				// If the block is working, apply the class
-				promoteClass();
-			} else {
-				// If the block has stopped working, demote
-				demoteClass();
-			}
-		}
-
-		#endregion
 		#region Utility - General
+
+		private bool isGeneratedPrefab() {
+			return m_ReservedClass == DEFAULT_CLASS &&
+				isUnowned() &&
+				m_BlockCount > PREFAB_BLOCK_THRESHOLD;
+		}
 
 		public override MyObjectBuilder_EntityBase GetObjectBuilder(bool copy = false) {
 			return Container.Entity.GetObjectBuilder();

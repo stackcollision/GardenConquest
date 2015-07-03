@@ -29,5 +29,15 @@ namespace GardenConquest {
 		/// Time between state saves (in seconds)
 		/// </summary>
 		public const int SaveInterval = 300;
+
+		/// <summary>
+		/// Current Version of Garden Conquest
+		/// </summary>
+		public const String Version = "1.0.9.2";
+
+		/// <summary>
+		/// Notification duration
+		/// </summary>
+		public const int NotificationMillis = 7500;
 	}
 }

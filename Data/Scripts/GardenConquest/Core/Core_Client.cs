@@ -41,7 +41,11 @@ namespace GardenConquest.Core {
 
 		public override void updateBeforeSimulation() {
 			if (m_NeedSettings) {
-				m_NeedSettings = !m_MailMan.requestSettings();
+				try {
+					m_NeedSettings = !m_MailMan.requestSettings();
+				} catch (Exception e) {
+					log("Error" + e, "updateBeforeSimulation", Logger.severity.ERROR);
+				}
 			}
 		}
 

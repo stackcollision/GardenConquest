@@ -48,9 +48,14 @@ namespace GardenConquest.Messaging {
 			if (msg == null)
 				return;
 
-			byte[] buffer = msg.serialize();
-			MyAPIGateway.Multiplayer.SendMessageToServer(Constants.GCMessageId, buffer);
-			log("Sent packet of " + buffer.Length + " bytes", "send");
+			try {
+				byte[] buffer = msg.serialize();
+				MyAPIGateway.Multiplayer.SendMessageToServer(Constants.GCMessageId, buffer);
+				log("Sent packet of " + buffer.Length + " bytes", "send");
+			}
+			catch (Exception e) {
+				log("Error: " + e, "send", Logger.severity.ERROR);
+			}
 		}
 
 		public bool requestSettings() {
