@@ -64,6 +64,8 @@
     <Compile Include="Messaging\BaseRequest.cs" />
     <Compile Include="Messaging\BaseResponse.cs" />
     <Compile Include="Extensions\ByteConverterExtension.cs" />
+    <Compile Include="Messaging\DisownRequest.cs" />
+    <Compile Include="Messaging\FleetResponse.cs" />
     <Compile Include="Messaging\SettingsRequest.cs" />
     <Compile Include="Messaging\SettingsResponse.cs" />
     <Compile Include="Messaging\NotificationResponse.cs" />

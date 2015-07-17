@@ -256,35 +256,37 @@ namespace GardenConquest.Messaging {
 					else {
 						fleetInfoBody += "0\n";
 					}
-				}
-				if (m_SupportedGrids.ContainsKey(i)) {
-					gdList = m_SupportedGrids[i];
-					for (int j = 0; j < gdList.Count; ++j) {
-						fleetInfoBody += "  " + j + ". " + gdList[j].shipName + " - " + gdList[j].blockCount + " blocks\n";
-						if (gdList[j].displayPos) {
-							fleetInfoBody += "      GPS: " + gdList[j].shipPosition.X + ", " + gdList[j].shipPosition.Y + ", " + gdList[j].shipPosition.Z + "\n";
-						}
-						else {
-							fleetInfoBody += "      GPS: Unavailable - Must own the Main Cockpit\n";
-						}
-					}
-				}
-				if (m_UnsupportedGrids.ContainsKey(i)) {
-					gdList = m_UnsupportedGrids[i];
-					int offset = (m_SupportedGrids.ContainsKey(i) ? m_SupportedGrids[i].Count : 0);
-					fleetInfoBody += "\n  Unsupported:\n";
-					for (int j = 0; j < gdList.Count; ++j) {
-						//Some code logic to continue the numbering of entries where m_SupportedGrid leaves off
-						fleetInfoBody += "     " + (j + offset) + ". " + gdList[j].shipName + " - " + gdList[j].blockCount + " blocks\n";
-						if (gdList[j].displayPos) {
-							fleetInfoBody += "         GPS: " + gdList[j].shipPosition.X + ", " + gdList[j].shipPosition.Y + ", " + gdList[j].shipPosition.Z + "\n";
-						}
-						else {
-							fleetInfoBody += "         GPS: Unavailable - Must own the Main Cockpit\n";
+
+					if (m_SupportedGrids.ContainsKey(i)) {
+						gdList = m_SupportedGrids[i];
+						for (int j = 0; j < gdList.Count; ++j) {
+							fleetInfoBody += "  " + (j + 1) + ". " + gdList[j].shipName + " - " + gdList[j].blockCount + " blocks\n";
+							if (gdList[j].displayPos) {
+								fleetInfoBody += "      GPS: " + gdList[j].shipPosition.X + ", " + gdList[j].shipPosition.Y + ", " + gdList[j].shipPosition.Z + "\n";
+							}
+							else {
+								fleetInfoBody += "      GPS: Unavailable - Must own the Main Cockpit\n";
+							}
 						}
 					}
+					if (m_UnsupportedGrids.ContainsKey(i)) {
+						gdList = m_UnsupportedGrids[i];
+						int offset = (m_SupportedGrids.ContainsKey(i) ? m_SupportedGrids[i].Count : 0);
+						fleetInfoBody += "\n  Unsupported:\n";
+						for (int j = 0; j < gdList.Count; ++j) {
+							//Some code logic to continue the numbering of entries where m_SupportedGrid leaves off
+							fleetInfoBody += "     " + (j + offset + 1) + ". " + gdList[j].shipName + " - " + gdList[j].blockCount + " blocks\n";
+							if (gdList[j].displayPos) {
+								fleetInfoBody += "         GPS: " + gdList[j].shipPosition.X + ", " + gdList[j].shipPosition.Y + ", " + gdList[j].shipPosition.Z + "\n";
+							}
+							else {
+								fleetInfoBody += "         GPS: Unavailable - Must own the Main Cockpit\n";
+							}
+						}
+					}
+
+					fleetInfoBody += "\n";
 				}
-				fleetInfoBody += "\n";
 			}
 			return fleetInfoBody;
 		}
