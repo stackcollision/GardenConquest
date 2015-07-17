@@ -42,6 +42,7 @@ namespace GardenConquest.Records {
 			stream.addUShort((ushort)MaxPerSoloPlayer);
 			stream.addUShort((ushort)CaptureMultiplier);
 			stream.addLong(MaxBlocks);
+			stream.addBoolean(ShouldBeStation);
 
 			stream.addUShort((ushort)BlockTypeLimits.Length);
 			foreach (int limit in BlockTypeLimits) {
@@ -57,6 +58,7 @@ namespace GardenConquest.Records {
 			result.MaxPerSoloPlayer = stream.getUShort();
 			result.CaptureMultiplier = stream.getUShort();
 			result.MaxBlocks = (int)stream.getLong();
+			result.ShouldBeStation = stream.getBoolean();
 
 			ushort blockTypeLimitsCount = stream.getUShort();
 			result.BlockTypeLimits = new int[blockTypeLimitsCount];

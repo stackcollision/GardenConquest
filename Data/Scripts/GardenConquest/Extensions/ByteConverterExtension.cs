@@ -66,6 +66,14 @@ namespace GardenConquest.Extensions {
 			return new string(cstr);
 		}
 
+		public static void addBoolean(this VRage.ByteStream stream, bool b) {
+			stream.WriteByte(Convert.ToByte(b));
+		}
+
+		public static bool getBoolean(this VRage.ByteStream stream) {
+			return Convert.ToBoolean(stream.ReadByte());
+		}
+
 		public static void addLongList(this VRage.ByteStream stream, List<long> L) {
 			if (L == null) {
 				stream.addUShort(0);
