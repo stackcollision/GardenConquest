@@ -152,17 +152,17 @@ namespace GardenConquest.Records {
 			}
 
 			// if we don't, see if it's bigger than one of the supported ones
-			foreach (long supportedID in m_SupportedGrids[c].Keys) {
-				GridEnforcer supported = m_SupportedGrids[c][supportedID];
+			foreach (KeyValuePair<long, GridEnforcer> pair in m_SupportedGrids[c]) {
+				GridEnforcer supported = pair.Value;
 
 				// it is!
 				if (ge.BlockCount > supported.BlockCount) {
 					log("it's larger than one of our supported, supporting", "updateSupportAdded");
 
 					// remove support from the old supported one
-					log("removing support from " + supportedID, "updateSupportAdded");
-					m_SupportedGrids[c].Remove(supportedID);
-					m_UnsupportedGrids[c][supportedID] = supported;
+					log("removing support from " + pair.Key, "updateSupportAdded");
+					m_SupportedGrids[c].Remove(pair.Key);
+					m_UnsupportedGrids[c][pair.Key] = supported;
 					supported.markUnsupported(m_FactionId);
 
 					// add support to the new
@@ -196,6 +196,24 @@ namespace GardenConquest.Records {
 				log(String.Format("Removing {0} from supported grids, count now {1}", 
 					eID, m_SupportedGrids[c].Count),
 					"updateSupportRemoved", Logger.severity.TRACE);
+
+				// See if there's an unsupported grid. If there's more than 1, select the
+				// grid with the highest block count
+				if (m_UnsupportedGrids[c].Count > 0) {
+					int highestBlockCount = 0;
+					long highestBlockCountID = 0;
+					foreach (KeyValuePair<long, GridEnforcer> pair in m_UnsupportedGrids[c]) {
+						long gridID = pair.Key;
+						GridEnforcer grid = pair.Value;
+						if (grid.BlockCount > highestBlockCount) {
+							highestBlockCount = grid.BlockCount;
+							highestBlockCountID = grid.Container.Entity.EntityId;
+						}
+					}
+					m_SupportedGrids[c][highestBlockCountID] = m_UnsupportedGrids[c][highestBlockCountID];
+					m_SupportedGrids[c][highestBlockCountID].markSupported(m_FactionId);
+					m_UnsupportedGrids[c].Remove(highestBlockCountID);
+				}
 			}
 			else if (m_UnsupportedGrids[c].ContainsKey(eID)) {
 				m_UnsupportedGrids[c].Remove(eID);
