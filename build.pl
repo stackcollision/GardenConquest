@@ -5,7 +5,8 @@ use File::Copy;
 use File::Path qw(make_path rmtree);
 
 my @roots = ('Data', 'Textures');
-my $destination = '..\\GardenConquestDistro\\';
+#my $destination = '..\\GardenConquestDistro\\';
+my $destination = 'C:\\Users\\Zach\\AppData\\Roaming\\SpaceEngineers\\Mods\\GardenConquestDistro\\';
 
 foreach my $r (@roots) {
 	my $remove = File::Spec->catfile($destination, $r);
