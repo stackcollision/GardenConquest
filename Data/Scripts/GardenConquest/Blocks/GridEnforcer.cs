@@ -1470,7 +1470,7 @@ namespace GardenConquest.Blocks {
 			stream.addUShort((ushort)BlockCount);
 
 			// Serialize position data if the owner of the grid
-			if (Grid.canDisplayPositionTo(Owner.PlayerID)) {
+			if (Grid.canInteractWith(Owner.PlayerID)) {
 				stream.addBoolean(true);
 				stream.addLong((long)Grid.GetPosition().X);
 				stream.addLong((long)Grid.GetPosition().Y);
