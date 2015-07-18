@@ -97,7 +97,6 @@ namespace GardenConquest.Extensions {
 		/// </remarks>
 		/// <returns></returns>
 		public static bool canInteractWith(this IMyCubeGrid grid, long playerID) {
-			bool result = false;
 			List<IMySlimBlock> fatBlocks = new List<IMySlimBlock>();
 
 			// Get all cockpit blocks
@@ -107,28 +106,26 @@ namespace GardenConquest.Extensions {
 			// We'll need the faction list to compare the factions of the given player and the owners of the fatblocks in the grid
 			IMyFactionCollection factions = MyAPIGateway.Session.Factions;
 
-			// Go through and search for the main cockpit. If found, set result and break out of loop, since there should only be 1 main cockpit
+			// Go through and search for the main cockpit. If found, set return true
 			foreach (IMySlimBlock block in fatBlocks) {
 				if (Interfaces.TerminalPropertyExtensions.GetValueBool(block.FatBlock as InGame.IMyTerminalBlock, "MainCockpit")) {
 					IMyFaction blocksFaction = factions.TryGetPlayerFaction(block.FatBlock.OwnerId);
 					// Owner of block is running solo
 					if (blocksFaction == null) {
 						if (block.FatBlock.OwnerId == playerID) {
-							result = true;
-							break;
+							return true;
 						}
 					}
 					// Owner of block is part of a faction
 					else {
 						long owningFactionID = blocksFaction.FactionId;
 						if (owningFactionID == factions.TryGetPlayerFaction(playerID).FactionId) {
-							result = true;
-							break;
+							return true;
 						}
 					}
 				}
 			}
-			return result;
+			return false;
 		}
 
 	}

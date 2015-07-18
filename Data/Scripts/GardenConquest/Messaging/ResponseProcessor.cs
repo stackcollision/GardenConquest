@@ -24,8 +24,8 @@ namespace GardenConquest.Messaging {
 		private static Logger s_Logger = null;
 
 		private uint[] m_Counts = null;
-		private Dictionary<int, List<GridEnforcer.GridData>> m_SupportedGrids;
-		private Dictionary<int, List<GridEnforcer.GridData>> m_UnsupportedGrids;
+		private List<GridEnforcer.GridData>[] m_SupportedGrids;
+		private List<GridEnforcer.GridData>[] m_UnsupportedGrids;
 
 		private ConquestSettings.SETTINGS m_ServerSettings;
 		private bool m_Registered = false;
@@ -43,8 +43,16 @@ namespace GardenConquest.Messaging {
 			}
 			int classCount = Enum.GetValues(typeof(HullClass.CLASS)).Length;
 			m_Counts = new uint[classCount];
-			m_SupportedGrids = new Dictionary<int, List<GridEnforcer.GridData>>();
-			m_UnsupportedGrids = new Dictionary<int, List<GridEnforcer.GridData>>();
+
+			m_SupportedGrids = new List<GridEnforcer.GridData>[classCount];
+			for (int i = 0; i < classCount; ++i) {
+				m_SupportedGrids[i] = new List<GridEnforcer.GridData>();
+			}
+
+			m_UnsupportedGrids = new List<GridEnforcer.GridData>[classCount];
+			for (int i = 0; i < classCount; ++i) {
+				m_UnsupportedGrids[i] = new List<GridEnforcer.GridData>();
+			}
 		}
 
 		public void unload() {
@@ -110,6 +118,44 @@ namespace GardenConquest.Messaging {
 			}
 		}
 
+		public bool requestStopGrid(string shipClass, string ID) {
+			log("Sending Stop Grid request", "requestStopGrid");
+			try {
+				HullClass.CLASS classID;
+				int localID = -1;
+
+				// Check user's input for shipClass is valid
+				if (!Enum.TryParse<HullClass.CLASS>(shipClass.ToUpper(), out classID)) {
+					MyAPIGateway.Utilities.ShowNotification("Invalid Ship Class!", Constants.NotificationMillis, MyFontEnum.Red);
+					return false;
+				}
+				// Check if user's input for index is valid
+				if (!int.TryParse(ID, out localID) || localID < 1 || localID > m_SupportedGrids[(int)classID].Count + m_UnsupportedGrids[(int)classID].Count) {
+					MyAPIGateway.Utilities.ShowNotification("Invalid Index!", Constants.NotificationMillis, MyFontEnum.Red);
+					return false;
+				}
+
+				long entityID;
+
+				//Some logic to decide whether or not the choice is a supported or unsupported grid, and its entityID
+				if (localID - 1 >= m_SupportedGrids[(int)classID].Count ) {
+					entityID = m_UnsupportedGrids[(int)classID][localID - 1 - m_SupportedGrids[(int)classID].Count].shipID;
+				} else {
+					entityID = m_SupportedGrids[(int)classID][localID - 1].shipID;
+				}
+
+				StopGridRequest req = new StopGridRequest();
+				req.ReturnAddress = MyAPIGateway.Session.Player.PlayerID;
+				req.EntityID = entityID;
+				send(req);
+				return true;
+			}
+			catch (Exception e) {
+				log("Exception occured: " + e, "requestStopGrid");
+				return false;
+			}
+		}
+
 		public bool requestDisown(string shipClass, string ID) {
 			log("Sending Disown request", "requestDisown");
 			try {
@@ -123,6 +169,7 @@ namespace GardenConquest.Messaging {
 				} else {
 					entityID = m_SupportedGrids[classID][localID].shipID;
 				}
+
 				DisownRequest req = new DisownRequest();
 				req.ReturnAddress = MyAPIGateway.Session.Player.PlayerID;
 				req.EntityID = entityID;
@@ -208,23 +255,19 @@ namespace GardenConquest.Messaging {
 
 			// Clear our current data to get fresh data from server
 			Array.Clear(m_Counts, 0, m_Counts.Length);
-			m_SupportedGrids.Clear();
-			m_UnsupportedGrids.Clear();
+			for (int i = 0; i < m_Counts.Length; ++i) {
+				m_SupportedGrids[i].Clear();
+				m_UnsupportedGrids[i].Clear();
+			}
 
 			// Saving data from server to client
 			for (int i = 0; i < gridData.Count; ++i) {
 				int classID = (int)gridData[i].shipClass;
 				m_Counts[classID] += 1;
 				if (gridData[i].supported) {
-					if (!m_SupportedGrids.ContainsKey(classID)) {
-						m_SupportedGrids[classID] = new List<GridEnforcer.GridData>();
-					}
 					m_SupportedGrids[classID].Add(gridData[i]);
 				}
 				else {
-					if (!m_UnsupportedGrids.ContainsKey(classID)) {
-						m_UnsupportedGrids[classID] = new List<GridEnforcer.GridData>();
-					}
 					m_UnsupportedGrids[classID].Add(gridData[i]);
 				}
 			}
@@ -257,7 +300,7 @@ namespace GardenConquest.Messaging {
 						fleetInfoBody += "0\n";
 					}
 
-					if (m_SupportedGrids.ContainsKey(i)) {
+					if (m_SupportedGrids[i].Count > 0) {
 						gdList = m_SupportedGrids[i];
 						for (int j = 0; j < gdList.Count; ++j) {
 							fleetInfoBody += "  " + (j + 1) + ". " + gdList[j].shipName + " - " + gdList[j].blockCount + " blocks\n";
@@ -269,9 +312,9 @@ namespace GardenConquest.Messaging {
 							}
 						}
 					}
-					if (m_UnsupportedGrids.ContainsKey(i)) {
+					if (m_UnsupportedGrids[i].Count > 0) {
 						gdList = m_UnsupportedGrids[i];
-						int offset = (m_SupportedGrids.ContainsKey(i) ? m_SupportedGrids[i].Count : 0);
+						int offset = m_SupportedGrids[i].Count;
 						fleetInfoBody += "\n  Unsupported:\n";
 						for (int j = 0; j < gdList.Count; ++j) {
 							//Some code logic to continue the numbering of entries where m_SupportedGrid leaves off

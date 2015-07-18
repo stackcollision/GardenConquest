@@ -69,6 +69,7 @@
     <Compile Include="Messaging\SettingsRequest.cs" />
     <Compile Include="Messaging\SettingsResponse.cs" />
     <Compile Include="Messaging\NotificationResponse.cs" />
+    <Compile Include="Messaging\StopGridRequest.cs" />
     <Compile Include="Messaging\ViolationsRequest .cs" />
     <Compile Include="Messaging\FleetRequest.cs" />
     <Compile Include="Messaging\DialogResponse.cs" />

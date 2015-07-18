@@ -37,6 +37,8 @@ namespace GardenConquest.Core {
 			"        cps            - Control Points\n" +
 			"        licenses    - Ship License components\n" +
 			"/gc fleet - Information on your fleet \n" +
+			"/gc fleet [command] - Commands for your fleet\n" +
+			"        stop [class] [id] - Stops your ship, given class and ID\n" +
 			//"/gc fleet remove \"Ship Name\"- Disown a ship";
 			"/gc violations - Your fleet's current rule violations, if any";
 
@@ -121,6 +123,11 @@ namespace GardenConquest.Core {
 										/*if (numCommands == 4) {
 											m_MailMan.requestDisown(cmd[3], cmd[4]);
 										}*/
+										break;
+									case "stop":
+										if (numCommands == 4) {
+											m_MailMan.requestStopGrid(cmd[3], cmd[4]);
+										}
 										break;
 								}
 							}
