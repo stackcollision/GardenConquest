@@ -13,6 +13,7 @@ using InGame = Sandbox.ModAPI.Ingame;
 using Interfaces = Sandbox.ModAPI.Interfaces;
 
 using GardenConquest;
+using GardenConquest.Records;
 
 namespace GardenConquest.Extensions {
 
@@ -57,6 +58,10 @@ namespace GardenConquest.Extensions {
 
 			return false;
 		}
+
+        public static long FleetID(this IMyPlayer player) {
+            return GridOwner.ownerFromPlayerID(player.PlayerID).FleetID;
+        }
 
 	}
 }

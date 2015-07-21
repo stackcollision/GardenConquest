@@ -145,7 +145,7 @@ namespace GardenConquest.Records {
 
 			StateTracker.getInstance().removeDerelictTimer(m_TimerInfo.GridID);
 
-			m_Timer.Stop();
+			m_Timer.Dispose();
 			m_Timer = null;
 
 			m_TimerInfo = null;
@@ -165,7 +165,7 @@ namespace GardenConquest.Records {
 
 			StateTracker.getInstance().removeDerelictTimer(m_TimerInfo.GridID);
 
-			m_Timer.Stop();
+			m_Timer.Dispose();
 			m_Timer = null;
 
 			CompletedPhase = m_TimerInfo.Phase;

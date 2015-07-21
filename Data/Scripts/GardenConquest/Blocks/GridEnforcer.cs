@@ -122,6 +122,7 @@ namespace GardenConquest.Blocks {
 
 		public GridOwner Owner { get { return m_Owner; } }
 		public HullClass.CLASS Class { get { return m_EffectiveClass; } }
+		public int CaptureMultiplier { get { return m_EffectiveRules.CaptureMultiplier; } }
 		private List<long> BigOwners { get {
 			try { return m_Grid.BigOwners; }
 			catch {
@@ -507,7 +508,7 @@ namespace GardenConquest.Blocks {
 
 
 		private void updateProjectorsWith(IMySlimBlock block) {
-			log("", "updateBlockCountsWith");
+			log("", "updateProjectorsWith");
 
 			InGame.IMyProjector projector = block.FatBlock as InGame.IMyProjector;
 			if (projector != null) {
@@ -569,9 +570,9 @@ namespace GardenConquest.Blocks {
 			log("", "incrementTotalBlocks");
 			m_BlockCount++;
 			//log("new count " + m_BlockCount, "incrementTotalBlocks");
-			log("m_EffectiveRules: ", "incrementTotalBlocks");
-			log("m_EffectiveRules.DisplayName " + m_EffectiveRules.DisplayName, "incrementTotalBlocks");
-			log("m_EffectiveRules.MaxBlocks " + m_EffectiveRules.MaxBlocks, "incrementTotalBlocks");
+			//log("m_EffectiveRules: ", "incrementTotalBlocks");
+			//log("m_EffectiveRules.DisplayName " + m_EffectiveRules.DisplayName, "incrementTotalBlocks");
+			//log("m_EffectiveRules.MaxBlocks " + m_EffectiveRules.MaxBlocks, "incrementTotalBlocks");
 
 			if (m_BlockCount > m_EffectiveRules.MaxBlocks) {
 				return VIOLATION_TYPE.TOTAL_BLOCKS;
@@ -599,7 +600,7 @@ namespace GardenConquest.Blocks {
 		/// Returns the violated limits if any
 		/// </summary>
 		private List<BlockType> updateBlockTypeCountsWith(IMySlimBlock block) {
-			log("", "updateBlockCountsWith");
+			log("", "updateBlockTypeCountsWith");
 			List<BlockType> violated_types = new List<BlockType>();
 
 			BlockType[] types = s_Settings.BlockTypes;

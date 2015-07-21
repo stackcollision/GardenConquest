@@ -60,6 +60,7 @@
     <Compile Include="Blocks\HullClassifier.cs" />
     <Compile Include="Core\CommandProcessor.cs" />
     <Compile Include="Extensions\GridExtensions.cs" />
+    <Compile Include="Extensions\IMyPlayerCollectionExtensions.cs" />
     <Compile Include="Extensions\PlayerExtensions.cs" />
     <Compile Include="Messaging\BaseRequest.cs" />
     <Compile Include="Messaging\BaseResponse.cs" />
@@ -84,7 +85,6 @@
     <Compile Include="Messaging\RequestProcessor.cs" />
     <Compile Include="Records\ControlPoint.cs" />
     <Compile Include="Core\Core_Server.cs" />
-    <Compile Include="GridSorter.cs" />
     <Compile Include="Records\GridOwner.cs" />
     <Compile Include="Records\HullRuleSet.cs" />
     <Compile Include="Records\HullClass.cs" />
@@ -94,6 +94,7 @@
     <Compile Include="Messaging\ResponseProcessor.cs" />
     <Compile Include="Core\StateTracker.cs" />
     <Compile Include="Core\SavedState.cs" />
+    <Compile Include="PhysicalObjects\ShipLicense.cs" />
     <Compile Include="Utility.cs" />
   </ItemGroup>
   <ItemGroup>
