@@ -251,8 +251,7 @@ namespace GardenConquest.Records {
 				log("null state, probably initing", "getFleet");
 			}
 
-			log("failed to load fleet from state tracker",
-				"getFleet", Logger.severity.WARNING);
+			log("failed to load fleet from state tracker", "getFleet");
 			m_StateLoaded = false;
 
 			if (m_Fleet == null) {
