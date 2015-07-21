@@ -86,9 +86,9 @@ namespace GardenConquest.Extensions {
 		}
 
 		/// <summary>
-		/// Is the given player allowed to see the given grid's position?
-		/// Player is able to see the position of the grid if the player
-		/// is part of the mainCockpit's faction OR the player owns the mainCockpit
+		/// Is the given player allowed get information or use commands on the grid?
+		/// Player is able to interact with the grid if the player is part of the
+		/// mainCockpit's faction OR the player owns the mainCockpit
 		/// </summary>
 		/// <param name="playerID"></param>
 		/// <param name="grid"></param>
@@ -96,41 +96,36 @@ namespace GardenConquest.Extensions {
 		/// Relatively expensive since we iterate through all blocks in grid!
 		/// </remarks>
 		/// <returns></returns>
-		public static bool canDisplayPositionTo(this IMyCubeGrid grid, long playerID) {
-			bool result = false;
+		public static bool canInteractWith(this IMyCubeGrid grid, long playerID) {
 			List<IMySlimBlock> fatBlocks = new List<IMySlimBlock>();
 
-			// Get only FatBlocks from the blocks list from the grid
-			Func<IMySlimBlock, bool> isFatBlock = b => b.FatBlock != null;
+			// Get all cockpit blocks
+			Func<IMySlimBlock, bool> isFatBlock = b => b.FatBlock != null && b.FatBlock is InGame.IMyShipController;
 			grid.GetBlocks(fatBlocks, isFatBlock);
 
 			// We'll need the faction list to compare the factions of the given player and the owners of the fatblocks in the grid
 			IMyFactionCollection factions = MyAPIGateway.Session.Factions;
 
-			// Go through and search for the main cockpit. If found, set result and break out of loop, since there should only be 1 main cockpit
+			// Go through and search for the main cockpit. If found, set return true
 			foreach (IMySlimBlock block in fatBlocks) {
-				if (block.FatBlock is InGame.IMyShipController) {
-					if (Interfaces.TerminalPropertyExtensions.GetValueBool(block.FatBlock as InGame.IMyTerminalBlock, "MainCockpit")) {
-						IMyFaction blocksFaction = factions.TryGetPlayerFaction(block.FatBlock.OwnerId);
-						// Owner of block is running solo
-						if (blocksFaction == null) {
-							if (block.FatBlock.OwnerId == playerID) {
-								result = true;
-								break;
-							}
+				if (Interfaces.TerminalPropertyExtensions.GetValueBool(block.FatBlock as InGame.IMyTerminalBlock, "MainCockpit")) {
+					IMyFaction blocksFaction = factions.TryGetPlayerFaction(block.FatBlock.OwnerId);
+					// Owner of block is running solo
+					if (blocksFaction == null) {
+						if (block.FatBlock.OwnerId == playerID) {
+							return true;
 						}
-						// Owner of block is part of a faction
-						else {
-							long owningFactionID = blocksFaction.FactionId;
-							if (owningFactionID == factions.TryGetPlayerFaction(playerID).FactionId) {
-								result = true;
-								break;
-							}
+					}
+					// Owner of block is part of a faction
+					else {
+						long owningFactionID = blocksFaction.FactionId;
+						if (owningFactionID == factions.TryGetPlayerFaction(playerID).FactionId) {
+							return true;
 						}
 					}
 				}
 			}
-			return result;
+			return false;
 		}
 
 	}

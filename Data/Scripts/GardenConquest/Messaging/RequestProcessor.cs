@@ -14,6 +14,7 @@ using InGame = Sandbox.ModAPI.Ingame;
 
 using GardenConquest.Blocks;
 using GardenConquest.Core;
+using GardenConquest.Extensions;
 using GardenConquest.Records;
 
 namespace GardenConquest.Messaging {
@@ -74,6 +75,9 @@ namespace GardenConquest.Messaging {
 					case BaseRequest.TYPE.DISOWN:
 						processDisownRequest(msg as DisownRequest);
 						break;
+					case BaseRequest.TYPE.STOPGRID:
+						processStopGridRequest(msg as StopGridRequest);
+						break;
 				}
 			} catch (Exception e) {
 				log("Exception occured: " + e, "incomming");
@@ -124,6 +128,66 @@ namespace GardenConquest.Messaging {
 			};
 
 			send(resp);
+		}
+
+		private void processStopGridRequest(StopGridRequest req) {
+			log("", "processStopGridRequest");
+			IMyCubeGrid gridToStop = MyAPIGateway.Entities.GetEntityById(req.EntityID) as IMyCubeGrid;
+			List<IMySlimBlock> fatBlocks = new List<IMySlimBlock>();
+
+			// Get all thrusters, spaceballs, artificial masses, and cockpits
+			Func<IMySlimBlock, bool> selectBlocks = b =>
+				b.FatBlock != null && (b.FatBlock is IMyThrust || b.FatBlock is IMySpaceBall || b.FatBlock is InGame.IMyVirtualMass || b.FatBlock is InGame.IMyShipController);
+			gridToStop.GetBlocks(fatBlocks, selectBlocks);
+
+			// Can the player interact with this grid? If they can, stop the ship by enabling dampeners, turning off
+			// space balls and artificial masses, and disable thruster override
+			if (gridToStop.canInteractWith(req.ReturnAddress)) {
+				foreach (IMySlimBlock block in fatBlocks) {
+					// Thruster
+					if (block.FatBlock is IMyThrust) {
+						Interfaces.TerminalPropertyExtensions.SetValueFloat(block.FatBlock as IMyTerminalBlock, "Override", 0);
+					}
+					// Spaceball
+					else if (block.FatBlock is IMySpaceBall) {
+						(block.FatBlock as InGame.IMyFunctionalBlock).RequestEnable(false);
+					}
+					// Artificial Mass
+					else if (block.FatBlock is InGame.IMyVirtualMass) {
+						(block.FatBlock as InGame.IMyFunctionalBlock).RequestEnable(false);
+					}
+					// Cockpit
+					else if (block.FatBlock is InGame.IMyShipController) {
+						Interfaces.TerminalPropertyExtensions.SetValueBool(block.FatBlock as InGame.IMyShipController, "DampenersOverride", true);
+					}
+				}
+				gridToStop.Physics.ClearSpeed();
+			}
+			// Player can't interact with grid, send error message
+			else {
+				GridOwner.OWNER owner = GridOwner.ownerFromPlayerID(req.ReturnAddress);
+				string errorMessage = "";
+
+				// Build text based on whether or not player is in faction
+				switch (owner.OwnerType) {
+					case GridOwner.OWNER_TYPE.FACTION:
+						errorMessage = "Your faction does not have control of that ship's Main Cockpit!";
+						break;
+					case GridOwner.OWNER_TYPE.PLAYER:
+						errorMessage = "You do not have control of that ship's Main Cockpit!";
+						break;
+				}
+
+				NotificationResponse noti = new NotificationResponse() {
+					NotificationText = errorMessage,
+					Time = Constants.NotificationMillis,
+					Font = MyFontEnum.Red,
+					Destination = new List<long>() { req.ReturnAddress },
+					DestType = BaseResponse.DEST_TYPE.PLAYER
+				};
+
+				send(noti);
+			}
 		}
 
 		private void processViolationsRequest(ViolationsRequest req) {

@@ -16,7 +16,8 @@ namespace GardenConquest.Messaging {
 			FLEET,
 			VIOLATIONS,
 			SETTINGS,
-			DISOWN
+			DISOWN,
+			STOPGRID
 		}
 
 		public TYPE MsgType { get; set; }
@@ -59,6 +60,9 @@ namespace GardenConquest.Messaging {
 					break;
 				case TYPE.DISOWN:
 					msg = new DisownRequest();
+					break;
+				case TYPE.STOPGRID:
+					msg = new StopGridRequest();
 					break;
 			}
 
