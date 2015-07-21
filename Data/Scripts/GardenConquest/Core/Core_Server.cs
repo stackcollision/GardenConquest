@@ -35,19 +35,13 @@ namespace GardenConquest.Core {
 		#region Class Members
 
 		private bool m_Initialized = false;
-		private CommandProcessor m_CmdProc = null;
-		private MyTimer m_RoundTimer = null;
-		private MyTimer m_SaveTimer = null;
-		private RequestProcessor m_MailMan = null;
-		private ResponseProcessor m_LocalReceiver = null;
-
+		private CommandProcessor m_CmdProc;
+		private MyTimer m_RoundTimer;
+		private MyTimer m_SaveTimer;
+		private RequestProcessor m_MailMan;
+		private ResponseProcessor m_LocalReceiver;
 		private bool m_RoundEnded = false;
-		//private Object m_SyncObject = new Object();
 
-		private static readonly int INGAME_PLACEMENT_MAX_DISTANCE = 60;
-		private static MyObjectBuilder_Component s_TokenBuilder = null;
-		private static VRage.ObjectBuilders.SerializableDefinitionId? s_TokenDef = null;
-		private static IComparer<FACGRID> s_Sorter = null;
 		private static ConquestSettings s_Settings;
 		private static bool s_DelayedSettingWrite = false;
 
@@ -65,17 +59,12 @@ namespace GardenConquest.Core {
 				s_Logger = new Logger("Conquest Core", "Server");
 			log("Conquest core (Server) started");
 
-			s_TokenBuilder = new MyObjectBuilder_Component() { SubtypeName = "ShipLicense" };
-			s_TokenDef = new VRage.ObjectBuilders.SerializableDefinitionId(
-				typeof(MyObjectBuilder_InventoryItem), "ShipLicense");
-			s_Sorter = new GridSorter();
-
 			s_Settings = ConquestSettings.getInstance();
 			s_DelayedSettingWrite = s_Settings.WriteFailed;
 			// Start round timer
 			m_RoundTimer = new MyTimer(s_Settings.CPPeriod * 1000, roundEnd);
 			m_RoundTimer.Start();
-			log("Round timer started");
+			log("Round timer started with " + s_Settings.CPPeriod + " seconds");
 
 			// Start save timer
 			m_SaveTimer = new MyTimer(Constants.SaveInterval * 1000, saveTimer);
@@ -98,6 +87,7 @@ namespace GardenConquest.Core {
 			GridEnforcer.OnCleanupViolation += eventCleanupViolation;
 			GridEnforcer.OnCleanupTimerStart += eventCleanupTimerStart;
 			GridEnforcer.OnCleanupTimerEnd += eventCleanupTimerEnd;
+			ControlPoint.OnRewardsDistributed += notifyPlayersOfCPResults;
 
 			m_Initialized = true;
 		}
@@ -109,6 +99,7 @@ namespace GardenConquest.Core {
 			GridEnforcer.OnCleanupViolation -= eventCleanupViolation;
 			GridEnforcer.OnCleanupTimerStart -= eventCleanupTimerStart;
 			GridEnforcer.OnCleanupTimerEnd -= eventCleanupTimerEnd;
+			ControlPoint.OnRewardsDistributed -= notifyPlayersOfCPResults;
 
 			if (m_LocalReceiver != null) {
 				m_MailMan.localMsgSent -= m_LocalReceiver.incomming;
@@ -120,17 +111,23 @@ namespace GardenConquest.Core {
 
 			if (!MyAPIGateway.Utilities.IsDedicated) m_CmdProc.shutdown();
 
+			m_RoundTimer.Dispose();
+			m_RoundTimer = null;
+			m_SaveTimer.Dispose();
+			m_SaveTimer = null;
+
 			s_Logger = null;
 		}
 
 		public override void updateBeforeSimulation() {
 			try {
-				//lock (m_SyncObject) {
 				if (m_RoundEnded) {
-					distributeRewards();
+					log("Round ended, distributing CP Rewards", "updateBeforeSimulation");
+					foreach (ControlPoint cp in s_Settings.ControlPoints) {
+						cp.distributeRewards();
+					}
 					m_RoundEnded = false;
 				}
-				//}
 				if (s_DelayedSettingWrite) {
 					log("Settings Write was delayed, trying again", "updateBeforeSimulation");
 					s_Settings.writeSettings();
@@ -154,7 +151,7 @@ namespace GardenConquest.Core {
 
 			// Check for players within the vicinity of the grid, since there's no
 			// built-in way to tell who just placed the block
-			List<long> players = getPlayersNearGrid(ge.Grid);
+			List<long> players = ge.Grid.getPlayerIDsWithinPlacementRadius();
 
 			if (players.Count <= 0)
 				return;
@@ -215,7 +212,7 @@ namespace GardenConquest.Core {
 				Destinations.Add(ge.Owner.PlayerID);
 				message += "Your ";
 			} else {
-				List<long> nearbyPlayers = getPlayersNearGrid(ge.Grid);
+				List<long> nearbyPlayers = ge.Grid.getPlayerIDsWithinPlacementRadius();
 				if (nearbyPlayers.Count > 0) {
 					destType = BaseResponse.DEST_TYPE.PLAYER;
 					Destinations = nearbyPlayers;
@@ -279,7 +276,7 @@ namespace GardenConquest.Core {
 				message += "Your ";
 			}
 			else {
-				List<long> nearbyPlayers = getPlayersNearGrid(ge.Grid);
+				List<long> nearbyPlayers = ge.Grid.getPlayerIDsWithinPlacementRadius();
 				if (nearbyPlayers.Count > 0) {
 					destType = BaseResponse.DEST_TYPE.PLAYER;
 					Destinations = nearbyPlayers;
@@ -337,7 +334,7 @@ namespace GardenConquest.Core {
 				message += "Your ";
 			}
 			else {
-				List<long> nearbyPlayers = getPlayersNearGrid(ge.Grid);
+				List<long> nearbyPlayers = ge.Grid.getPlayerIDsWithinPlacementRadius();
 				if (nearbyPlayers.Count > 0) {
 					destType = BaseResponse.DEST_TYPE.PLAYER;
 					Destinations = nearbyPlayers;
@@ -370,6 +367,48 @@ namespace GardenConquest.Core {
 			m_MailMan.send(noti);
 		}
 
+		/// <summary>
+		/// Notify players within the CP whether they won, lost, or tied
+		/// </summary>
+		public void notifyPlayersOfCPResults(int rewardsDistributed,
+			List<long> winningFleetIds, List<IMyPlayer> nearbyPlayers, ControlPoint cp) {
+			bool tie = (winningFleetIds.Count > 1);
+			long winningFleetId = 0;
+			if (!tie) winningFleetId = winningFleetIds.First();
+
+			var winningPlayers = new List<long>();
+			var tiedPlayers = new List<long>();
+			var losingPlayers = new List<long>();
+
+			foreach (IMyPlayer player in nearbyPlayers) {
+				long fleetID = player.FleetID();
+
+				if (!tie && fleetID == winningFleetId) {
+					winningPlayers.Add(player.PlayerID);
+				} else if (tie && winningFleetIds.Contains(fleetID)) {
+					tiedPlayers.Add(player.PlayerID);
+				} else {
+					losingPlayers.Add(player.PlayerID);
+				}
+			}
+
+			if (winningPlayers.Count > 0) {
+				notifyPlayers(String.Format(
+					"You control {0} and received {1} licenses.", 
+					cp.Name, rewardsDistributed),
+					winningPlayers, MyFontEnum.Green);
+			}
+			if (tiedPlayers.Count > 0) {
+				notifyPlayers(String.Format(
+					"You tied for control of {0} and received no licenses.",
+					cp.Name), tiedPlayers, MyFontEnum.Red);
+			}
+			if (losingPlayers.Count > 0) {
+				notifyPlayers("Someone else controls " + cp.Name,
+					losingPlayers, MyFontEnum.Red);
+			}
+		}
+
 		#endregion
 		#region Class Timer Events
 
@@ -378,9 +417,7 @@ namespace GardenConquest.Core {
 		/// </summary>
 		private void roundEnd() {
 			log("hit", "roundEnd");
-			//lock (m_SyncObject) {
-				m_RoundEnded = true;
-			//}
+			m_RoundEnded = true;
 		}
 
 		private void saveTimer() {
@@ -388,280 +425,16 @@ namespace GardenConquest.Core {
 			StateTracker.getInstance().saveState();
 		}
 
-		/// <summary>
-		/// Called at the end of a round.  Distributes rewards to winning factions.
-		/// </summary>
-		private void distributeRewards() {
-			log("Timer triggered", "roundEnd");
-
-			try {
-				if (!m_Initialized)
-					return;
-
-				// Check each CP in turn
-				Dictionary<long, int> totalTokens = new Dictionary<long, int>();
-				foreach (ControlPoint cp in s_Settings.ControlPoints) {
-					log("Processing control point " + cp.Name, "roundEnd");
-
-					// Get a list of all grids within this CPs sphere of influence
-					List<IMyCubeGrid> gridsInSOI = getGridsInCPRadius(cp);
-					log("Found " + gridsInSOI.Count + " grids in CP SOI", "roundEnd");
-
-					// Group all of the grids in the SOI into their factions
-					// This will only return grids which conform to the rules which make them valid
-					// for counting.  All other grids discarded.
-					Dictionary<long, List<FACGRID>> allFactionGrids = 
-						groupFactionGrids(gridsInSOI, cp.Position);
-					log("After aggregation there are " + allFactionGrids.Count + " factions present", "roundEnd");
-					foreach (KeyValuePair<long, List<FACGRID>> entry in allFactionGrids) {
-						log("Grids for faction " + entry.Key, "roundEnd");
-						foreach (FACGRID grid in entry.Value) {
-							log("\t" + grid.grid.Name, "roundEnd");
-						}
-					}
-
-					// Now that we have an aggregation of grids for factions
-					// in the SOI, we can decide who wins
-					long greatestFaction = -1;
-					int greatestTotal = -1;
-					bool tie = false;
-					foreach (KeyValuePair<long, List<FACGRID>> entry in allFactionGrids) {
-						int weightedTotal = 0;
-						foreach (FACGRID fg in entry.Value) {
-							weightedTotal +=
-								s_Settings.HullRules[(int)fg.hullClass].CaptureMultiplier;
-						}
-
-						if (weightedTotal >= greatestTotal) {
-							tie = weightedTotal == greatestTotal;
-
-							greatestFaction = entry.Key;
-							greatestTotal = weightedTotal;
-						}
-					}
-
-					log("Faction with most grids: " + greatestFaction, "roundEnd");
-					log("Number of (weighted) grids: " + greatestTotal, "roundEnd");
-					log("Tie? " + tie, "roundEnd");
-
-					// If we have a tie, nobody gets the tokens
-					// If we don't, award tokens to the faction with the most ships in the SOI
-					if (greatestFaction != -1 && !tie) {
-						// Deposit order:
-						// 1. Largest station (by block count)
-						// 2. If no stations, largest (by block count) large ship with cargo
-						// 3. Otherwise largest (by block count) small ship with cargo
-
-						// Sort the list by these rules ^
-						log("Sorting list of grids", "roundEnd");
-						List<FACGRID> grids = allFactionGrids[greatestFaction];
-						grids.Sort(s_Sorter);
-
-						//foreach (FACGRID g in grids) {
-						//	log(g.grid.EntityId + " " + g.gtype + " " + g.blockCount);
-						//}
-
-						// Go through the sorted list and find the first ship with a cargo container
-						// with space.  If the faction has no free cargo container they are S.O.L.
-						log("Looking for valid container", "roundEnd");
-						InGame.IMyCargoContainer container = null;
-						foreach (FACGRID grid in grids) {
-							container = grid.grid.getAvailableCargo(s_TokenDef, cp.TokensPerPeriod);
-							if (container != null)
-								break;
-						}
-						
-						if (container != null) {
-							// Award the tokens
-							log("Found a ship to put tokens in", "roundEnd");
-							((container as Interfaces.IMyInventoryOwner).GetInventory(0)
-								as IMyInventory).AddItems(
-								cp.TokensPerPeriod,
-								s_TokenBuilder);
-
-							// Track totals
-							if (totalTokens.ContainsKey(greatestFaction)) {
-								totalTokens[greatestFaction] += cp.TokensPerPeriod;
-							} else {
-								totalTokens.Add(greatestFaction, cp.TokensPerPeriod);
-							}
-						}
-					}
-				}
-
-				// Anounce round ended
-				log("Sending message", "roundEnd");
-				NotificationResponse endedMessage = new NotificationResponse() {
-					NotificationText = "Conquest Round Ended",
-					Time = Constants.NotificationMillis,
-					Font = MyFontEnum.White,
-					Destination = null,
-					DestType = BaseResponse.DEST_TYPE.EVERYONE
-				};
-				m_MailMan.send(endedMessage);
-
-				// Report round results
-				// For every faction that got rewards, tell them
-				NotificationResponse rewardMessage = new NotificationResponse() {
-					NotificationText = "",
-					Time = Constants.NotificationMillis,
-					Font = MyFontEnum.White,
-					Destination = new List<long>() { 0 },
-					DestType = BaseResponse.DEST_TYPE.FACTION
-				};
-				foreach (KeyValuePair<long, int> entry in totalTokens) {
-					rewardMessage.NotificationText = "Your faction has been awarded " +
-						entry.Value + " licenses";
-					rewardMessage.Destination[0] = entry.Key;
-					m_MailMan.send(endedMessage);
-				}
-
-
-			} catch (Exception e) {
-				log("An exception occured: " + e, "roundEnd", Logger.severity.ERROR);
-			}
-		}
-
 		#endregion
-		#region Class Helpers
 
-
-
-		/// <summary>
-		/// Returns a list of players near a grid.  Used to send messages
-		/// </summary>
-		/// <param name="grid"></param>
-		/// <returns></returns>
-		private List<long> getPlayersNearGrid(IMyCubeGrid grid) {
-			log("Getting players near grid " + grid.DisplayName);
-
-			Vector3 gridPos = grid.GetPosition();
-			VRageMath.Vector3 gridSize = grid.LocalAABB.Size;
-			float gridMaxLength = 
-				Math.Max(gridSize.X, Math.Max(gridSize.Y, gridSize.Z));
-			int maxDistFromGrid = (int)gridMaxLength + INGAME_PLACEMENT_MAX_DISTANCE;
-
-			List<IMyPlayer> allPlayers = new List<IMyPlayer>();
-			MyAPIGateway.Players.GetPlayers(allPlayers);
-
-			float pDistFromGrid = 0.0f;
-			List<long> nearbyPlayerIds = new List<long>();
-			foreach (IMyPlayer p in allPlayers)
-			{
-				pDistFromGrid = VRageMath.Vector3.Distance(p.GetPosition(), gridPos);
-				if (pDistFromGrid < maxDistFromGrid) {
-					nearbyPlayerIds.Add((long)p.PlayerID);
-				}
-			}
-
-			log(nearbyPlayerIds.Count + " Nearby players: " + String.Join(" ,", nearbyPlayerIds));
-			return nearbyPlayerIds;
+		public void notifyPlayers(String msg, List<long> playerIDs, MyFontEnum color) {
+			m_MailMan.send(new NotificationResponse() {
+				NotificationText = msg,
+				Time = Constants.NotificationMillis,
+				Font = color,
+				Destination = playerIDs,
+				DestType = BaseResponse.DEST_TYPE.PLAYER
+			});
 		}
-
-		/// <summary>
-		/// Returns a list of grids in the vicinity of the CP
-		/// </summary>
-		/// <param name="cp">Control point to check</param>
-		/// <returns></returns>
-		private List<IMyCubeGrid> getGridsInCPRadius(ControlPoint cp) {
-			// Get all ents within the radius
-			VRageMath.BoundingSphereD bounds =
-				new VRageMath.BoundingSphereD(cp.Position, (double)cp.Radius);
-			List<IMyEntity> ents =
-				MyAPIGateway.Entities.GetEntitiesInSphere(ref bounds);
-
-			// Get only the ships/stations
-			List<IMyCubeGrid> grids = new List<IMyCubeGrid>();
-			foreach (IMyEntity e in ents) {
-				if (e is IMyCubeGrid)
-					grids.Add(e as IMyCubeGrid);
-			}
-
-			return grids;
-		}
-
-		/// <summary>
-		/// Separates a list of grids by their fleet.  Also discards invalid grids.
-		/// </summary>
-		/// <param name="grids">Grids to aggregate</param>
-		/// <param name="cpPos">The position of the CP</param>
-		/// <returns></returns>
-		private Dictionary<long, List<FACGRID>> groupFactionGrids(List<IMyCubeGrid> grids, VRageMath.Vector3D cpPos) {
-			Dictionary<long, List<FACGRID>> result = new Dictionary<long, List<FACGRID>>();
-
-			foreach (IMyCubeGrid grid in grids) {
-				// GridEnforcer
-				GridEnforcer ge = grid.Components.Get<MyGameLogicComponent>() as GridEnforcer;
-				if (ge == null) {
-					log("No grid enforcer on grid " + grid.EntityId,
-						"groupFactionGrids", Logger.severity.ERROR);
-					continue;
-				}
-
-				// Owner
-				ge.reevaluateOwnership();
-
-				if (ge.Owner.OwnerType == GridOwner.OWNER_TYPE.UNOWNED) {
-					log("Grid " + grid.EntityId + " is unowned, skipping",
-						"groupFactionGrids");
-					continue;
-				}
-
-				// Fleet
-				long fleetID = ge.Owner.FleetID;
-				if (ge.SupportedByFleet) {
-					log("Grid " + grid.DisplayName + " belongs to fleet " + fleetID,
-						"groupFactionGrids");
-				} else {
-					log("Grid " + grid.DisplayName + " is unsupported by its fleet " + fleetID +
-					", skipping.", "groupFactionGrids");
-					continue;
-				}
-
-				// Hull Classifier conditions for the grid to count:
-				// 1. Must have a hull classifier
-				HullClassifier classifier = ge.Classifier;
-				if (classifier == null) {
-					log("Grid has no classifier, skipping", "groupFactionGrids");
-					continue;
-				}
-
-				// 2. HC must be working
-				InGame.IMyBeacon beacon = classifier.FatBlock as InGame.IMyBeacon;
-				if (beacon == null || !beacon.IsWorking) {
-					log("Classifier beacon not working, skipping", "groupFactionGrids");
-					continue;
-				}
-
-				// 3. HC must have a beacon radius greater than the distance to the grid
-				if (beacon.Radius < VRageMath.Vector3.Distance(cpPos, grid.GetPosition())) {
-					log("Classifier range too small, skipping", "groupFactionGrids");
-					continue;
-				}
-
-				// The grid can be counted
-				List<IMySlimBlock> blocks = new List<IMySlimBlock>();
-				grid.GetBlocks(blocks);
-
-				FACGRID fg = new FACGRID();
-				fg.grid = grid;
-				fg.blockCount = blocks.Count;
-				fg.gtype = Utility.getGridType(grid);
-				fg.hullClass = ge.Class;
-
-				List<FACGRID> gridsOfCurrent = null;
-				if (result.ContainsKey(fleetID)) {
-					gridsOfCurrent = result[fleetID];
-				} else {
-					gridsOfCurrent = new List<FACGRID>();
-					result.Add(fleetID, gridsOfCurrent);
-				}
-				gridsOfCurrent.Add(fg);
-			}
-
-			return result;
-		}
-
-		#endregion
 	}
 }
