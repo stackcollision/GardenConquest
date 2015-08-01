@@ -59,7 +59,7 @@ namespace GardenConquest.Blocks {
 			public int Limit { get; set; }
 		}
 
-		private static readonly bool CLEANUP_PREFABS_IMMEDIATELY = true;
+		private static readonly bool CLEANUP_PREFABS_IMMEDIATELY = false;
 		private static readonly int PREFAB_BLOCK_THRESHOLD = 200;
 		private static readonly int CLEANUP_CLASS_TICKS = 1; // So 30 min with default 30 min ticks
 		private static readonly int CLEANUP_STATIC_TICKS = 96; // 2 days

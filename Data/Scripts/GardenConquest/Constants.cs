@@ -33,7 +33,7 @@ namespace GardenConquest {
 		/// <summary>
 		/// Current Version of Garden Conquest
 		/// </summary>
-		public const String Version = "1.0.9.5";
+		public const String Version = "1.0.9.5-1";
 
 		/// <summary>
 		/// Notification duration
