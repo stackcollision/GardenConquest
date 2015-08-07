@@ -28,6 +28,8 @@ namespace GardenConquest.Messaging {
 		private List<GridEnforcer.GridData>[] m_UnsupportedGrids;
 
 		private ConquestSettings.SETTINGS m_ServerSettings;
+		private List<IMyGps> m_ServerCPGPS = new List<IMyGps>();
+		private bool m_ServerCPGPSAdded = false;
 		private bool m_Registered = false;
 
 		public ConquestSettings.SETTINGS ServerSettings {
@@ -241,12 +243,15 @@ namespace GardenConquest.Messaging {
 
 			log("Adding CP GPS", "processSettingsResponse");
 			foreach (Records.ControlPoint cp in ServerSettings.ControlPoints) {
-				IMyGps gps = MyAPIGateway.Session.GPS.Create(
-					cp.Name, "GardenConquest Control Point",
+				m_ServerCPGPS.Add(MyAPIGateway.Session.GPS.Create(
+					cp.Name,
+					"GardenConquest Control Point",
 					new VRageMath.Vector3D(cp.Position.X, cp.Position.Y, cp.Position.Z),
-					true, true);
-				MyAPIGateway.Session.GPS.AddLocalGps(gps);
+					true, true
+				));
 			}
+
+			addCPGPS();
 		}
 
 		private void processFleetResponse(FleetResponse resp) {
@@ -344,6 +349,25 @@ namespace GardenConquest.Messaging {
 					break;
 			}
 			return fleetInfoTitle;
+		}
+
+		public void addCPGPS() {
+			foreach (IMyGps gps in m_ServerCPGPS) {
+				MyAPIGateway.Session.GPS.AddLocalGps(gps);
+			}
+
+			m_ServerCPGPSAdded = true;
+		}
+
+		public void removeCPGPS() {
+			if (!m_ServerCPGPSAdded)
+				return;
+
+			foreach (IMyGps gps in m_ServerCPGPS) {
+				MyAPIGateway.Session.GPS.RemoveLocalGps(gps.Hash);
+			}
+
+			m_ServerCPGPSAdded = false;
 		}
 
 		#endregion

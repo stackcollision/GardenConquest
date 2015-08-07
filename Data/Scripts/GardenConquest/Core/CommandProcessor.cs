@@ -24,23 +24,21 @@ namespace GardenConquest.Core {
 		private static Logger s_Logger = null;
 
 		private static string s_HelpText =
-			" ----- Garden Conquest V" + Constants.Version + " ------ \n\n" +
+			" ----- Garden Conquest V" + Constants.Version + " ------ \n" +
 			"Garden Conquest is a new, open source, Conquest-type mod. " +
 			"It introduces ship classes and control points for " +
 			"combat-focused servers.\n\n" +
-			"If you're new to GC, check out the help subtopics below.\n\n" +
 			"Chat Commands:\n" +
 			"/gc help - Show this screen\n" +
-			"/gc help [category] - Show help for a category:\n" +
-			"        classes     - Ship Classes and their limits\n" +
-			"        classifiers - Hull Classifier blocks\n" +
-			"        cps            - Control Points\n" +
-			"        licenses    - Ship License components\n" +
-			"/gc fleet - Information on your fleet \n" +
-			"/gc fleet [command] - Commands for your fleet\n" +
-			"        stop [class] [id] - Stops your ship, given class and ID\n" +
-			//"/gc fleet remove \"Ship Name\"- Disown a ship";
-			"/gc violations - Your fleet's current rule violations, if any";
+			"/gc help classes - Ship Classes and their limits\n" +
+			"/gc help classifiers - Hull Classifier blocks\n" +
+			"/gc help licenses - Ship License components\n" +
+			"/gc cps - Info on Control Points\n" +
+			"/gc cps hide - Hide the CP GPS markers\n" +
+			"/gc cps show - Show the CP GPS markers\n" +
+			"/gc fleet - Info on your fleet \n" +
+			"/gc fleet stop [Class] [N] - Stop your Nth ship of class Class\n" +
+			"/gc violations - Your fleet's current rule violations, if any\n";
 
 		private static string s_HelpClassesText;
 		private static string s_HelpClassifiersText;
@@ -91,12 +89,10 @@ namespace GardenConquest.Core {
 					switch (cmd[1].ToLower()) {
 						case "about":
 						case "help":
-							if (numCommands == 1)
+							if (numCommands == 1) {
 								Utility.showDialog("Help", s_HelpText, "Close");
-							else
-							{
-								switch (cmd[2].ToLower())
-								{
+							} else {
+								switch (cmd[2].ToLower()) {
 									case "classes":
 										Utility.showDialog("Help - Classes", helpClassesText(), "Close");
 										break;
@@ -108,6 +104,21 @@ namespace GardenConquest.Core {
 										break;
 									case "licenses":
 										Utility.showDialog("Help - Licenses", s_HelpLicensesText, "Close");
+										break;
+								}
+							}
+							break;
+
+						case "cps":
+							if (numCommands == 1) {
+								Utility.showDialog("Help - Control Points", helpCPsText(), "Close");
+							} else if (numCommands == 2) {
+								switch (cmd[2].ToLower()) {
+									case "show":
+										m_MailMan.addCPGPS();
+										break;
+									case "hide":
+										m_MailMan.removeCPGPS();
 										break;
 								}
 							}
