@@ -313,7 +313,8 @@ namespace GardenConquest.Messaging {
 								fleetInfoBody += "      GPS: " + gdList[j].shipPosition.X + ", " + gdList[j].shipPosition.Y + ", " + gdList[j].shipPosition.Z + "\n";
 							}
 							else {
-								fleetInfoBody += "      GPS: Unavailable - Must own the Main Cockpit\n";
+								fleetInfoBody += "      GPS: Unavailable - Must own the ";
+								fleetInfoBody += (m_ServerSettings.CommandsRequireClassifier == true ? "Hull Classifier\n" : "Main Cockpit\n");
 							}
 						}
 					}
@@ -328,7 +329,8 @@ namespace GardenConquest.Messaging {
 								fleetInfoBody += "         GPS: " + gdList[j].shipPosition.X + ", " + gdList[j].shipPosition.Y + ", " + gdList[j].shipPosition.Z + "\n";
 							}
 							else {
-								fleetInfoBody += "         GPS: Unavailable - Must own the Main Cockpit\n";
+								fleetInfoBody += "         GPS: Unavailable - Must own the ";
+								fleetInfoBody += (m_ServerSettings.CommandsRequireClassifier == true ? "Hull Classifier\n" : "Main Cockpit\n");
 							}
 						}
 					}

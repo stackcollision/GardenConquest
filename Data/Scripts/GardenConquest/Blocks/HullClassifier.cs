@@ -16,7 +16,7 @@ namespace GardenConquest.Blocks {
 
 		#region Static
 
-		private const String SHARED_SUBTYPE = "HullClassifier";
+		public const String SHARED_SUBTYPE = "HullClassifier";
 		public readonly static String[] SUBTYPES_IN_CLASS_ORDER = {
 			"Unclassified",
 			"Unlicensed",

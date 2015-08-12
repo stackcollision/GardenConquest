@@ -39,5 +39,10 @@ namespace GardenConquest {
 		/// Notification duration
 		/// </summary>
 		public const int NotificationMillis = 7500;
+
+		/// <summary>
+		/// How often should Update functions execute (how many frames until an update)
+		/// </summary>
+		public const int UpdateFrequency = 100;
 	}
 }

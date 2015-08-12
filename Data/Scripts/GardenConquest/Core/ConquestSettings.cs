@@ -28,6 +28,7 @@ namespace GardenConquest.Core {
 			public List<ControlPoint> ControlPoints { get; set; }
 			public int CPPeriod { get; set; }
 			public int CleanupPeriod { get; set; }
+			public bool CommandsRequireClassifier { get; set; }
 			public BlockType[] BlockTypes { get; set; }
 			[XmlElement("Classes")]
 			public HullRuleSet[] HullRules { get; set; }
@@ -35,6 +36,7 @@ namespace GardenConquest.Core {
 
 		private static readonly int DEFAULT_CP_PERIOD = 300; // 5 minutes
 		private static readonly int DEFAULT_CLEANUP_PERIOD = 1200; // 1800; // 30 minutes
+		private static readonly bool DEFAULT_COMMANDS_REQUIRE_CLASSIFIER = false;
 		private static Logger s_Logger;
 		private static ConquestSettings s_Instance;
 
@@ -60,6 +62,9 @@ namespace GardenConquest.Core {
 		}
 		public int CleanupPeriod {
 			get { return m_Settings.CleanupPeriod; }
+		}
+		public bool CommandsRequireClassifier {
+			get { return m_Settings.CommandsRequireClassifier; }
 		}
 		public BlockType[] BlockTypes { 
 			get { return m_Settings.BlockTypes; }
@@ -194,6 +199,7 @@ namespace GardenConquest.Core {
 			m_Settings.ControlPoints = defaultControlPoints();
 			m_Settings.CPPeriod = DEFAULT_CP_PERIOD;
 			m_Settings.CleanupPeriod = DEFAULT_CLEANUP_PERIOD;
+			m_Settings.CommandsRequireClassifier = DEFAULT_COMMANDS_REQUIRE_CLASSIFIER;
 			m_Settings.BlockTypes  = defaultBlockTypes();
 			m_Settings.HullRules = defaultHullRules();
 			writeSettings();
