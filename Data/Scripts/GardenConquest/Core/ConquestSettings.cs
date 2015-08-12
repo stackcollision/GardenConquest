@@ -36,7 +36,7 @@ namespace GardenConquest.Core {
 
 		private static readonly int DEFAULT_CP_PERIOD = 300; // 5 minutes
 		private static readonly int DEFAULT_CLEANUP_PERIOD = 1200; // 1800; // 30 minutes
-		private static readonly bool DEFAULT_COMMANDS_REQUIRE_CLASSIFIER = false;
+		private static readonly bool DEFAULT_COMMANDS_REQUIRE_CLASSIFIER = true;
 		private static Logger s_Logger;
 		private static ConquestSettings s_Instance;
 
