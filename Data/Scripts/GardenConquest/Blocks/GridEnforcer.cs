@@ -1012,7 +1012,13 @@ namespace GardenConquest.Blocks {
 		/// </summary>
 		/// <returns>Whether or not the ownership changed.</returns>
 		public bool reevaluateOwnership() {
-			bool changed = m_Owner.reevaluateOwnership(BigOwners);
+			bool changed;
+			if (s_Settings.SimpleOwnership) {
+				changed = m_Owner.reevaluateOwnership(new List<long> { m_Grid.getClassifierBlock().OwnerId });
+			}
+			else {
+				changed = m_Owner.reevaluateOwnership(BigOwners);
+			}
 
 			if (changed) {
 				m_CheckCleanupNextUpdate = true;

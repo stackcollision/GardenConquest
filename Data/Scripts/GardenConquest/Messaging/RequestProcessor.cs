@@ -171,12 +171,10 @@ namespace GardenConquest.Messaging {
 				// Build text based on whether or not player is in faction
 				switch (owner.OwnerType) {
 					case GridOwner.OWNER_TYPE.FACTION:
-						errorMessage = "Your faction does not have control of that ship's ";
-						errorMessage += (ConquestSettings.getInstance().CommandsRequireClassifier == true ? "Hull Classifier!" : "Main Cockpit!");
+						errorMessage = "Your faction does not have control of that ship's Main Cockpit!";
 						break;
 					case GridOwner.OWNER_TYPE.PLAYER:
-						errorMessage = "You do not have control of that ship's ";
-						errorMessage += (ConquestSettings.getInstance().CommandsRequireClassifier == true ? "Hull Classifier!" : "Main Cockpit!");
+						errorMessage = "You do not have control of that ship's Main Cockpit!";
 						break;
 				}
 

@@ -154,7 +154,7 @@ namespace GardenConquest.Extensions {
 			IMyCubeBlock blockToCheck;
 
 			// Get the type of block to check based on settings
-			if (Core.ConquestSettings.getInstance().CommandsRequireClassifier) {
+			if (Core.ConquestSettings.getInstance().SimpleOwnership) {
 				blockToCheck = grid.getClassifierBlock();
 			}
 			else {
@@ -196,8 +196,7 @@ namespace GardenConquest.Extensions {
 			List<IMySlimBlock> beaconBlocks = new List<IMySlimBlock>();
 
 			// Get all beacon blocks
-			Func<IMySlimBlock, bool> isBeacon = b => b.FatBlock != null && b.FatBlock is InGame.IMyBeacon;
-			grid.GetBlocks(beaconBlocks, isBeacon);
+			grid.GetBlocks(beaconBlocks, (b => b.FatBlock != null && b.FatBlock is InGame.IMyBeacon));
 
 			foreach (IMySlimBlock block in beaconBlocks) {
 				String subTypeName = block.FatBlock.BlockDefinition.SubtypeName;
@@ -218,8 +217,7 @@ namespace GardenConquest.Extensions {
 			List<IMySlimBlock> cockpitBlocks = new List<IMySlimBlock>();
 
 			// Get all cockpit blocks
-			Func<IMySlimBlock, bool> isCockpit = b => b.FatBlock != null && b.FatBlock is InGame.IMyShipController;
-			grid.GetBlocks(cockpitBlocks, isCockpit);
+			grid.GetBlocks(cockpitBlocks, (b => b.FatBlock != null && b.FatBlock is InGame.IMyShipConnector));
 
 			foreach (IMySlimBlock block in cockpitBlocks) {
 				if (Interfaces.TerminalPropertyExtensions.GetValueBool(block.FatBlock as IMyTerminalBlock, "MainCockpit")) {
