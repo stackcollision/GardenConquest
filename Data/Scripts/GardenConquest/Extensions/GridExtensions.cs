@@ -199,8 +199,7 @@ namespace GardenConquest.Extensions {
 			grid.GetBlocks(beaconBlocks, (b => b.FatBlock != null && b.FatBlock is InGame.IMyBeacon));
 
 			foreach (IMySlimBlock block in beaconBlocks) {
-				String subTypeName = block.FatBlock.BlockDefinition.SubtypeName;
-				if (subTypeName.Contains(Blocks.HullClassifier.SHARED_SUBTYPE)) {
+				if (block.isClassifierBlock()) {
 					return block.FatBlock;
 				}
 			}
@@ -217,7 +216,7 @@ namespace GardenConquest.Extensions {
 			List<IMySlimBlock> cockpitBlocks = new List<IMySlimBlock>();
 
 			// Get all cockpit blocks
-			grid.GetBlocks(cockpitBlocks, (b => b.FatBlock != null && b.FatBlock is InGame.IMyShipConnector));
+			grid.GetBlocks(cockpitBlocks, (b => b.FatBlock != null && b.FatBlock is InGame.IMyShipController));
 
 			foreach (IMySlimBlock block in cockpitBlocks) {
 				if (Interfaces.TerminalPropertyExtensions.GetValueBool(block.FatBlock as IMyTerminalBlock, "MainCockpit")) {

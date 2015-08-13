@@ -58,20 +58,6 @@ namespace GardenConquest.Blocks {
 			return HullClass.CLASS.UNCLASSIFIED;
 		}
 
-		/// <summary>
-		/// If we recognize the block's subtype as belonging to a classifier, return true
-		/// </summary>
-		public static bool isClassifierBlock(IMySlimBlock block) {
-			IMyCubeBlock fatblock = block.FatBlock;
-			if (fatblock != null && fatblock is Ingame.IMyBeacon) {
-				String subTypeName = fatblock.BlockDefinition.SubtypeName;
-				if (subTypeName.Contains(SHARED_SUBTYPE))
-					return true;
-			}
-
-			return false;
-		}
-
 		private static void log(String message, String method = null, 
 			Logger.severity level = Logger.severity.DEBUG) {
 			if (s_Logger == null)
