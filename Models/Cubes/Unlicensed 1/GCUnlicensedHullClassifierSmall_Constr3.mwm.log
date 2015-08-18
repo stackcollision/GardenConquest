@@ -1,0 +1,257 @@
+Running from: C:\Users\Chris\AppData\Local\Temp\tmpyub6ayx5 
+Command: C:\Games\Steam\SteamApps\common\SpaceEngineers\Tools\MwmBuilder\MwmBuilder.exe /s:Content /m:GCUnlicensedHullClassifierSmall_Constr3.fbx /o:.\ 
+: WARNING: 
+    Could not find Materials library folder.
+Textures\Models\Cubes\beacon_me.dds: WARNING: 
+    Texture DiffuseTexture does not exists!
+Textures\Models\Cubes\beacon_ns.dds: WARNING: 
+    Texture NormalTexture does not exists!
+Textures\Models\Cubes\beacon_cm.dds: WARNING: 
+    Texture ColorMetalTexture does not exists!
+Textures\Models\Cubes\beacon_ng.dds: WARNING: 
+    Texture NormalGlossTexture does not exists!
+Textures\Models\Cubes\beacon_add.dds: WARNING: 
+    Texture AddMapsTexture does not exists!
+: WARNING: 
+    Model contains degenerated triangle (indices 304 306 305)
+: WARNING: 
+    Model contains degenerated triangle (indices 304 305 304)
+: WARNING: 
+    Model contains degenerated triangle (indices 2578 2580 2579)
+: WARNING: 
+    Model contains degenerated triangle (indices 2578 2579 2578)
+: WARNING: 
+    Model contains degenerated triangle (indices 2585 2587 2586)
+: WARNING: 
+    Model contains degenerated triangle (indices 2585 2586 2585)
+: WARNING: 
+    Model contains degenerated triangle (indices 2592 2594 2593)
+: WARNING: 
+    Model contains degenerated triangle (indices 2592 2593 2592)
+: WARNING: 
+    Model contains degenerated triangle (indices 2601 2603 2602)
+: WARNING: 
+    Model contains degenerated triangle (indices 2601 2602 2601)
+: WARNING: 
+    Model contains degenerated triangle (indices 2608 2610 2609)
+: WARNING: 
+    Model contains degenerated triangle (indices 2608 2609 2608)
+: WARNING: 
+    Model contains degenerated triangle (indices 2617 2619 2618)
+: WARNING: 
+    Model contains degenerated triangle (indices 2617 2618 2617)
+: WARNING: 
+    Model contains degenerated triangle (indices 2624 2626 2625)
+: WARNING: 
+    Model contains degenerated triangle (indices 2624 2625 2624)
+: WARNING: 
+    Model contains degenerated triangle (indices 2631 2633 2632)
+: WARNING: 
+    Model contains degenerated triangle (indices 2631 2632 2631)
+: WARNING: 
+    Model contains degenerated triangle (indices 2704 2706 2705)
+: WARNING: 
+    Model contains degenerated triangle (indices 2704 2705 2704)
+: WARNING: 
+    Model contains degenerated triangle (indices 2707 2709 2708)
+: WARNING: 
+    Model contains degenerated triangle (indices 2707 2708 2707)
+: WARNING: 
+    Model contains degenerated triangle (indices 2710 2712 2711)
+: WARNING: 
+    Model contains degenerated triangle (indices 2710 2711 2710)
+: WARNING: 
+    Model contains degenerated triangle (indices 2713 2715 2714)
+: WARNING: 
+    Model contains degenerated triangle (indices 2713 2714 2713)
+: WARNING: 
+    Model contains degenerated triangle (indices 2716 2718 2717)
+: WARNING: 
+    Model contains degenerated triangle (indices 2716 2717 2716)
+: WARNING: 
+    Model contains degenerated triangle (indices 2719 2721 2720)
+: WARNING: 
+    Model contains degenerated triangle (indices 2719 2720 2719)
+: WARNING: 
+    Model contains degenerated triangle (indices 2608 2723 2722)
+: WARNING: 
+    Model contains degenerated triangle (indices 2608 2722 2608)
+: WARNING: 
+    Model contains degenerated triangle (indices 2724 2726 2725)
+: WARNING: 
+    Model contains degenerated triangle (indices 2724 2725 2724)
+: WARNING: 
+    Model contains degenerated triangle (indices 2727 2729 2728)
+: WARNING: 
+    Model contains degenerated triangle (indices 2727 2728 2727)
+: WARNING: 
+    Model contains degenerated triangle (indices 2730 2732 2731)
+: WARNING: 
+    Model contains degenerated triangle (indices 2730 2731 2730)
+: WARNING: 
+    Model contains degenerated triangle (indices 2733 2735 2734)
+: WARNING: 
+    Model contains degenerated triangle (indices 2733 2734 2733)
+: WARNING: 
+    Model contains degenerated triangle (indices 2736 2738 2737)
+: WARNING: 
+    Model contains degenerated triangle (indices 2736 2737 2736)
+: WARNING: 
+    Model contains degenerated triangle (indices 2739 2741 2740)
+: WARNING: 
+    Model contains degenerated triangle (indices 2739 2740 2739)
+: WARNING: 
+    Model contains degenerated triangle (indices 2742 2744 2743)
+: WARNING: 
+    Model contains degenerated triangle (indices 2742 2743 2742)
+: WARNING: 
+    Model contains degenerated triangle (indices 2745 2747 2746)
+: WARNING: 
+    Model contains degenerated triangle (indices 2745 2746 2745)
+: WARNING: 
+    Model contains degenerated triangle (indices 2748 2750 2749)
+: WARNING: 
+    Model contains degenerated triangle (indices 2748 2749 2748)
+: WARNING: 
+    Model contains degenerated triangle (indices 2751 2753 2752)
+: WARNING: 
+    Model contains degenerated triangle (indices 2751 2752 2751)
+: WARNING: 
+    Model contains degenerated triangle (indices 2754 2756 2755)
+: WARNING: 
+    Model contains degenerated triangle (indices 2754 2755 2754)
+: WARNING: 
+    Model contains degenerated triangle (indices 2805 2807 2806)
+: WARNING: 
+    Model contains degenerated triangle (indices 2805 2806 2805)
+: WARNING: 
+    Model contains degenerated triangle (indices 2808 2810 2809)
+: WARNING: 
+    Model contains degenerated triangle (indices 2808 2809 2808)
+: WARNING: 
+    Model contains degenerated triangle (indices 2811 2715 2714)
+: WARNING: 
+    Model contains degenerated triangle (indices 2811 2714 2811)
+: WARNING: 
+    Model contains degenerated triangle (indices 2868 2870 2869)
+: WARNING: 
+    Model contains degenerated triangle (indices 2868 2869 2868)
+: WARNING: 
+    Model contains degenerated triangle (indices 2871 2873 2872)
+: WARNING: 
+    Model contains degenerated triangle (indices 2871 2872 2871)
+: WARNING: 
+    Model contains degenerated triangle (indices 2874 2876 2875)
+: WARNING: 
+    Model contains degenerated triangle (indices 2874 2875 2874)
+: WARNING: 
+    Model contains degenerated triangle (indices 2877 2879 2878)
+: WARNING: 
+    Model contains degenerated triangle (indices 2877 2878 2877)
+: WARNING: 
+    Model contains degenerated triangle (indices 2880 2882 2881)
+: WARNING: 
+    Model contains degenerated triangle (indices 2880 2881 2880)
+: WARNING: 
+    Model contains degenerated triangle (indices 2883 2885 2884)
+: WARNING: 
+    Model contains degenerated triangle (indices 2883 2884 2883)
+: WARNING: 
+    Model contains degenerated triangle (indices 2886 2888 2887)
+: WARNING: 
+    Model contains degenerated triangle (indices 2886 2887 2886)
+: WARNING: 
+    Model contains degenerated triangle (indices 2889 2891 2890)
+: WARNING: 
+    Model contains degenerated triangle (indices 2889 2890 2889)
+: WARNING: 
+    Model contains degenerated triangle (indices 2892 2894 2893)
+: WARNING: 
+    Model contains degenerated triangle (indices 2892 2893 2892)
+: WARNING: 
+    Model contains degenerated triangle (indices 2895 2897 2896)
+: WARNING: 
+    Model contains degenerated triangle (indices 2895 2896 2895)
+: WARNING: 
+    Model contains degenerated triangle (indices 2898 2900 2899)
+: WARNING: 
+    Model contains degenerated triangle (indices 2898 2899 2898)
+: WARNING: 
+    Model contains degenerated triangle (indices 2901 2619 2618)
+: WARNING: 
+    Model contains degenerated triangle (indices 2901 2618 2901)
+: WARNING: 
+    Model contains degenerated triangle (indices 2902 2904 2903)
+: WARNING: 
+    Model contains degenerated triangle (indices 2902 2903 2902)
+: WARNING: 
+    Model contains degenerated triangle (indices 2704 2906 2905)
+: WARNING: 
+    Model contains degenerated triangle (indices 2704 2905 2704)
+: WARNING: 
+    Model contains degenerated triangle (indices 2907 2909 2908)
+: WARNING: 
+    Model contains degenerated triangle (indices 2907 2908 2907)
+: WARNING: 
+    Model contains degenerated triangle (indices 2910 2912 2911)
+: WARNING: 
+    Model contains degenerated triangle (indices 2910 2911 2910)
+: WARNING: 
+    Model contains degenerated triangle (indices 2913 2915 2914)
+: WARNING: 
+    Model contains degenerated triangle (indices 2913 2914 2913)
+: WARNING: 
+    Model contains degenerated triangle (indices 2948 2950 2949)
+: WARNING: 
+    Model contains degenerated triangle (indices 2948 2949 2948)
+: WARNING: 
+    Model contains degenerated triangle (indices 2951 2953 2952)
+: WARNING: 
+    Model contains degenerated triangle (indices 2951 2952 2951)
+: WARNING: 
+    Model contains degenerated triangle (indices 2954 2956 2955)
+: WARNING: 
+    Model contains degenerated triangle (indices 2954 2955 2954)
+: WARNING: 
+    Model contains degenerated triangle (indices 2957 2959 2958)
+: WARNING: 
+    Model contains degenerated triangle (indices 2957 2958 2957)
+: WARNING: 
+    Model contains degenerated triangle (indices 2960 2962 2961)
+: WARNING: 
+    Model contains degenerated triangle (indices 2960 2961 2960)
+: WARNING: 
+    Model contains degenerated triangle (indices 2963 2965 2964)
+: WARNING: 
+    Model contains degenerated triangle (indices 2963 2964 2963)
+: WARNING: 
+    Model contains degenerated triangle (indices 3458 3460 3459)
+: WARNING: 
+    Model contains degenerated triangle (indices 3458 3459 3458)
+: WARNING: 
+    Model contains degenerated triangle (indices 3621 3623 3622)
+: WARNING: 
+    Model contains degenerated triangle (indices 3621 3622 3621)
+: WARNING: 
+    Model contains degenerated triangle (indices 3624 3626 3625)
+: WARNING: 
+    Model contains degenerated triangle (indices 3624 3625 3624)
+: WARNING: 
+    Model contains degenerated triangle (indices 3629 3631 3630)
+: WARNING: 
+    Model contains degenerated triangle (indices 3629 3630 3629)
+: WARNING: 
+    Model contains degenerated triangle (indices 3894 3896 3895)
+: WARNING: 
+    Model contains degenerated triangle (indices 3894 3895 3894)
+: WARNING: 
+    Model contains degenerated triangle (indices 3897 3899 3898)
+: WARNING: 
+    Model contains degenerated triangle (indices 3897 3898 3897)
+: WARNING: 
+    Model contains degenerated triangle (indices 3900 3901 304)
+: WARNING: 
+    Model contains degenerated triangle (indices 3900 304 3900)
+C:\Users\Chris\AppData\Local\Temp\tmpyub6ayx5\Content\GCUnlicensedHullClassifierSmall_Constr3.fbx: Processed
+: 
+    : Finished in 0.2s

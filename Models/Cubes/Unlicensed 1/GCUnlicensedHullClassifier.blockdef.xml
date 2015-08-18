@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Definition>
+	<Id>
+		<SubtypeId>GCUnlicensedHullClassifier</SubtypeId>
+	</Id>
+	<Icon>Textures\Icons\GCUnlicensedHullClassifier.dds</Icon>
+	<CubeSize>Large</CubeSize>
+	<BlockTopology>TriangleMesh</BlockTopology>
+	<Size x="1" y="2" z="1" />
+	<ModelOffset x="0" y="0" z="0" />
+	<Model>Models\Cubes\Unlicensed 1\GCUnlicensedHullClassifier.mwm</Model>
+	<BuildProgressModels>
+		<Model BuildPercentUpperBound="0.33" File="Models\Cubes\Unlicensed 1\GCUnlicensedHullClassifier_Constr1.mwm" />
+		<Model BuildPercentUpperBound="0.67" File="Models\Cubes\Unlicensed 1\GCUnlicensedHullClassifier_Constr2.mwm" />
+		<Model BuildPercentUpperBound="1.00" File="Models\Cubes\Unlicensed 1\GCUnlicensedHullClassifier_Constr3.mwm" />
+	</BuildProgressModels>
+	<MountPoints>
+		<MountPoint Side="Bottom" StartX="0.03" StartY="0.03" EndX="0.97" EndY="0.97" />
+	</MountPoints>
+	<BlockPairName>GCUnlicensedHullClassifier</BlockPairName>
+</Definition>
