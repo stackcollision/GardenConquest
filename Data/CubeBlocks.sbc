@@ -30,10 +30,10 @@
       <MountPoints>
         <MountPoint Side="Bottom" StartX="0.1" StartY="0.1" EndX="0.9" EndY="0.9" />
         <MountPoint Side="Top" StartX="0.1" StartY="0.1" EndX="0.9" EndY="0.9" />
-        <MountPoint Side="Left" StartX="0.175" StartY="0.1" EndX="0.825" EndY="0.9" />
-        <MountPoint Side="Right" StartX="0.175" StartY="0.1" EndX="0.825" EndY="0.9" />
-        <MountPoint Side="Front" StartX="0.175" StartY="0.1" EndX="0.825" EndY="0.9" />
-        <MountPoint Side="Back" StartX="0.175" StartY="0.1" EndX="0.825" EndY="0.9" />
+        <MountPoint Side="Left" StartX="0.175" StartY="0.1" EndX="0.825" EndY="1.9" />
+        <MountPoint Side="Right" StartX="0.175" StartY="0.1" EndX="0.825" EndY="1.9" />
+        <MountPoint Side="Front" StartX="0.175" StartY="0.1" EndX="0.825" EndY="1.9" />
+        <MountPoint Side="Back" StartX="0.175" StartY="0.1" EndX="0.825" EndY="1.9" />
       </MountPoints>
       <BuildProgressModels>
         <Model BuildPercentUpperBound="0.33" File="Models\Cubes\Large\BeaconConstruction_1.mwm" />
@@ -107,10 +107,10 @@
       <MountPoints>
         <MountPoint Side="Bottom" StartX="0.1" StartY="0.1" EndX="0.9" EndY="0.9" />
         <MountPoint Side="Top" StartX="0.1" StartY="0.1" EndX="0.9" EndY="0.9" />
-        <MountPoint Side="Left" StartX="0.175" StartY="0.1" EndX="0.825" EndY="0.9" />
-        <MountPoint Side="Right" StartX="0.175" StartY="0.1" EndX="0.825" EndY="0.9" />
-        <MountPoint Side="Front" StartX="0.175" StartY="0.1" EndX="0.825" EndY="0.9" />
-        <MountPoint Side="Back" StartX="0.175" StartY="0.1" EndX="0.825" EndY="0.9" />
+        <MountPoint Side="Left" StartX="0.175" StartY="0.1" EndX="0.825" EndY="1.9" />
+        <MountPoint Side="Right" StartX="0.175" StartY="0.1" EndX="0.825" EndY="1.9" />
+        <MountPoint Side="Front" StartX="0.175" StartY="0.1" EndX="0.825" EndY="1.9" />
+        <MountPoint Side="Back" StartX="0.175" StartY="0.1" EndX="0.825" EndY="1.9" />
       </MountPoints>
       <BuildProgressModels>
         <Model BuildPercentUpperBound="0.33" File="Models\Cubes\Large\BeaconConstruction_1.mwm" />
@@ -181,10 +181,10 @@
       <MountPoints>
         <MountPoint Side="Bottom" StartX="0.1" StartY="0.1" EndX="0.9" EndY="0.9" />
         <MountPoint Side="Top" StartX="0.1" StartY="0.1" EndX="0.9" EndY="0.9" />
-        <MountPoint Side="Left" StartX="0.175" StartY="0.1" EndX="0.825" EndY="0.9" />
-        <MountPoint Side="Right" StartX="0.175" StartY="0.1" EndX="0.825" EndY="0.9" />
-        <MountPoint Side="Front" StartX="0.175" StartY="0.1" EndX="0.825" EndY="0.9" />
-        <MountPoint Side="Back" StartX="0.175" StartY="0.1" EndX="0.825" EndY="0.9" />
+        <MountPoint Side="Left" StartX="0.175" StartY="0.1" EndX="0.825" EndY="1.9" />
+        <MountPoint Side="Right" StartX="0.175" StartY="0.1" EndX="0.825" EndY="1.9" />
+        <MountPoint Side="Front" StartX="0.175" StartY="0.1" EndX="0.825" EndY="1.9" />
+        <MountPoint Side="Back" StartX="0.175" StartY="0.1" EndX="0.825" EndY="1.9" />
       </MountPoints>
       <BuildProgressModels>
         <Model BuildPercentUpperBound="0.33" File="Models\Cubes\Large\BeaconConstruction_1.mwm" />
@@ -328,10 +328,10 @@
       <MountPoints>
         <MountPoint Side="Bottom" StartX="0.1" StartY="0.1" EndX="0.9" EndY="0.9" />
         <MountPoint Side="Top" StartX="0.1" StartY="0.1" EndX="0.9" EndY="0.9" />
-        <MountPoint Side="Left" StartX="0.175" StartY="0.1" EndX="0.825" EndY="0.9" />
-        <MountPoint Side="Right" StartX="0.175" StartY="0.1" EndX="0.825" EndY="0.9" />
-        <MountPoint Side="Front" StartX="0.175" StartY="0.1" EndX="0.825" EndY="0.9" />
-        <MountPoint Side="Back" StartX="0.175" StartY="0.1" EndX="0.825" EndY="0.9" />
+        <MountPoint Side="Left" StartX="0.175" StartY="0.1" EndX="0.825" EndY="1.9" />
+        <MountPoint Side="Right" StartX="0.175" StartY="0.1" EndX="0.825" EndY="1.9" />
+        <MountPoint Side="Front" StartX="0.175" StartY="0.1" EndX="0.825" EndY="1.9" />
+        <MountPoint Side="Back" StartX="0.175" StartY="0.1" EndX="0.825" EndY="1.9" />
       </MountPoints>
       <BuildProgressModels>
         <Model BuildPercentUpperBound="0.33" File="Models\Cubes\Large\BeaconConstruction_1.mwm" />
@@ -371,10 +371,10 @@
       <MountPoints>
         <MountPoint Side="Bottom" StartX="0.1" StartY="0.1" EndX="0.9" EndY="0.9" />
         <MountPoint Side="Top" StartX="0.1" StartY="0.1" EndX="0.9" EndY="0.9" />
-        <MountPoint Side="Left" StartX="0.175" StartY="0.1" EndX="0.825" EndY="0.9" />
-        <MountPoint Side="Right" StartX="0.175" StartY="0.1" EndX="0.825" EndY="0.9" />
-        <MountPoint Side="Front" StartX="0.175" StartY="0.1" EndX="0.825" EndY="0.9" />
-        <MountPoint Side="Back" StartX="0.175" StartY="0.1" EndX="0.825" EndY="0.9" />
+        <MountPoint Side="Left" StartX="0.175" StartY="0.1" EndX="0.825" EndY="1.9" />
+        <MountPoint Side="Right" StartX="0.175" StartY="0.1" EndX="0.825" EndY="1.9" />
+        <MountPoint Side="Front" StartX="0.175" StartY="0.1" EndX="0.825" EndY="1.9" />
+        <MountPoint Side="Back" StartX="0.175" StartY="0.1" EndX="0.825" EndY="1.9" />
       </MountPoints>
       <BuildProgressModels>
         <Model BuildPercentUpperBound="0.33" File="Models\Cubes\Large\BeaconConstruction_1.mwm" />
@@ -414,10 +414,10 @@
       <MountPoints>
         <MountPoint Side="Bottom" StartX="0.1" StartY="0.1" EndX="0.9" EndY="0.9" />
         <MountPoint Side="Top" StartX="0.1" StartY="0.1" EndX="0.9" EndY="0.9" />
-        <MountPoint Side="Left" StartX="0.175" StartY="0.1" EndX="0.825" EndY="0.9" />
-        <MountPoint Side="Right" StartX="0.175" StartY="0.1" EndX="0.825" EndY="0.9" />
-        <MountPoint Side="Front" StartX="0.175" StartY="0.1" EndX="0.825" EndY="0.9" />
-        <MountPoint Side="Back" StartX="0.175" StartY="0.1" EndX="0.825" EndY="0.9" />
+        <MountPoint Side="Left" StartX="0.175" StartY="0.1" EndX="0.825" EndY="1.9" />
+        <MountPoint Side="Right" StartX="0.175" StartY="0.1" EndX="0.825" EndY="1.9" />
+        <MountPoint Side="Front" StartX="0.175" StartY="0.1" EndX="0.825" EndY="1.9" />
+        <MountPoint Side="Back" StartX="0.175" StartY="0.1" EndX="0.825" EndY="1.9" />
       </MountPoints>
       <BuildProgressModels>
         <Model BuildPercentUpperBound="0.33" File="Models\Cubes\Large\BeaconConstruction_1.mwm" />
@@ -457,10 +457,10 @@
       <MountPoints>
         <MountPoint Side="Bottom" StartX="0.1" StartY="0.1" EndX="0.9" EndY="0.9" />
         <MountPoint Side="Top" StartX="0.1" StartY="0.1" EndX="0.9" EndY="0.9" />
-        <MountPoint Side="Left" StartX="0.175" StartY="0.1" EndX="0.825" EndY="0.9" />
-        <MountPoint Side="Right" StartX="0.175" StartY="0.1" EndX="0.825" EndY="0.9" />
-        <MountPoint Side="Front" StartX="0.175" StartY="0.1" EndX="0.825" EndY="0.9" />
-        <MountPoint Side="Back" StartX="0.175" StartY="0.1" EndX="0.825" EndY="0.9" />
+        <MountPoint Side="Left" StartX="0.175" StartY="0.1" EndX="0.825" EndY="1.9" />
+        <MountPoint Side="Right" StartX="0.175" StartY="0.1" EndX="0.825" EndY="1.9" />
+        <MountPoint Side="Front" StartX="0.175" StartY="0.1" EndX="0.825" EndY="1.9" />
+        <MountPoint Side="Back" StartX="0.175" StartY="0.1" EndX="0.825" EndY="1.9" />
       </MountPoints>
       <BuildProgressModels>
         <Model BuildPercentUpperBound="0.33" File="Models\Cubes\Large\BeaconConstruction_1.mwm" />
@@ -500,10 +500,10 @@
       <MountPoints>
         <MountPoint Side="Bottom" StartX="0.1" StartY="0.1" EndX="0.9" EndY="0.9" />
         <MountPoint Side="Top" StartX="0.1" StartY="0.1" EndX="0.9" EndY="0.9" />
-        <MountPoint Side="Left" StartX="0.175" StartY="0.1" EndX="0.825" EndY="0.9" />
-        <MountPoint Side="Right" StartX="0.175" StartY="0.1" EndX="0.825" EndY="0.9" />
-        <MountPoint Side="Front" StartX="0.175" StartY="0.1" EndX="0.825" EndY="0.9" />
-        <MountPoint Side="Back" StartX="0.175" StartY="0.1" EndX="0.825" EndY="0.9" />
+        <MountPoint Side="Left" StartX="0.175" StartY="0.1" EndX="0.825" EndY="1.9" />
+        <MountPoint Side="Right" StartX="0.175" StartY="0.1" EndX="0.825" EndY="1.9" />
+        <MountPoint Side="Front" StartX="0.175" StartY="0.1" EndX="0.825" EndY="1.9" />
+        <MountPoint Side="Back" StartX="0.175" StartY="0.1" EndX="0.825" EndY="1.9" />
       </MountPoints>
       <BuildProgressModels>
         <Model BuildPercentUpperBound="0.33" File="Models\Cubes\Large\BeaconConstruction_1.mwm" />
@@ -543,10 +543,10 @@
       <MountPoints>
         <MountPoint Side="Bottom" StartX="0.1" StartY="0.1" EndX="0.9" EndY="0.9" />
         <MountPoint Side="Top" StartX="0.1" StartY="0.1" EndX="0.9" EndY="0.9" />
-        <MountPoint Side="Left" StartX="0.175" StartY="0.1" EndX="0.825" EndY="0.9" />
-        <MountPoint Side="Right" StartX="0.175" StartY="0.1" EndX="0.825" EndY="0.9" />
-        <MountPoint Side="Front" StartX="0.175" StartY="0.1" EndX="0.825" EndY="0.9" />
-        <MountPoint Side="Back" StartX="0.175" StartY="0.1" EndX="0.825" EndY="0.9" />
+        <MountPoint Side="Left" StartX="0.175" StartY="0.1" EndX="0.825" EndY="1.9" />
+        <MountPoint Side="Right" StartX="0.175" StartY="0.1" EndX="0.825" EndY="1.9" />
+        <MountPoint Side="Front" StartX="0.175" StartY="0.1" EndX="0.825" EndY="1.9" />
+        <MountPoint Side="Back" StartX="0.175" StartY="0.1" EndX="0.825" EndY="1.9" />
       </MountPoints>
       <BuildProgressModels>
         <Model BuildPercentUpperBound="0.33" File="Models\Cubes\Large\BeaconConstruction_1.mwm" />
@@ -590,10 +590,10 @@
       <MountPoints>
         <MountPoint Side="Bottom" StartX="0.1" StartY="0.1" EndX="0.9" EndY="0.9" />
         <MountPoint Side="Top" StartX="0.1" StartY="0.1" EndX="0.9" EndY="0.9" />
-        <MountPoint Side="Left" StartX="0.175" StartY="0.1" EndX="0.825" EndY="0.9" />
-        <MountPoint Side="Right" StartX="0.175" StartY="0.1" EndX="0.825" EndY="0.9" />
-        <MountPoint Side="Front" StartX="0.175" StartY="0.1" EndX="0.825" EndY="0.9" />
-        <MountPoint Side="Back" StartX="0.175" StartY="0.1" EndX="0.825" EndY="0.9" />
+        <MountPoint Side="Left" StartX="0.175" StartY="0.1" EndX="0.825" EndY="1.9" />
+        <MountPoint Side="Right" StartX="0.175" StartY="0.1" EndX="0.825" EndY="1.9" />
+        <MountPoint Side="Front" StartX="0.175" StartY="0.1" EndX="0.825" EndY="1.9" />
+        <MountPoint Side="Back" StartX="0.175" StartY="0.1" EndX="0.825" EndY="1.9" />
       </MountPoints>
       <BuildProgressModels>
         <Model BuildPercentUpperBound="0.33" File="Models\Cubes\Large\BeaconConstruction_1.mwm" />
@@ -633,10 +633,10 @@
       <MountPoints>
         <MountPoint Side="Bottom" StartX="0.1" StartY="0.1" EndX="0.9" EndY="0.9" />
         <MountPoint Side="Top" StartX="0.1" StartY="0.1" EndX="0.9" EndY="0.9" />
-        <MountPoint Side="Left" StartX="0.175" StartY="0.1" EndX="0.825" EndY="0.9" />
-        <MountPoint Side="Right" StartX="0.175" StartY="0.1" EndX="0.825" EndY="0.9" />
-        <MountPoint Side="Front" StartX="0.175" StartY="0.1" EndX="0.825" EndY="0.9" />
-        <MountPoint Side="Back" StartX="0.175" StartY="0.1" EndX="0.825" EndY="0.9" />
+        <MountPoint Side="Left" StartX="0.175" StartY="0.1" EndX="0.825" EndY="1.9" />
+        <MountPoint Side="Right" StartX="0.175" StartY="0.1" EndX="0.825" EndY="1.9" />
+        <MountPoint Side="Front" StartX="0.175" StartY="0.1" EndX="0.825" EndY="1.9" />
+        <MountPoint Side="Back" StartX="0.175" StartY="0.1" EndX="0.825" EndY="1.9" />
       </MountPoints>
       <BuildProgressModels>
         <Model BuildPercentUpperBound="0.33" File="Models\Cubes\Large\BeaconConstruction_1.mwm" />
@@ -676,10 +676,10 @@
       <MountPoints>
         <MountPoint Side="Bottom" StartX="0.1" StartY="0.1" EndX="0.9" EndY="0.9" />
         <MountPoint Side="Top" StartX="0.1" StartY="0.1" EndX="0.9" EndY="0.9" />
-        <MountPoint Side="Left" StartX="0.175" StartY="0.1" EndX="0.825" EndY="0.9" />
-        <MountPoint Side="Right" StartX="0.175" StartY="0.1" EndX="0.825" EndY="0.9" />
-        <MountPoint Side="Front" StartX="0.175" StartY="0.1" EndX="0.825" EndY="0.9" />
-        <MountPoint Side="Back" StartX="0.175" StartY="0.1" EndX="0.825" EndY="0.9" />
+        <MountPoint Side="Left" StartX="0.175" StartY="0.1" EndX="0.825" EndY="1.9" />
+        <MountPoint Side="Right" StartX="0.175" StartY="0.1" EndX="0.825" EndY="1.9" />
+        <MountPoint Side="Front" StartX="0.175" StartY="0.1" EndX="0.825" EndY="1.9" />
+        <MountPoint Side="Back" StartX="0.175" StartY="0.1" EndX="0.825" EndY="1.9" />
       </MountPoints>
       <BuildProgressModels>
         <Model BuildPercentUpperBound="0.33" File="Models\Cubes\Large\BeaconConstruction_1.mwm" />
