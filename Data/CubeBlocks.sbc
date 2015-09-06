@@ -6,7 +6,7 @@
 
     <Definition>
       <Id>
-        <TypeId>Beacon</TypeId>
+        <TypeId>RadioAntenna</TypeId>
         <SubtypeId>GCUnlicensedHullClassifier</SubtypeId>
       </Id>
       <DisplayName>Unlicensed Hull Classifier</DisplayName>
@@ -47,7 +47,7 @@
     </Definition>
     <Definition>
       <Id>
-        <TypeId>Beacon</TypeId>
+        <TypeId>RadioAntenna</TypeId>
         <SubtypeId>GCUnlicensedHullClassifierSmall</SubtypeId>
       </Id>
       <DisplayName>Unlicensed Hull Classifier</DisplayName>
@@ -82,7 +82,7 @@
 
     <Definition>
       <Id>
-        <TypeId>Beacon</TypeId>
+        <TypeId>RadioAntenna</TypeId>
         <SubtypeId>GCWorkerHullClassifier</SubtypeId>
       </Id>
       <DisplayName>Worker Hull Classifier</DisplayName>
@@ -124,7 +124,7 @@
     </Definition>
     <Definition>
       <Id>
-        <TypeId>Beacon</TypeId>
+        <TypeId>RadioAntenna</TypeId>
         <SubtypeId>GCWorkerHullClassifierSmall</SubtypeId>
       </Id>
       <DisplayName>Worker Hull Classifier</DisplayName>
@@ -156,7 +156,7 @@
 
     <Definition>
       <Id>
-        <TypeId>Beacon</TypeId>
+        <TypeId>RadioAntenna</TypeId>
         <SubtypeId>GCFoundryHullClassifier</SubtypeId>
       </Id>
       <DisplayName>Foundry Hull Classifier</DisplayName>
@@ -203,7 +203,7 @@
 
     <Definition>
       <Id>
-        <TypeId>Beacon</TypeId>
+        <TypeId>RadioAntenna</TypeId>
         <SubtypeId>GCScoutHullClassifier</SubtypeId>
       </Id>
       <DisplayName>Scout Hull Classifier</DisplayName>
@@ -235,7 +235,7 @@
 
     <Definition>
       <Id>
-        <TypeId>Beacon</TypeId>
+        <TypeId>RadioAntenna</TypeId>
         <SubtypeId>GCFighterHullClassifier</SubtypeId>
       </Id>
       <DisplayName>Fighter Hull Classifier</DisplayName>
@@ -267,7 +267,7 @@
 
     <Definition>
       <Id>
-        <TypeId>Beacon</TypeId>
+        <TypeId>RadioAntenna</TypeId>
         <SubtypeId>GCGunshipHullClassifier</SubtypeId>
       </Id>
       <DisplayName>Gunship Hull Classifier</DisplayName>
@@ -303,7 +303,7 @@
 
     <Definition>
       <Id>
-        <TypeId>Beacon</TypeId>
+        <TypeId>RadioAntenna</TypeId>
         <SubtypeId>GCCorvetteHullClassifier</SubtypeId>
       </Id>
       <DisplayName>Corvette Hull Classifier</DisplayName>
@@ -346,7 +346,7 @@
 
     <Definition>
       <Id>
-        <TypeId>Beacon</TypeId>
+        <TypeId>RadioAntenna</TypeId>
         <SubtypeId>GCFrigateHullClassifier</SubtypeId>
       </Id>
       <DisplayName>Frigate Hull Classifier</DisplayName>
@@ -389,7 +389,7 @@
 
     <Definition>
       <Id>
-        <TypeId>Beacon</TypeId>
+        <TypeId>RadioAntenna</TypeId>
         <SubtypeId>GCDestroyerHullClassifier</SubtypeId>
       </Id>
       <DisplayName>Destroyer Hull Classifier</DisplayName>
@@ -432,7 +432,7 @@
 
     <Definition>
       <Id>
-        <TypeId>Beacon</TypeId>
+        <TypeId>RadioAntenna</TypeId>
         <SubtypeId>GCCruiserHullClassifier</SubtypeId>
       </Id>
       <DisplayName>Cruiser Hull Classifier</DisplayName>
@@ -475,7 +475,7 @@
 
     <Definition>
       <Id>
-        <TypeId>Beacon</TypeId>
+        <TypeId>RadioAntenna</TypeId>
         <SubtypeId>GCHeavyCruiserHullClassifier</SubtypeId>
       </Id>
       <DisplayName>Heavy Cruiser Hull Classifier</DisplayName>
@@ -518,7 +518,7 @@
 
     <Definition>
       <Id>
-        <TypeId>Beacon</TypeId>
+        <TypeId>RadioAntenna</TypeId>
         <SubtypeId>GCBattleshipHullClassifier</SubtypeId>
       </Id>
       <DisplayName>Battleship Hull Classifier</DisplayName>
@@ -565,7 +565,7 @@
 
     <Definition>
       <Id>
-        <TypeId>Beacon</TypeId>
+        <TypeId>RadioAntenna</TypeId>
         <SubtypeId>GCOutpostHullClassifier</SubtypeId>
       </Id>
       <DisplayName>Outpost Hull Classifier</DisplayName>
@@ -608,7 +608,7 @@
 
     <Definition>
       <Id>
-        <TypeId>Beacon</TypeId>
+        <TypeId>RadioAntenna</TypeId>
         <SubtypeId>GCInstallationHullClassifier</SubtypeId>
       </Id>
       <DisplayName>Installation Hull Classifier</DisplayName>
@@ -651,7 +651,7 @@
 
     <Definition>
       <Id>
-        <TypeId>Beacon</TypeId>
+        <TypeId>RadioAntenna</TypeId>
         <SubtypeId>GCFortressHullClassifier</SubtypeId>
       </Id>
       <DisplayName>Fortress Hull Classifier</DisplayName>

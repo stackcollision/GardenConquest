@@ -63,7 +63,7 @@ namespace GardenConquest.Blocks {
 		/// </summary>
 		public static bool isClassifierBlock(IMySlimBlock block) {
 			IMyCubeBlock fatblock = block.FatBlock;
-			if (fatblock != null && fatblock is Ingame.IMyBeacon) {
+			if (fatblock != null && fatblock is Ingame.IMyRadioAntenna) {
 				String subTypeName = fatblock.BlockDefinition.SubtypeName;
 				if (subTypeName.Contains(SHARED_SUBTYPE))
 					return true;

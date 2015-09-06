@@ -9,21 +9,21 @@
       <DisplayName>Hull Classifiers</DisplayName>
       <Name>Hull Classifiers</Name>
       <ItemIds>
-        <string>Beacon/GCUnlicensedHullClassifier</string>
-        <string>Beacon/GCWorkerHullClassifier</string>
-        <string>Beacon/GCFoundryHullClassifier</string>
-        <string>Beacon/GCScoutHullClassifier</string>
-        <string>Beacon/GCFighterHullClassifier</string>
-        <string>Beacon/GCGunshipHullClassifier</string>
-        <string>Beacon/GCCorvetteHullClassifier</string>
-        <string>Beacon/GCFrigateHullClassifier</string>
-        <string>Beacon/GCDestroyerHullClassifier</string>
-        <string>Beacon/GCCruiserHullClassifier</string>
-        <string>Beacon/GCHeavyCruiserHullClassifier</string>
-        <string>Beacon/GCBattleshipHullClassifier</string>
-        <string>Beacon/GCOutpostHullClassifier</string>
-        <string>Beacon/GCInstallationHullClassifier</string>
-        <string>Beacon/GCFortressHullClassifier</string>
+        <string>RadioAntenna/GCUnlicensedHullClassifier</string>
+        <string>RadioAntenna/GCWorkerHullClassifier</string>
+        <string>RadioAntenna/GCFoundryHullClassifier</string>
+        <string>RadioAntenna/GCScoutHullClassifier</string>
+        <string>RadioAntenna/GCFighterHullClassifier</string>
+        <string>RadioAntenna/GCGunshipHullClassifier</string>
+        <string>RadioAntenna/GCCorvetteHullClassifier</string>
+        <string>RadioAntenna/GCFrigateHullClassifier</string>
+        <string>RadioAntenna/GCDestroyerHullClassifier</string>
+        <string>RadioAntenna/GCCruiserHullClassifier</string>
+        <string>RadioAntenna/GCHeavyCruiserHullClassifier</string>
+        <string>RadioAntenna/GCBattleshipHullClassifier</string>
+        <string>RadioAntenna/GCOutpostHullClassifier</string>
+        <string>RadioAntenna/GCInstallationHullClassifier</string>
+        <string>RadioAntenna/GCFortressHullClassifier</string>
       </ItemIds>
     </Category>
   </CategoryClasses>

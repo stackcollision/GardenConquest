@@ -207,19 +207,19 @@ namespace GardenConquest.Records {
 						"nearbySubfleets", Logger.severity.ERROR);
 					continue;
 				}
-				InGame.IMyBeacon beacon = classifier.FatBlock as InGame.IMyBeacon;
-				if (beacon == null) {
-					log("Classifier could not be referenced as beacon",
+				InGame.IMyRadioAntenna antenna = classifier.FatBlock as InGame.IMyRadioAntenna;
+				if (antenna == null) {
+					log("Classifier could not be referenced as antenna",
 						"nearbySubfleets", Logger.severity.ERROR);
 					continue;
 				}
-				if (!beacon.IsWorking) {
-					log("Classifier beacon not working but grid was classified",
+				if (!antenna.IsWorking) {
+					log("Classifier antenna not working but grid was classified",
 						"nearbySubfleets", Logger.severity.ERROR);
 					continue;
 				}
 				
-				if (beacon.Radius < VRageMath.Vector3.Distance(Position, grid.GetPosition())) {
+				if (antenna.Radius < VRageMath.Vector3.Distance(Position, grid.GetPosition())) {
 					log("Classifier range too small, skipping", "nearbySubfleets");
 					// TODO notify pilot
 					continue;
