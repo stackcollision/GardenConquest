@@ -244,7 +244,7 @@ namespace GardenConquest.Blocks {
 			}
 
 			// We need to only turn on our rule checking after startup. Otherwise, if
-			// a antenna is destroyed and then the server restarts, all but the first
+			// an antenna is destroyed and then the server restarts, all but the first
 			// 25 blocks will be deleted on startup.
 			m_Grid.NeedsUpdate |= MyEntityUpdateEnum.EACH_100TH_FRAME;
 
