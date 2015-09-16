@@ -6,7 +6,7 @@
 
     <Definition>
       <Id>
-        <TypeId>Beacon</TypeId>
+        <TypeId>RadioAntenna</TypeId>
         <SubtypeId>GCUnlicensedHullClassifier</SubtypeId>
       </Id>
       <DisplayName>Unlicensed Hull Classifier</DisplayName>
