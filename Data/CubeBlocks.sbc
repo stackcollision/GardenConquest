@@ -42,7 +42,7 @@
     </Definition>
     <Definition>
       <Id>
-        <TypeId>Beacon</TypeId>
+       <TypeId>RadioAntenna</TypeId>
         <SubtypeId>GCUnlicensedHullClassifierSmall</SubtypeId>
       </Id>
       <DisplayName>Unlicensed Hull Classifier</DisplayName>
