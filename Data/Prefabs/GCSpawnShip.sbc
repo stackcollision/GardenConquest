@@ -1180,7 +1180,7 @@ people will try to kill you.
               <BlinkLenght>10</BlinkLenght>
               <BlinkOffset>0</BlinkOffset>
             </MyObjectBuilder_CubeBlock>
-            <MyObjectBuilder_CubeBlock xsi:type="MyObjectBuilder_Beacon">
+            <MyObjectBuilder_CubeBlock xsi:type="MyObjectBuilder_RadioAntenna">
               <SubtypeName>GCUnlicensedHullClassifier</SubtypeName>
               <EntityId>200619511763221591</EntityId>
               <Min x="2" y="-1" z="9" />
