@@ -137,7 +137,7 @@ namespace GardenConquest.Messaging {
 
 			// Get all thrusters, spaceballs, artificial masses, and cockpits
 			Func<IMySlimBlock, bool> selectBlocks = b =>
-				b.FatBlock != null && (b.FatBlock is IMyThrust || b.FatBlock is IMySpaceBall || b.FatBlock is InGame.IMyVirtualMass || b.FatBlock is InGame.IMyShipController);
+				b.FatBlock != null && (b.FatBlock is IMyThrust || b.FatBlock is IMyGyro || b.FatBlock is IMySpaceBall || b.FatBlock is InGame.IMyVirtualMass || b.FatBlock is InGame.IMyShipController);
 			gridToStop.GetBlocks(fatBlocks, selectBlocks);
 
 			// Can the player interact with this grid? If they can, stop the ship by enabling dampeners, turning off
@@ -146,7 +146,14 @@ namespace GardenConquest.Messaging {
 				foreach (IMySlimBlock block in fatBlocks) {
 					// Thruster
 					if (block.FatBlock is IMyThrust) {
-						Interfaces.TerminalPropertyExtensions.SetValueFloat(block.FatBlock as IMyTerminalBlock, "Override", 0);
+						(block.FatBlock as InGame.IMyFunctionalBlock).RequestEnable(true);
+                        Interfaces.TerminalPropertyExtensions.SetValueFloat(block.FatBlock as IMyTerminalBlock, "Override", 0);
+					}
+                    // Gyroscope
+					if (block.FatBlock is IMyGyro) {
+                        (block.FatBlock as InGame.IMyFunctionalBlock).RequestEnable(true);
+                        Interfaces.TerminalPropertyExtensions.SetValueFloat(block.FatBlock as IMyTerminalBlock, "Power", 1);
+                        Interfaces.TerminalPropertyExtensions.SetValueBool(block.FatBlock as InGame.IMyGyro, "Override", false);
 					}
 					// Spaceball
 					else if (block.FatBlock is IMySpaceBall) {
