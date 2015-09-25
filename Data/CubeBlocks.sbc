@@ -4,7 +4,7 @@
 
     <!-- Begin Unlicensed -->
 
-    <Definition>
+    <Definition xsi:type="MyObjectBuilder_BeaconDefinition">
       <Id>
         <TypeId>RadioAntenna</TypeId>
         <SubtypeId>GCUnlicensedHullClassifier</SubtypeId>
@@ -37,10 +37,11 @@
 			</MountPoints>
       <BlockPairName>GCUnlicensedHullClassifier</BlockPairName>
       <EdgeType>Light</EdgeType>
+      <ResourceSinkGroup>Utility</ResourceSinkGroup>
       <BuildTimeSeconds>50</BuildTimeSeconds>
       <DamageEffectId>214</DamageEffectId>
     </Definition>
-    <Definition>
+    <Definition xsi:type="MyObjectBuilder_BeaconDefinition">
       <Id>
        <TypeId>RadioAntenna</TypeId>
         <SubtypeId>GCUnlicensedHullClassifierSmall</SubtypeId>
@@ -71,6 +72,7 @@
       <MirroringY>Z</MirroringY>
       <MirroringZ>Y</MirroringZ>
       <EdgeType>Light</EdgeType>
+      <ResourceSinkGroup>Utility</ResourceSinkGroup>
       <BuildTimeSeconds>15</BuildTimeSeconds>
       <DamageEffectId>214</DamageEffectId>
     </Definition>
@@ -79,7 +81,7 @@
 
     <!-- Begin Utility -->
 
-    <Definition>
+    <Definition xsi:type="MyObjectBuilder_BeaconDefinition">
       <Id>
         <TypeId>Beacon</TypeId>
         <SubtypeId>GCWorkerHullClassifier</SubtypeId>
@@ -118,10 +120,11 @@
       </BuildProgressModels>
       <BlockPairName>GardenConquest_WorkerHullClassifier</BlockPairName>
       <EdgeType>Light</EdgeType>
+      <ResourceSinkGroup>Utility</ResourceSinkGroup>
       <BuildTimeSeconds>50</BuildTimeSeconds>
       <DamageEffectId>214</DamageEffectId>
     </Definition>
-    <Definition>
+    <Definition xsi:type="MyObjectBuilder_BeaconDefinition">
       <Id>
         <TypeId>Beacon</TypeId>
         <SubtypeId>GCWorkerHullClassifierSmall</SubtypeId>
@@ -149,11 +152,12 @@
       <MirroringY>Z</MirroringY>
       <MirroringZ>Y</MirroringZ>
       <EdgeType>Light</EdgeType>
+      <ResourceSinkGroup>Utility</ResourceSinkGroup>
       <BuildTimeSeconds>15</BuildTimeSeconds>
       <DamageEffectId>214</DamageEffectId>
     </Definition>
 
-    <Definition>
+    <Definition xsi:type="MyObjectBuilder_BeaconDefinition">
       <Id>
         <TypeId>Beacon</TypeId>
         <SubtypeId>GCFoundryHullClassifier</SubtypeId>
@@ -192,6 +196,7 @@
       </BuildProgressModels>
       <BlockPairName>GardenConquest_FoundryHullClassifier</BlockPairName>
       <EdgeType>Light</EdgeType>
+      <ResourceSinkGroup>Utility</ResourceSinkGroup>
       <BuildTimeSeconds>50</BuildTimeSeconds>
       <DamageEffectId>214</DamageEffectId>
     </Definition>
@@ -200,7 +205,7 @@
 
     <!-- Begin Strikecraft -->
 
-    <Definition>
+    <Definition xsi:type="MyObjectBuilder_BeaconDefinition">
       <Id>
         <TypeId>Beacon</TypeId>
         <SubtypeId>GCScoutHullClassifier</SubtypeId>
@@ -228,11 +233,12 @@
       <MirroringY>Z</MirroringY>
       <MirroringZ>Y</MirroringZ>
       <EdgeType>Light</EdgeType>
+      <ResourceSinkGroup>Utility</ResourceSinkGroup>
       <BuildTimeSeconds>15</BuildTimeSeconds>
       <DamageEffectId>214</DamageEffectId>
     </Definition>
 
-    <Definition>
+    <Definition xsi:type="MyObjectBuilder_BeaconDefinition">
       <Id>
         <TypeId>Beacon</TypeId>
         <SubtypeId>GCFighterHullClassifier</SubtypeId>
@@ -260,11 +266,12 @@
       <MirroringY>Z</MirroringY>
       <MirroringZ>Y</MirroringZ>
       <EdgeType>Light</EdgeType>
+      <ResourceSinkGroup>Utility</ResourceSinkGroup>
       <BuildTimeSeconds>15</BuildTimeSeconds>
       <DamageEffectId>214</DamageEffectId>
     </Definition>
 
-    <Definition>
+    <Definition xsi:type="MyObjectBuilder_BeaconDefinition">
       <Id>
         <TypeId>Beacon</TypeId>
         <SubtypeId>GCGunshipHullClassifier</SubtypeId>
@@ -292,6 +299,7 @@
       <MirroringY>Z</MirroringY>
       <MirroringZ>Y</MirroringZ>
       <EdgeType>Light</EdgeType>
+      <ResourceSinkGroup>Utility</ResourceSinkGroup>
       <BuildTimeSeconds>15</BuildTimeSeconds>
       <DamageEffectId>214</DamageEffectId>
     </Definition>
@@ -300,7 +308,7 @@
 
     <!-- Begin Capitals -->
 
-    <Definition>
+    <Definition xsi:type="MyObjectBuilder_BeaconDefinition">
       <Id>
         <TypeId>Beacon</TypeId>
         <SubtypeId>GCCorvetteHullClassifier</SubtypeId>
@@ -339,11 +347,12 @@
       </BuildProgressModels>
       <BlockPairName>GardenConquest_CorvetteHullClassifier</BlockPairName>
       <EdgeType>Light</EdgeType>
+      <ResourceSinkGroup>Utility</ResourceSinkGroup>
       <BuildTimeSeconds>50</BuildTimeSeconds>
       <DamageEffectId>214</DamageEffectId>
     </Definition>
 
-    <Definition>
+    <Definition xsi:type="MyObjectBuilder_BeaconDefinition">
       <Id>
         <TypeId>Beacon</TypeId>
         <SubtypeId>GCFrigateHullClassifier</SubtypeId>
@@ -382,11 +391,12 @@
       </BuildProgressModels>
       <BlockPairName>GardenConquest_FrigateHullClassifier</BlockPairName>
       <EdgeType>Light</EdgeType>
+      <ResourceSinkGroup>Utility</ResourceSinkGroup>
       <BuildTimeSeconds>50</BuildTimeSeconds>
       <DamageEffectId>214</DamageEffectId>
     </Definition>
 
-    <Definition>
+    <Definition xsi:type="MyObjectBuilder_BeaconDefinition">
       <Id>
         <TypeId>Beacon</TypeId>
         <SubtypeId>GCDestroyerHullClassifier</SubtypeId>
@@ -425,11 +435,12 @@
       </BuildProgressModels>
       <BlockPairName>GardenConquest_DestroyerHullClassifier</BlockPairName>
       <EdgeType>Light</EdgeType>
+      <ResourceSinkGroup>Utility</ResourceSinkGroup>
       <BuildTimeSeconds>50</BuildTimeSeconds>
       <DamageEffectId>214</DamageEffectId>
     </Definition>
 
-    <Definition>
+    <Definition xsi:type="MyObjectBuilder_BeaconDefinition">
       <Id>
         <TypeId>Beacon</TypeId>
         <SubtypeId>GCCruiserHullClassifier</SubtypeId>
@@ -468,11 +479,12 @@
       </BuildProgressModels>
       <BlockPairName>GardenConquest_CruiserHullClassifier</BlockPairName>
       <EdgeType>Light</EdgeType>
+      <ResourceSinkGroup>Utility</ResourceSinkGroup>
       <BuildTimeSeconds>50</BuildTimeSeconds>
       <DamageEffectId>214</DamageEffectId>
     </Definition>
 
-    <Definition>
+    <Definition xsi:type="MyObjectBuilder_BeaconDefinition">
       <Id>
         <TypeId>Beacon</TypeId>
         <SubtypeId>GCHeavyCruiserHullClassifier</SubtypeId>
@@ -511,11 +523,12 @@
       </BuildProgressModels>
       <BlockPairName>GardenConquest_HeavyCruiserHullClassifier</BlockPairName>
       <EdgeType>Light</EdgeType>
+      <ResourceSinkGroup>Utility</ResourceSinkGroup>
       <BuildTimeSeconds>50</BuildTimeSeconds>
       <DamageEffectId>214</DamageEffectId>
     </Definition>
 
-    <Definition>
+    <Definition xsi:type="MyObjectBuilder_BeaconDefinition">
       <Id>
         <TypeId>Beacon</TypeId>
         <SubtypeId>GCBattleshipHullClassifier</SubtypeId>
@@ -554,6 +567,7 @@
       </BuildProgressModels>
       <BlockPairName>GardenConquest_BattleshipHullClassifier</BlockPairName>
       <EdgeType>Light</EdgeType>
+      <ResourceSinkGroup>Utility</ResourceSinkGroup>
       <BuildTimeSeconds>50</BuildTimeSeconds>
       <DamageEffectId>214</DamageEffectId>
     </Definition>
@@ -562,7 +576,7 @@
 
     <!-- Begin Stations -->
 
-    <Definition>
+    <Definition xsi:type="MyObjectBuilder_BeaconDefinition">
       <Id>
         <TypeId>Beacon</TypeId>
         <SubtypeId>GCOutpostHullClassifier</SubtypeId>
@@ -601,11 +615,12 @@
       </BuildProgressModels>
       <BlockPairName>GardenConquest_OutpostHullClassifier</BlockPairName>
       <EdgeType>Light</EdgeType>
+      <ResourceSinkGroup>Utility</ResourceSinkGroup>
       <BuildTimeSeconds>50</BuildTimeSeconds>
       <DamageEffectId>214</DamageEffectId>
     </Definition>
 
-    <Definition>
+    <Definition xsi:type="MyObjectBuilder_BeaconDefinition">
       <Id>
         <TypeId>Beacon</TypeId>
         <SubtypeId>GCInstallationHullClassifier</SubtypeId>
@@ -644,11 +659,12 @@
       </BuildProgressModels>
       <BlockPairName>GardenConquest_InstallationHullClassifier</BlockPairName>
       <EdgeType>Light</EdgeType>
+      <ResourceSinkGroup>Utility</ResourceSinkGroup>
       <BuildTimeSeconds>50</BuildTimeSeconds>
       <DamageEffectId>214</DamageEffectId>
     </Definition>
 
-    <Definition>
+    <Definition xsi:type="MyObjectBuilder_BeaconDefinition">
       <Id>
         <TypeId>Beacon</TypeId>
         <SubtypeId>GCFortressHullClassifier</SubtypeId>
@@ -687,6 +703,7 @@
       </BuildProgressModels>
       <BlockPairName>GardenConquest_FortressHullClassifier</BlockPairName>
       <EdgeType>Light</EdgeType>
+      <ResourceSinkGroup>Utility</ResourceSinkGroup>
       <BuildTimeSeconds>50</BuildTimeSeconds>
       <DamageEffectId>214</DamageEffectId>
     </Definition>
