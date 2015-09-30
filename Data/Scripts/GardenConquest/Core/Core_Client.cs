@@ -4,8 +4,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+using Sandbox.Common;
 using Sandbox.ModAPI;
+using InGame = Sandbox.ModAPI.Ingame;
 
+using GardenConquest.Extensions;
 using GardenConquest.Messaging;
 
 namespace GardenConquest.Core {
@@ -20,12 +23,18 @@ namespace GardenConquest.Core {
 		private ResponseProcessor m_MailMan = null;
 		private bool m_NeedSettings = true;
 
+		private IMyPlayer m_Player;
+		private int m_CurrentFrame;
+
 		#endregion
 		#region Inherited Methods
 
 		public override void initialize() {
 			if (s_Logger == null)
 				s_Logger = new Logger("Conquest Core", "Client");
+
+			m_Player = MyAPIGateway.Session.Player;
+			m_CurrentFrame = 0;
 
 			m_MailMan = new ResponseProcessor();
 
@@ -47,6 +56,18 @@ namespace GardenConquest.Core {
 					log("Error" + e, "updateBeforeSimulation", Logger.severity.ERROR);
 				}
 			}
+
+			if (m_CurrentFrame >= Constants.UpdateFrequency - 1) {
+				if (m_Player.Controller.ControlledEntity is InGame.IMyShipController) {
+					IMyCubeGrid currentControllerGrid = (m_Player.Controller.ControlledEntity as IMyCubeBlock).CubeGrid;
+					IMyCubeBlock classifierBlock = currentControllerGrid.getClassifierBlock();
+					if (classifierBlock != null && classifierBlock.OwnerId != m_Player.PlayerID && ConquestSettings.getInstance().SimpleOwnership) {
+						MyAPIGateway.Utilities.ShowNotification("WARNING: Take control of the hull classifier or you may be tracked by the original owner!", 1250, MyFontEnum.Red);
+					}
+				}
+				m_CurrentFrame = 0;
+			}
+			++m_CurrentFrame;
 		}
 
 		#endregion

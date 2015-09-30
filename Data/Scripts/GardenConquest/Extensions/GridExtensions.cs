@@ -143,37 +143,39 @@ namespace GardenConquest.Extensions {
 
 		/// <summary>
 		/// Is the given player allowed get information or use commands on the grid?
-		/// Player is able to interact with the grid if the player is part of the
-		/// mainCockpit's faction OR the player owns the mainCockpit
+		/// Player is able to interact with the grid if the player is part of a specific
+		/// block's faction OR the player owns the block
+		/// The block is dependent on the CommandsRequireClassifier setting
 		/// </summary>
 		/// <param name="playerID"></param>
 		/// <param name="grid"></param>
-		/// <remarks>
-		/// Relatively expensive since we iterate through all blocks in grid!
-		/// </remarks>
 		/// <returns></returns>
 		public static bool canInteractWith(this IMyCubeGrid grid, long playerID) {
-			List<IMySlimBlock> fatBlocks = new List<IMySlimBlock>();
+			IMyCubeBlock blockToCheck;
 
-			// Get all cockpit blocks
-			Func<IMySlimBlock, bool> isFatBlock = b => b.FatBlock != null && b.FatBlock is InGame.IMyShipController;
-			grid.GetBlocks(fatBlocks, isFatBlock);
+			// Get the type of block to check based on settings
+			if (Core.ConquestSettings.getInstance().SimpleOwnership) {
+				blockToCheck = grid.getClassifierBlock();
+			}
+			else {
+				blockToCheck = grid.getMainCockpit();
+			}
 
-			// We'll need the faction list to compare the factions of the given player and the owners of the fatblocks in the grid
-			IMyFactionCollection factions = MyAPIGateway.Session.Factions;
+			if (blockToCheck != null) {
+				MyRelationsBetweenPlayerAndBlock relationship = blockToCheck.GetUserRelationToOwner(playerID);
+				if (relationship == MyRelationsBetweenPlayerAndBlock.NoOwnership || relationship == MyRelationsBetweenPlayerAndBlock.Enemies) {
+					return false;
+				}
+				else if (relationship == MyRelationsBetweenPlayerAndBlock.FactionShare || relationship == MyRelationsBetweenPlayerAndBlock.Owner) {
+					return true;
+				}
+				// Being in a faction doesn't necessarily mean FactionShare, so need to check for faction status
+				else {
+					IMyFactionCollection factions = MyAPIGateway.Session.Factions;
+					IMyFaction blocksFaction = factions.TryGetPlayerFaction(blockToCheck.OwnerId);
 
-			// Go through and search for the main cockpit. If found, set return true
-			foreach (IMySlimBlock block in fatBlocks) {
-				if (Interfaces.TerminalPropertyExtensions.GetValueBool(block.FatBlock as InGame.IMyTerminalBlock, "MainCockpit")) {
-					IMyFaction blocksFaction = factions.TryGetPlayerFaction(block.FatBlock.OwnerId);
-					// Owner of block is running solo
-					if (blocksFaction == null) {
-						if (block.FatBlock.OwnerId == playerID) {
-							return true;
-						}
-					}
-					// Owner of block is part of a faction
-					else {
+					// Block is either owned by friendly faction or user's faction
+					if (blocksFaction != null) {
 						long owningFactionID = blocksFaction.FactionId;
 						if (owningFactionID == factions.TryGetPlayerFaction(playerID).FactionId) {
 							return true;
@@ -184,6 +186,45 @@ namespace GardenConquest.Extensions {
 			return false;
 		}
 
+		/// <summary>
+		/// Get the classifier block on the grid
+		/// </summary>
+		/// <param name="grid"></param>
+		/// <remarks>Grids should only have 1 classifier block</remarks>
+		/// <returns>The HullClassifier as IMyCubeBlock if found, null otherwise</returns>
+		public static IMyCubeBlock getClassifierBlock(this IMyCubeGrid grid) {
+			List<IMySlimBlock> beaconBlocks = new List<IMySlimBlock>();
+
+			// Get all beacon blocks
+			grid.GetBlocks(beaconBlocks, (b => b.FatBlock != null && b.FatBlock is InGame.IMyBeacon));
+
+			foreach (IMySlimBlock block in beaconBlocks) {
+				if (block.isClassifierBlock()) {
+					return block.FatBlock;
+				}
+			}
+			return null;
+		}
+
+		/// <summary>
+		/// Get the main cockpit on the grid
+		/// </summary>
+		/// <param name="grid"></param>
+		/// <remarks>Grids should only have 1 main cockpit</remarks>
+		/// <returns>The main cockpit as IMyCubeBlock if found, null otherwise</returns>
+		public static IMyCubeBlock getMainCockpit(this IMyCubeGrid grid) {
+			List<IMySlimBlock> cockpitBlocks = new List<IMySlimBlock>();
+
+			// Get all cockpit blocks
+			grid.GetBlocks(cockpitBlocks, (b => b.FatBlock != null && b.FatBlock is InGame.IMyShipController));
+
+			foreach (IMySlimBlock block in cockpitBlocks) {
+				if (Interfaces.TerminalPropertyExtensions.GetValueBool(block.FatBlock as IMyTerminalBlock, "MainCockpit")) {
+					return block.FatBlock;
+				}
+			}
+			return null;
+		}
 
 		private static void log(String message, String method = null, Logger.severity level = Logger.severity.DEBUG) {
 			s_Logger.log(level, method, message);

@@ -16,7 +16,7 @@ namespace GardenConquest.Blocks {
 
 		#region Static
 
-		private const String SHARED_SUBTYPE = "HullClassifier";
+		public const String SHARED_SUBTYPE = "HullClassifier";
 		public readonly static String[] SUBTYPES_IN_CLASS_ORDER = {
 			"Unclassified",
 			"Unlicensed",
@@ -56,20 +56,6 @@ namespace GardenConquest.Blocks {
 			log("Classifier Subtype not recognized, defaulting to Unclassified", 
 				"IDFromSubTypeString", Logger.severity.ERROR);
 			return HullClass.CLASS.UNCLASSIFIED;
-		}
-
-		/// <summary>
-		/// If we recognize the block's subtype as belonging to a classifier, return true
-		/// </summary>
-		public static bool isClassifierBlock(IMySlimBlock block) {
-			IMyCubeBlock fatblock = block.FatBlock;
-			if (fatblock != null && fatblock is Ingame.IMyBeacon) {
-				String subTypeName = fatblock.BlockDefinition.SubtypeName;
-				if (subTypeName.Contains(SHARED_SUBTYPE))
-					return true;
-			}
-
-			return false;
 		}
 
 		private static void log(String message, String method = null, 

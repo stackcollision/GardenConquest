@@ -527,7 +527,7 @@ namespace GardenConquest.Blocks {
 			log("", "updateClassificationWith");
 			try {
 				// If it's not a classifier, we don't care about it
-				if (!HullClassifier.isClassifierBlock(block)) {
+				if (!block.isClassifierBlock()) {
 					return VIOLATION_TYPE.NONE;
 				}
 
@@ -587,7 +587,7 @@ namespace GardenConquest.Blocks {
 			}
 
 			if (m_ReservedClass == DEFAULT_CLASS) {
-				return HullClassifier.isClassifierBlock(block);
+				return block.isClassifierBlock();
 			}
 			else {
 				IMyReactor reactor = block.FatBlock as IMyReactor;
@@ -656,7 +656,7 @@ namespace GardenConquest.Blocks {
 		/// </summary>
 		private void updateClassificationWithout(IMySlimBlock block) {
 			// classifier?
-			if (!HullClassifier.isClassifierBlock(block))
+			if (!block.isClassifierBlock())
 				return;
 
 			log("removing classifier", "updateClassificationWithout");
@@ -1012,7 +1012,13 @@ namespace GardenConquest.Blocks {
 		/// </summary>
 		/// <returns>Whether or not the ownership changed.</returns>
 		public bool reevaluateOwnership() {
-			bool changed = m_Owner.reevaluateOwnership(BigOwners);
+			bool changed;
+			if (s_Settings.SimpleOwnership) {
+				changed = m_Owner.reevaluateOwnership(new List<long> { m_Grid.getClassifierBlock().OwnerId });
+			}
+			else {
+				changed = m_Owner.reevaluateOwnership(BigOwners);
+			}
 
 			if (changed) {
 				m_CheckCleanupNextUpdate = true;

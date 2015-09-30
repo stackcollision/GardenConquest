@@ -42,6 +42,9 @@ namespace GardenConquest.Core {
 		private ResponseProcessor m_LocalReceiver;
 		private bool m_RoundEnded = false;
 
+		private IMyPlayer m_Player;
+		private int m_CurrentFrame;
+
 		private static ConquestSettings s_Settings;
 		private static bool s_DelayedSettingWrite = false;
 
@@ -80,6 +83,7 @@ namespace GardenConquest.Core {
 				m_CmdProc = new CommandProcessor(m_LocalReceiver);
 				m_CmdProc.initialize();
 				m_LocalReceiver.requestSettings();
+				m_Player = MyAPIGateway.Session.Player;
 			}
 
 			// Subscribe events
@@ -88,6 +92,8 @@ namespace GardenConquest.Core {
 			GridEnforcer.OnCleanupTimerStart += eventCleanupTimerStart;
 			GridEnforcer.OnCleanupTimerEnd += eventCleanupTimerEnd;
 			ControlPoint.OnRewardsDistributed += notifyPlayersOfCPResults;
+
+			m_CurrentFrame = 0;
 
 			m_Initialized = true;
 		}
@@ -137,6 +143,22 @@ namespace GardenConquest.Core {
 					}
 
 				}
+
+				// Performing this notification if server is player
+				if (!MyAPIGateway.Utilities.IsDedicated) {
+					if (m_CurrentFrame >= Constants.UpdateFrequency - 1) {
+						if (m_Player.Controller.ControlledEntity is InGame.IMyShipController) {
+							IMyCubeGrid currentControllerGrid = (m_Player.Controller.ControlledEntity as IMyCubeBlock).CubeGrid;
+							IMyCubeBlock classifierBlock = currentControllerGrid.getClassifierBlock();
+							if (classifierBlock != null && classifierBlock.OwnerId != m_Player.PlayerID && s_Settings.SimpleOwnership) {
+								MyAPIGateway.Utilities.ShowNotification("WARNING: Take control of the hull classifier or your position may be tracked!", 1250, MyFontEnum.Red);
+							}
+						}
+						m_CurrentFrame = 0;
+					}
+					++m_CurrentFrame;
+				}
+
 			}
 			catch (Exception e) {
 				log("Error" + e, "updateBeforeSimulation", Logger.severity.ERROR);

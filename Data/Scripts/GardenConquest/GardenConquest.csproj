@@ -61,6 +61,7 @@
     <Compile Include="Core\CommandProcessor.cs" />
     <Compile Include="Extensions\GridExtensions.cs" />
     <Compile Include="Extensions\IMyPlayerCollectionExtensions.cs" />
+    <Compile Include="Extensions\IMySlimBlockExtensions.cs" />
     <Compile Include="Extensions\PlayerExtensions.cs" />
     <Compile Include="Messaging\BaseRequest.cs" />
     <Compile Include="Messaging\BaseResponse.cs" />
