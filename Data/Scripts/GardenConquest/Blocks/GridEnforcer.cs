@@ -1013,12 +1013,22 @@ namespace GardenConquest.Blocks {
 		/// <returns>Whether or not the ownership changed.</returns>
 		public bool reevaluateOwnership() {
 			bool changed;
+			List<long> owners;
+
 			if (s_Settings.SimpleOwnership) {
-				changed = m_Owner.reevaluateOwnership(new List<long> { m_Grid.getClassifierBlock().OwnerId });
+				HullClassifier bestClassifier = findBestClassifier();
+				if (bestClassifier != null) {
+					owners = new List<long> { bestClassifier.FatBlock.OwnerId };
+				}
+				else {
+					owners = new List<long> { 0 };
+				}
 			}
 			else {
-				changed = m_Owner.reevaluateOwnership(BigOwners);
+				owners = BigOwners;
 			}
+			
+			changed = m_Owner.reevaluateOwnership(owners);
 
 			if (changed) {
 				m_CheckCleanupNextUpdate = true;
@@ -1477,7 +1487,7 @@ namespace GardenConquest.Blocks {
 			stream.addUShort((ushort)BlockCount);
 
 			// Serialize position data if the owner of the grid
-			if (Grid.canInteractWith(Owner.PlayerID)) {
+			if (Grid.canInteractWith(Owner.PlayerID, findBestClassifier())) {
 				stream.addBoolean(true);
 				stream.addLong((long)Grid.GetPosition().X);
 				stream.addLong((long)Grid.GetPosition().Y);

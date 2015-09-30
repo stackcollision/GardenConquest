@@ -15,6 +15,8 @@ using Sandbox.ModAPI;
 using InGame = Sandbox.ModAPI.Ingame;
 using Interfaces = Sandbox.ModAPI.Interfaces;
 
+using GardenConquest.Blocks;
+
 namespace GardenConquest.Extensions {
 
 	/// <summary>
@@ -150,12 +152,17 @@ namespace GardenConquest.Extensions {
 		/// <param name="playerID"></param>
 		/// <param name="grid"></param>
 		/// <returns></returns>
-		public static bool canInteractWith(this IMyCubeGrid grid, long playerID) {
+		public static bool canInteractWith(this IMyCubeGrid grid, long playerID, HullClassifier bestClassifier = null) {
 			IMyCubeBlock blockToCheck;
 
 			// Get the type of block to check based on settings
 			if (Core.ConquestSettings.getInstance().SimpleOwnership) {
-				blockToCheck = grid.getClassifierBlock();
+				if (bestClassifier != null) {
+					blockToCheck = bestClassifier.FatBlock;
+				}
+				else {
+					blockToCheck = grid.getFirstClassifierBlock();
+				}
 			}
 			else {
 				blockToCheck = grid.getMainCockpit();
@@ -190,9 +197,12 @@ namespace GardenConquest.Extensions {
 		/// Get the classifier block on the grid
 		/// </summary>
 		/// <param name="grid"></param>
-		/// <remarks>Grids should only have 1 classifier block</remarks>
-		/// <returns>The HullClassifier as IMyCubeBlock if found, null otherwise</returns>
-		public static IMyCubeBlock getClassifierBlock(this IMyCubeGrid grid) {
+		/// <remarks>Grids can have many classifiers at once, but it's unusual
+		/// so we can make a somewhat reliable guess using the first. This must be
+		/// used on client-side, because they haven't been keeping track of 
+		/// classifiers.</remarks>
+		/// <returns>The first HullClassifier as IMyCubeBlock found, null otherwise</returns>
+		public static IMyCubeBlock getFirstClassifierBlock(this IMyCubeGrid grid) {
 			List<IMySlimBlock> blocks = new List<IMySlimBlock>();
 
 			// Get all blocks with fatblocks

@@ -133,16 +133,21 @@ namespace GardenConquest.Messaging {
 		private void processStopGridRequest(StopGridRequest req) {
 			log("", "processStopGridRequest");
 			IMyCubeGrid gridToStop = MyAPIGateway.Entities.GetEntityById(req.EntityID) as IMyCubeGrid;
-			List<IMySlimBlock> fatBlocks = new List<IMySlimBlock>();
 
-			// Get all thrusters, spaceballs, artificial masses, and cockpits
-			Func<IMySlimBlock, bool> selectBlocks = b =>
-				b.FatBlock != null && (b.FatBlock is IMyThrust || b.FatBlock is IMySpaceBall || b.FatBlock is InGame.IMyVirtualMass || b.FatBlock is InGame.IMyShipController);
-			gridToStop.GetBlocks(fatBlocks, selectBlocks);
+			// @TODO: make it easy to find enforcers by entityId so we can provide
+			// greater accuracy to our canInteractWith check
+			//GridEnforcer enforcer = StateTracker.getInstance().
 
 			// Can the player interact with this grid? If they can, stop the ship by enabling dampeners, turning off
 			// space balls and artificial masses, and disable thruster override
 			if (gridToStop.canInteractWith(req.ReturnAddress)) {
+
+				// Get all thrusters, spaceballs, artificial masses, and cockpits
+				List<IMySlimBlock> fatBlocks = new List<IMySlimBlock>();
+				Func<IMySlimBlock, bool> selectBlocks = b =>
+					b.FatBlock != null && (b.FatBlock is IMyThrust || b.FatBlock is IMySpaceBall || b.FatBlock is InGame.IMyVirtualMass || b.FatBlock is InGame.IMyShipController);
+				gridToStop.GetBlocks(fatBlocks, selectBlocks);
+
 				foreach (IMySlimBlock block in fatBlocks) {
 					// Thruster
 					if (block.FatBlock is IMyThrust) {
