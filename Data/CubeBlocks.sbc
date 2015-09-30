@@ -4,7 +4,7 @@
 
     <!-- Begin Unlicensed -->
 
-    <Definition xsi:type="MyObjectBuilder_BeaconDefinition">
+    <Definition xsi:type="MyObjectBuilder_RadioAntennaDefinition">
       <Id>
         <TypeId>RadioAntenna</TypeId>
         <SubtypeId>GCUnlicensedHullClassifier</SubtypeId>
@@ -41,7 +41,7 @@
       <BuildTimeSeconds>50</BuildTimeSeconds>
       <DamageEffectId>214</DamageEffectId>
     </Definition>
-    <Definition xsi:type="MyObjectBuilder_BeaconDefinition">
+    <Definition xsi:type="MyObjectBuilder_RadioAntennaDefinition">
       <Id>
        <TypeId>RadioAntenna</TypeId>
         <SubtypeId>GCUnlicensedHullClassifierSmall</SubtypeId>
