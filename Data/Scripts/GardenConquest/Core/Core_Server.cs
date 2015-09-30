@@ -149,7 +149,7 @@ namespace GardenConquest.Core {
 					if (m_CurrentFrame >= Constants.UpdateFrequency - 1) {
 						if (m_Player.Controller.ControlledEntity is InGame.IMyShipController) {
 							IMyCubeGrid currentControllerGrid = (m_Player.Controller.ControlledEntity as IMyCubeBlock).CubeGrid;
-							IMyCubeBlock classifierBlock = currentControllerGrid.getClassifierBlock();
+							IMyCubeBlock classifierBlock = currentControllerGrid.getFirstClassifierBlock();
 							if (classifierBlock != null && classifierBlock.OwnerId != m_Player.PlayerID && s_Settings.SimpleOwnership) {
 								MyAPIGateway.Utilities.ShowNotification("WARNING: Take control of the hull classifier or your position may be tracked!", 1250, MyFontEnum.Red);
 							}

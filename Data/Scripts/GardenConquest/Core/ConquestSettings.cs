@@ -35,8 +35,8 @@ namespace GardenConquest.Core {
 		}
 
 		private static readonly int DEFAULT_CP_PERIOD = 300; // 5 minutes
-		private static readonly int DEFAULT_CLEANUP_PERIOD = 1200; // 1800; // 30 minutes
 		private static readonly bool DEFAULT_SIMPLE_OWNERSHIP = true;
+		private static readonly int DEFAULT_CLEANUP_PERIOD = 3600; // 1 hour
 		private static Logger s_Logger;
 		private static ConquestSettings s_Instance;
 
@@ -240,7 +240,13 @@ namespace GardenConquest.Core {
 				},
 				new ControlPoint() {
 					Name = "CP Kadesh",
-					Position = new VRageMath.Vector3D(-100000, 0, 0),
+					Position = new VRageMath.Vector3D(-50000, 0, 86602.54),
+					Radius = 15000,
+					TokensPerPeriod = 2,
+				},
+				new ControlPoint() {
+					Name = "CP Vaygr",
+					Position = new VRageMath.Vector3D(-50000, 0, -86602.54),
 					Radius = 15000,
 					TokensPerPeriod = 2,
 				},
@@ -350,7 +356,7 @@ namespace GardenConquest.Core {
 				BlockTypeLimits = new int[7] {
 					//10,  // Conveyors
 					//1,   // Gravity
-					3,     // Industrial
+					2,     // Industrial
 					//0,   // Logic
 					0,     // Projector
 					1,     // Spotlight
@@ -463,7 +469,7 @@ namespace GardenConquest.Core {
 			};
 			results[(int)HullClass.CLASS.CORVETTE] = new HullRuleSet() {
 				DisplayName = "Corvette",
-				MaxPerFaction = 6,
+				MaxPerFaction = 8,
 				MaxPerSoloPlayer = 0,
 				CaptureMultiplier = 4,
 				MaxBlocks = 200,
@@ -545,7 +551,7 @@ namespace GardenConquest.Core {
 			};
 			results[(int)HullClass.CLASS.HEAVYCRUISER] = new HullRuleSet() {
 				DisplayName = "Heavy Cruiser",
-				MaxPerFaction = 0,
+				MaxPerFaction = 1,
 				MaxPerSoloPlayer = 0,
 				CaptureMultiplier = 20,
 				MaxBlocks = 4050, 

@@ -267,7 +267,7 @@ namespace GardenConquest.Core {
 
 				"In order to control the CP, your fleet must " +
 				"have the most ships in that area that:\n" +
-				"* have a powered, broadcasting Hull Classifier beacon\n" +
+				"* have a powered, broadcasting Hull Classifier\n" +
 				"* have a broadcast range on the classifier at least as large " +
 				" as the ship's distance to the CP. (This is to prevent players " +
 				"from hiding while capturing a CP. If someone stands in the " +

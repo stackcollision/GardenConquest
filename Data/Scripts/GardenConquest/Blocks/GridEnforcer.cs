@@ -59,7 +59,7 @@ namespace GardenConquest.Blocks {
 			public int Limit { get; set; }
 		}
 
-		private static readonly bool CLEANUP_PREFABS_IMMEDIATELY = true;
+		private static readonly bool CLEANUP_PREFABS_IMMEDIATELY = false;
 		private static readonly int PREFAB_BLOCK_THRESHOLD = 200;
 		private static readonly int CLEANUP_CLASS_TICKS = 1; // So 30 min with default 30 min ticks
 		private static readonly int CLEANUP_STATIC_TICKS = 96; // 2 days
@@ -244,7 +244,7 @@ namespace GardenConquest.Blocks {
 			}
 
 			// We need to only turn on our rule checking after startup. Otherwise, if
-			// a beacon is destroyed and then the server restarts, all but the first
+			// a classifer is destroyed and then the server restarts, all but the first
 			// 25 blocks will be deleted on startup.
 			m_Grid.NeedsUpdate |= MyEntityUpdateEnum.EACH_100TH_FRAME;
 
@@ -975,7 +975,7 @@ namespace GardenConquest.Blocks {
 		/// The cleanest way to do that would be making Hull Classifiers a logic component
 		/// so we can track isWorking there and make sure it's closed when they are
 		/// This would require the ge to be able to find the HullClassifier component on
-		/// an added beacon, which seems like it might be possible, but also might not
+		/// an added fatblock, which seems like it might be possible, but also might not
 		/// </remarks>
 		private List<HullClassifier> findWorstClassifiers(uint removeCount = 0) {
 			List<HullClassifier> worstClassifiers = new List<HullClassifier>();
@@ -1013,12 +1013,22 @@ namespace GardenConquest.Blocks {
 		/// <returns>Whether or not the ownership changed.</returns>
 		public bool reevaluateOwnership() {
 			bool changed;
+			List<long> owners;
+
 			if (s_Settings.SimpleOwnership) {
-				changed = m_Owner.reevaluateOwnership(new List<long> { m_Grid.getClassifierBlock().OwnerId });
+				HullClassifier bestClassifier = findBestClassifier();
+				if (bestClassifier != null) {
+					owners = new List<long> { bestClassifier.FatBlock.OwnerId };
+				}
+				else {
+					owners = new List<long> { 0 };
+				}
 			}
 			else {
-				changed = m_Owner.reevaluateOwnership(BigOwners);
+				owners = BigOwners;
 			}
+			
+			changed = m_Owner.reevaluateOwnership(owners);
 
 			if (changed) {
 				m_CheckCleanupNextUpdate = true;
@@ -1477,7 +1487,7 @@ namespace GardenConquest.Blocks {
 			stream.addUShort((ushort)BlockCount);
 
 			// Serialize position data if the owner of the grid
-			if (Grid.canInteractWith(Owner.PlayerID)) {
+			if (Grid.canInteractWith(Owner.PlayerID, findBestClassifier())) {
 				stream.addBoolean(true);
 				stream.addLong((long)Grid.GetPosition().X);
 				stream.addLong((long)Grid.GetPosition().Y);

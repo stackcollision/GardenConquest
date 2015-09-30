@@ -9,7 +9,7 @@
       <DisplayName>Hull Classifiers</DisplayName>
       <Name>Hull Classifiers</Name>
       <ItemIds>
-        <string>Beacon/GCUnlicensedHullClassifier</string>
+        <string>RadioAntenna/GCUnlicensedHullClassifier</string>
         <string>Beacon/GCWorkerHullClassifier</string>
         <string>Beacon/GCFoundryHullClassifier</string>
         <string>Beacon/GCScoutHullClassifier</string>
