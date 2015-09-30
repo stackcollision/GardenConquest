@@ -97,6 +97,10 @@ Use these (plus any existing ships that haven't yet been removed) to capture
 You can use those to build bigger and better Hull Classifiers. These will
 allow you to place and keep more blocks
 
+## Deployment
+
+Use [this builder](https://github.com/zrisher/se_mod_builder).
+
 ## Contributing
 
 See the [Contributing section of our wiki]
