@@ -244,7 +244,7 @@ namespace GardenConquest.Blocks {
 			}
 
 			// We need to only turn on our rule checking after startup. Otherwise, if
-			// a beacon is destroyed and then the server restarts, all but the first
+			// a classifer is destroyed and then the server restarts, all but the first
 			// 25 blocks will be deleted on startup.
 			m_Grid.NeedsUpdate |= MyEntityUpdateEnum.EACH_100TH_FRAME;
 
@@ -975,7 +975,7 @@ namespace GardenConquest.Blocks {
 		/// The cleanest way to do that would be making Hull Classifiers a logic component
 		/// so we can track isWorking there and make sure it's closed when they are
 		/// This would require the ge to be able to find the HullClassifier component on
-		/// an added beacon, which seems like it might be possible, but also might not
+		/// an added fatblock, which seems like it might be possible, but also might not
 		/// </remarks>
 		private List<HullClassifier> findWorstClassifiers(uint removeCount = 0) {
 			List<HullClassifier> worstClassifiers = new List<HullClassifier>();

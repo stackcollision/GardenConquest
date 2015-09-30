@@ -193,12 +193,12 @@ namespace GardenConquest.Extensions {
 		/// <remarks>Grids should only have 1 classifier block</remarks>
 		/// <returns>The HullClassifier as IMyCubeBlock if found, null otherwise</returns>
 		public static IMyCubeBlock getClassifierBlock(this IMyCubeGrid grid) {
-			List<IMySlimBlock> beaconBlocks = new List<IMySlimBlock>();
+			List<IMySlimBlock> blocks = new List<IMySlimBlock>();
 
-			// Get all beacon blocks
-			grid.GetBlocks(beaconBlocks, (b => b.FatBlock != null && b.FatBlock is InGame.IMyBeacon));
+			// Get all blocks with fatblocks
+			grid.GetBlocks(blocks, (b => b.FatBlock != null));
 
-			foreach (IMySlimBlock block in beaconBlocks) {
+			foreach (IMySlimBlock block in blocks) {
 				if (block.isClassifierBlock()) {
 					return block.FatBlock;
 				}

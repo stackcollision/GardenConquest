@@ -207,19 +207,36 @@ namespace GardenConquest.Records {
 						"nearbySubfleets", Logger.severity.ERROR);
 					continue;
 				}
-				InGame.IMyBeacon beacon = classifier.FatBlock as InGame.IMyBeacon;
-				if (beacon == null) {
-					log("Classifier could not be referenced as beacon",
+
+				IMyCubeBlock fatblock = classifier.FatBlock;
+				if (fatblock == null) {
+					log("Classifier could not be referenced as fatblock",
 						"nearbySubfleets", Logger.severity.ERROR);
 					continue;
 				}
-				if (!beacon.IsWorking) {
-					log("Classifier beacon not working but grid was classified",
+				if (!fatblock.IsWorking) {
+					log("Classifier not working but grid was classified",
 						"nearbySubfleets", Logger.severity.ERROR);
 					continue;
 				}
-				
-				if (beacon.Radius < VRageMath.Vector3.Distance(Position, grid.GetPosition())) {
+
+				InGame.IMyBeacon beacon = fatblock as InGame.IMyBeacon;
+				InGame.IMyRadioAntenna antenna = fatblock as InGame.IMyRadioAntenna;
+				if (beacon == null && antenna == null) {
+					log("Classifier not a beacon or antennae, no broadcast radius",
+						"nearbySubfleets", Logger.severity.ERROR);
+					continue;
+				}
+				if (beacon != null && beacon.Radius < 
+						VRageMath.Vector3.Distance(Position, grid.GetPosition())) {
+
+						log("Classifier range too small, skipping", "nearbySubfleets");
+						// TODO notify pilot
+						continue;
+				}
+				if (antenna != null && antenna.Radius <
+						VRageMath.Vector3.Distance(Position, grid.GetPosition())) {
+
 					log("Classifier range too small, skipping", "nearbySubfleets");
 					// TODO notify pilot
 					continue;
