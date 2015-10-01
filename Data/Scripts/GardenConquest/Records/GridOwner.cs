@@ -40,6 +40,16 @@ namespace GardenConquest.Records {
 						return StateTracker.UNOWNED_FLEET_ID;
 				}
 			}}
+			public FactionFleet Fleet {
+				get {
+					if (GridEnforcer.StateTracker != null) {
+						return GridEnforcer.StateTracker.getFleet(FleetID, OwnerType);
+					}
+					else {
+						return null;
+					}
+				}
+			}
 		}
 
 		public static OWNER ownerFromPlayerID(long playerID) {
