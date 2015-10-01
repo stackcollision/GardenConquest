@@ -188,7 +188,15 @@ namespace GardenConquest.Core {
 			else if (v == GridEnforcer.VIOLATION_TYPE.SHOULD_BE_STATIC)
 				message = "This classifier is only allowed on Stations";
 			else if (v == GridEnforcer.VIOLATION_TYPE.TOO_MANY_OF_CLASS) {
-				GridOwner.OWNER_TYPE owner_type = ge.Owner.OwnerType;
+
+				// Hopefully the first person in the immediate vicinity is the
+				// same ownertype as the person trying to place the block.
+				// We could pass the owner of the block up with the violation,
+				// but it would required more sophistication in the way we pass
+				// violations in BlockAdded
+				GridOwner.OWNER localOwner = GridOwner.ownerFromPlayerID(players[0]);
+				GridOwner.OWNER_TYPE owner_type = localOwner.OwnerType;
+
 				if (owner_type == GridOwner.OWNER_TYPE.UNOWNED) {
 					message = "Take ownership of this grid or it will eventually be removed.";
 				}

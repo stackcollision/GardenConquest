@@ -551,9 +551,48 @@ namespace GardenConquest.Blocks {
 				}
 
 				// Too many per Player/Faction not allowed
-				if (!checkClassAllowed(classID)) {
-					return VIOLATION_TYPE.TOO_MANY_OF_CLASS;
+				if (s_Settings.SimpleOwnership) {
+
+					// because we didn't return on the above Two Classifier check, 
+					// we know we don't have a classifier to use for ownership. 
+					// So use our best guess of the placer instead
+					// Note: the added block is unowned right now : /
+
+					// If we're before the first 100, we're initing and the results
+					// of this don't matter anyway. But the cost could be great
+					// with a ton of blocks.
+					if (m_BeyondFirst100) {
+						List<long> nearbyPlayers = Grid.getPlayerIDsWithinPlacementRadius();
+
+						if (nearbyPlayers.Count == 0) {
+							log("No nearby players for block placed after init... ", 
+								"updateClassifiersWith", Logger.severity.ERROR);
+						}
+						else {
+							log("Nearby Player ID " + nearbyPlayers[0], "updateClassifiersWith");
+
+							GridOwner.OWNER placerOwner = GridOwner.
+								ownerFromPlayerID(nearbyPlayers[0]);
+
+							log("Simple ownership check with placerOwner of type " +
+								placerOwner.OwnerType, "updateClassifiersWith");
+
+							FactionFleet placerFleet = placerOwner.Fleet;
+							if (!placerFleet.canSupportAnother(classID)) {
+								return VIOLATION_TYPE.TOO_MANY_OF_CLASS;
+							}
+						}
+
+					}
+
 				}
+				else {
+					if (!checkClassAllowed(classID)) {
+						return VIOLATION_TYPE.TOO_MANY_OF_CLASS;
+					}
+				}
+
+
 			}
 			catch (Exception e) {
 				log("Error: " + e, "updateClassificationWith", Logger.severity.ERROR);
