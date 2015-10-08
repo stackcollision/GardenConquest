@@ -11,6 +11,7 @@
       </Id>
       <DisplayName>Unlicensed Hull Classifier</DisplayName>
       <Icon>Textures\Icons\unlicensed-1-128.dds</Icon>
+      <ResourceSinkGroup>Utility</ResourceSinkGroup>
       <CubeSize>Large</CubeSize>
       <BlockTopology>TriangleMesh</BlockTopology>
       <Size x="1" y="2" z="1" />
@@ -52,6 +53,7 @@
       </Id>
       <DisplayName>Unlicensed Hull Classifier</DisplayName>
       <Icon>Textures\Icons\unlicensed-1-128.dds</Icon>
+      <ResourceSinkGroup>Utility</ResourceSinkGroup>
       <CubeSize>Small</CubeSize>
       <BlockTopology>TriangleMesh</BlockTopology>
       <Size x="1" y="1" z="2" />
@@ -87,6 +89,7 @@
       </Id>
       <DisplayName>Worker Hull Classifier</DisplayName>
       <Icon>Textures\Icons\utility-1-128.dds</Icon>
+      <ResourceSinkGroup>Utility</ResourceSinkGroup>
       <CubeSize>Large</CubeSize>
       <BlockTopology>TriangleMesh</BlockTopology>
       <Size x="1" y="2" z="1" />
@@ -129,6 +132,7 @@
       </Id>
       <DisplayName>Worker Hull Classifier</DisplayName>
       <Icon>Textures\Icons\utility-1-128.dds</Icon>
+      <ResourceSinkGroup>Utility</ResourceSinkGroup>
       <CubeSize>Small</CubeSize>
       <BlockTopology>TriangleMesh</BlockTopology>
       <Size x="1" y="1" z="2" />
@@ -161,6 +165,7 @@
       </Id>
       <DisplayName>Foundry Hull Classifier</DisplayName>
       <Icon>Textures\Icons\utility-2-128.dds</Icon>
+      <ResourceSinkGroup>Utility</ResourceSinkGroup>
       <CubeSize>Large</CubeSize>
       <BlockTopology>TriangleMesh</BlockTopology>
       <Size x="1" y="2" z="1" />
@@ -208,6 +213,7 @@
       </Id>
       <DisplayName>Scout Hull Classifier</DisplayName>
       <Icon>Textures\Icons\strikecraft-1-128.dds</Icon>
+      <ResourceSinkGroup>Utility</ResourceSinkGroup>
       <CubeSize>Small</CubeSize>
       <BlockTopology>TriangleMesh</BlockTopology>
       <Size x="1" y="1" z="2" />
@@ -240,6 +246,7 @@
       </Id>
       <DisplayName>Fighter Hull Classifier</DisplayName>
       <Icon>Textures\Icons\strikecraft-2-128.dds</Icon>
+      <ResourceSinkGroup>Utility</ResourceSinkGroup>
       <CubeSize>Small</CubeSize>
       <BlockTopology>TriangleMesh</BlockTopology>
       <Size x="1" y="1" z="2" />
@@ -272,6 +279,7 @@
       </Id>
       <DisplayName>Gunship Hull Classifier</DisplayName>
       <Icon>Textures\Icons\strikecraft-3-128.dds</Icon>
+      <ResourceSinkGroup>Utility</ResourceSinkGroup>
       <CubeSize>Small</CubeSize>
       <BlockTopology>TriangleMesh</BlockTopology>
       <Size x="1" y="1" z="2" />
@@ -308,6 +316,7 @@
       </Id>
       <DisplayName>Corvette Hull Classifier</DisplayName>
       <Icon>Textures\Icons\corvette-1-128.dds</Icon>
+      <ResourceSinkGroup>Utility</ResourceSinkGroup>
       <CubeSize>Large</CubeSize>
       <BlockTopology>TriangleMesh</BlockTopology>
       <Size x="1" y="2" z="1" />
@@ -351,6 +360,7 @@
       </Id>
       <DisplayName>Frigate Hull Classifier</DisplayName>
       <Icon>Textures\Icons\frigate-1-128.dds</Icon>
+      <ResourceSinkGroup>Utility</ResourceSinkGroup>
       <CubeSize>Large</CubeSize>
       <BlockTopology>TriangleMesh</BlockTopology>
       <Size x="1" y="2" z="1" />
@@ -394,6 +404,7 @@
       </Id>
       <DisplayName>Destroyer Hull Classifier</DisplayName>
       <Icon>Textures\Icons\capital-1-128.dds</Icon>
+      <ResourceSinkGroup>Utility</ResourceSinkGroup>
       <CubeSize>Large</CubeSize>
       <BlockTopology>TriangleMesh</BlockTopology>
       <Size x="1" y="2" z="1" />
@@ -437,6 +448,7 @@
       </Id>
       <DisplayName>Cruiser Hull Classifier</DisplayName>
       <Icon>Textures\Icons\capital-2-128.dds</Icon>
+      <ResourceSinkGroup>Utility</ResourceSinkGroup>
       <CubeSize>Large</CubeSize>
       <BlockTopology>TriangleMesh</BlockTopology>
       <Size x="1" y="2" z="1" />
@@ -480,6 +492,7 @@
       </Id>
       <DisplayName>Heavy Cruiser Hull Classifier</DisplayName>
       <Icon>Textures\Icons\supercapital-1-128.dds</Icon>
+      <ResourceSinkGroup>Utility</ResourceSinkGroup>
       <CubeSize>Large</CubeSize>
       <BlockTopology>TriangleMesh</BlockTopology>
       <Size x="1" y="2" z="1" />
@@ -523,6 +536,7 @@
       </Id>
       <DisplayName>Battleship Hull Classifier</DisplayName>
       <Icon>Textures\Icons\supercapital-2-128.dds</Icon>
+      <ResourceSinkGroup>Utility</ResourceSinkGroup>
       <CubeSize>Large</CubeSize>
       <BlockTopology>TriangleMesh</BlockTopology>
       <Size x="1" y="2" z="1" />
@@ -570,6 +584,7 @@
       </Id>
       <DisplayName>Outpost Hull Classifier</DisplayName>
       <Icon>Textures\Icons\station-1-128.dds</Icon>
+      <ResourceSinkGroup>Utility</ResourceSinkGroup>
       <CubeSize>Large</CubeSize>
       <BlockTopology>TriangleMesh</BlockTopology>
       <Size x="1" y="2" z="1" />
@@ -613,6 +628,7 @@
       </Id>
       <DisplayName>Installation Hull Classifier</DisplayName>
       <Icon>Textures\Icons\station-2-128.dds</Icon>
+      <ResourceSinkGroup>Utility</ResourceSinkGroup>
       <CubeSize>Large</CubeSize>
       <BlockTopology>TriangleMesh</BlockTopology>
       <Size x="1" y="2" z="1" />
@@ -656,6 +672,7 @@
       </Id>
       <DisplayName>Fortress Hull Classifier</DisplayName>
       <Icon>Textures\Icons\station-3-128.dds</Icon>
+      <ResourceSinkGroup>Utility</ResourceSinkGroup>
       <CubeSize>Large</CubeSize>
       <BlockTopology>TriangleMesh</BlockTopology>
       <Size x="1" y="2" z="1" />
